@@ -424,11 +424,13 @@ if(sessionStorage.getItem('ct_auth')==='1')document.getElementById('lockScreen')
       <h3 class="modal-title" style="margin:0;">Add Transfer Step</h3>
       <button class="btn btn-ghost" onclick="closeModal('addStepModal')">&times;</button>
     </div>
+    <!-- Trail: shows the chain path so far -->
+    <div id="stepTrail" style="margin-bottom:24px;"></div>
     <form id="addStepForm" onsubmit="submitAddStep(event)">
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Amount Sent ($)</label>
-          <input class="form-input mono" name="amount_sent" type="number" step="0.01" required>
+          <input class="form-input mono" name="amount_sent" id="stepAmountInput" type="number" step="0.01" required>
         </div>
         <div class="form-group">
           <label class="form-label">Fee ($)</label>
@@ -437,7 +439,7 @@ if(sessionStorage.getItem('ct_auth')==='1')document.getElementById('lockScreen')
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">Destination Account</label>
+          <label class="form-label">Next Destination Account</label>
           <select class="form-select" name="to_account_id" id="stepDestSelect" required></select>
         </div>
         <div class="form-group">
@@ -809,9 +811,37 @@ async function loadAudit() {
 }
 
 // ── Modals & Forms ──
+let allEntities = [];
+
 async function loadAccountOptions() {
-  allAccounts = await api('/accounts');
-  const opts = allAccounts.map(a => `<option value="${a.id}">${a.name} (${a.account_type})</option>`).join('');
+  const [accounts, entities] = await Promise.all([api('/accounts'), api('/entities')]);
+  allAccounts = accounts;
+  allEntities = entities;
+
+  // Build entity lookup
+  const entityMap = {};
+  entities.forEach(e => { entityMap[e.id] = e.name; });
+
+  // Group accounts by entity
+  const grouped = {};
+  accounts.forEach(a => {
+    const eName = entityMap[a.entity_id] || 'Unknown';
+    if (!grouped[eName]) grouped[eName] = [];
+    grouped[eName].push(a);
+  });
+
+  // Build <optgroup> HTML
+  let opts = '';
+  for (const [entityName, accts] of Object.entries(grouped)) {
+    opts += `<optgroup label="${entityName}">`;
+    accts.forEach(a => {
+      const provider = a.provider ? ` — ${a.provider}` : '';
+      const last4 = a.account_number_last4 ? ` (****${a.account_number_last4})` : '';
+      opts += `<option value="${a.id}">${a.name}${provider}${last4}</option>`;
+    });
+    opts += '</optgroup>';
+  }
+
   document.getElementById('sourceAccountSelect').innerHTML = opts;
   document.getElementById('destAccountSelect').innerHTML = '<option value="">-- Not specified --</option>' + opts;
   document.getElementById('stepDestSelect').innerHTML = opts;
@@ -822,8 +852,62 @@ function showNewChainModal() {
   document.getElementById('newChainModal').classList.remove('hidden');
 }
 
-function showAddStepModal() {
-  loadAccountOptions();
+async function showAddStepModal() {
+  await loadAccountOptions();
+
+  // Build the trail showing the chain path so far
+  const chain = await api(`/transactions/${currentChainId}`);
+  let trailHtml = '<div class="form-label" style="margin-bottom:8px;">ACCOUNT TRAIL</div>';
+  trailHtml += '<div style="display:flex;align-items:center;gap:0;overflow-x:auto;padding:8px 0;">';
+
+  if (chain.steps.length === 0) {
+    // No steps yet — show source only
+    trailHtml += `<div style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;text-align:center;min-width:120px;">
+      <div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;">${chain.source_entity_name || ''}</div>
+      <div style="font-size:12px;font-weight:600;">${chain.source_account_name || 'Source'}</div>
+      <div class="mono" style="font-size:14px;color:var(--success);margin-top:4px;">${fmt(chain.original_amount)}</div>
+    </div>`;
+    trailHtml += `<div style="color:var(--text-muted);padding:0 6px;font-size:18px;">&#8594;</div>`;
+    trailHtml += `<div style="background:var(--surface-3);border:2px dashed var(--accent);border-radius:8px;padding:10px 14px;text-align:center;min-width:120px;">
+      <div style="font-size:11px;color:var(--accent);font-weight:600;">NEXT STEP</div>
+    </div>`;
+    // Pre-fill amount
+    document.getElementById('stepAmountInput').value = parseFloat(chain.original_amount);
+  } else {
+    // Show source node
+    const firstStep = chain.steps[0];
+    trailHtml += `<div style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;text-align:center;min-width:110px;">
+      <div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;">${firstStep.from_entity_name || ''}</div>
+      <div style="font-size:11px;font-weight:600;">${firstStep.from_account_name}</div>
+      <div class="mono" style="font-size:13px;color:var(--success);margin-top:2px;">${fmt(firstStep.amount_sent)}</div>
+    </div>`;
+
+    // Show each intermediate step
+    chain.steps.forEach(s => {
+      trailHtml += `<div style="display:flex;flex-direction:column;align-items:center;padding:0 4px;">
+        <div style="color:var(--text-muted);font-size:16px;">&#8594;</div>
+        <div style="font-size:9px;color:var(--danger);font-family:'JetBrains Mono',monospace;">${parseFloat(s.fee) > 0 ? '-' + fmt(s.fee) : ''}</div>
+      </div>`;
+      trailHtml += `<div style="background:var(--surface-2);border:1px solid ${s.status === 'completed' ? 'var(--success)' : 'var(--border)'};border-radius:8px;padding:10px 14px;text-align:center;min-width:110px;">
+        <div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;">${s.to_entity_name || ''}</div>
+        <div style="font-size:11px;font-weight:600;">${s.to_account_name}</div>
+        <div class="mono" style="font-size:13px;color:var(--success);margin-top:2px;">${fmt(s.amount_received)}</div>
+      </div>`;
+    });
+
+    // Show "next step" placeholder
+    const lastStep = chain.steps[chain.steps.length - 1];
+    trailHtml += `<div style="color:var(--text-muted);padding:0 6px;font-size:18px;">&#8594;</div>`;
+    trailHtml += `<div style="background:var(--surface-3);border:2px dashed var(--accent);border-radius:8px;padding:10px 14px;text-align:center;min-width:110px;">
+      <div style="font-size:11px;color:var(--accent);font-weight:600;">NEXT STEP</div>
+    </div>`;
+
+    // Pre-fill amount from last step's received amount
+    document.getElementById('stepAmountInput').value = parseFloat(lastStep.amount_received);
+  }
+
+  trailHtml += '</div>';
+  document.getElementById('stepTrail').innerHTML = trailHtml;
   document.getElementById('addStepModal').classList.remove('hidden');
 }
 
