@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Capital Tracker | Armada Operations</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+<style>
+:root {
+  --bg: #0a0e17;
+  --surface: #111827;
+  --surface-2: #1a2236;
+  --surface-3: #222d45;
+  --border: #2a3550;
+  --text: #e2e8f0;
+  --text-dim: #94a3b8;
+  --text-muted: #64748b;
+  --accent: #3b82f6;
+  --accent-dim: #1d4ed8;
+  --success: #10b981;
+  --success-bg: rgba(16,185,129,0.1);
+  --danger: #ef4444;
+  --danger-bg: rgba(239,68,68,0.1);
+  --warning: #f59e0b;
+  --warning-bg: rgba(245,158,11,0.1);
+  --purple: #8b5cf6;
+  --purple-bg: rgba(139,92,246,0.1);
+  --cyan: #06b6d4;
+  --cyan-bg: rgba(6,182,212,0.1);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; }
+.mono { font-family:'JetBrains Mono',monospace; }
+.display { font-family:'Playfair Display',serif; }
+
+/* Sidebar */
+.sidebar { width:260px; background:var(--surface); border-right:1px solid var(--border); padding:24px 0; display:flex; flex-direction:column; position:fixed; height:100vh; z-index:10; }
+.sidebar-header { padding:0 24px 24px; border-bottom:1px solid var(--border); }
+.sidebar-header h1 { font-size:18px; font-weight:700; color:var(--accent); letter-spacing:-0.5px; }
+.sidebar-header p { font-size:11px; color:var(--text-muted); margin-top:4px; text-transform:uppercase; letter-spacing:1px; }
+.nav { padding:16px 12px; flex:1; }
+.nav-item { display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:8px; cursor:pointer; color:var(--text-dim); font-size:14px; font-weight:500; transition:all 0.15s; margin-bottom:2px; }
+.nav-item:hover { background:var(--surface-2); color:var(--text); }
+.nav-item.active { background:var(--accent-dim); color:#fff; }
+.nav-icon { width:20px; height:20px; display:flex; align-items:center; justify-content:center; font-size:16px; }
+.sidebar-footer { padding:16px 24px; border-top:1px solid var(--border); }
+.api-status { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-muted); }
+.api-dot { width:8px; height:8px; border-radius:50%; }
+.api-dot.online { background:var(--success); box-shadow:0 0 6px var(--success); }
+.api-dot.offline { background:var(--danger); box-shadow:0 0 6px var(--danger); }
+
+/* Main Content */
+.main { margin-left:260px; flex:1; padding:32px; min-height:100vh; overflow-y:auto; height:100vh; }
+.page-header { margin-bottom:32px; }
+.page-header h2 { font-size:28px; font-weight:700; letter-spacing:-0.5px; }
+.page-header p { color:var(--text-dim); margin-top:4px; font-size:14px; }
+
+/* KPI Cards */
+.kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; margin-bottom:32px; }
+.kpi-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px; }
+.kpi-label { font-size:12px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px; }
+.kpi-value { font-size:24px; font-weight:700; font-family:'JetBrains Mono',monospace; }
+.kpi-value.positive { color:var(--success); }
+.kpi-value.negative { color:var(--danger); }
+.kpi-value.accent { color:var(--accent); }
+.kpi-value.warning { color:var(--warning); }
+.kpi-sub { font-size:11px; color:var(--text-muted); margin-top:4px; }
+
+/* Cards & Panels */
+.card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:24px; margin-bottom:24px; }
+.card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+.card-title { font-size:16px; font-weight:600; }
+
+/* Tables */
+table { width:100%; border-collapse:collapse; }
+th { text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); padding:12px 16px; border-bottom:1px solid var(--border); font-weight:600; }
+td { padding:12px 16px; border-bottom:1px solid var(--border); font-size:13px; }
+tr:hover td { background:var(--surface-2); }
+
+/* Status Badges */
+.badge { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
+.badge-completed { background:var(--success-bg); color:var(--success); }
+.badge-in_transit, .badge-in-transit { background:var(--warning-bg); color:var(--warning); }
+.badge-pending { background:var(--purple-bg); color:var(--purple); }
+.badge-failed { background:var(--danger-bg); color:var(--danger); }
+.badge-cancelled { background:rgba(100,116,139,0.1); color:var(--text-muted); }
+
+/* Capital Type Badges */
+.cap-badge { display:inline-block; padding:3px 8px; border-radius:4px; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
+.cap-lp_capital { background:var(--cyan-bg); color:var(--cyan); }
+.cap-gp_capital { background:var(--purple-bg); color:var(--purple); }
+.cap-fee_revenue { background:var(--warning-bg); color:var(--warning); }
+.cap-operating_funds { background:rgba(100,116,139,0.15); color:var(--text-dim); }
+
+/* Flow Pipeline */
+.pipeline { display:flex; align-items:center; gap:0; overflow-x:auto; padding:24px 0; }
+.pipe-node { flex-shrink:0; background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:16px 20px; min-width:160px; text-align:center; position:relative; }
+.pipe-node.completed { border-color:var(--success); }
+.pipe-node.pending { border-color:var(--text-muted); opacity:0.6; }
+.pipe-node.in_transit { border-color:var(--warning); }
+.pipe-node .node-entity { font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
+.pipe-node .node-account { font-size:13px; font-weight:600; margin-bottom:8px; }
+.pipe-node .node-amount { font-size:18px; font-weight:700; font-family:'JetBrains Mono',monospace; color:var(--success); }
+.pipe-node .node-status { margin-top:8px; }
+.pipe-connector { flex-shrink:0; display:flex; flex-direction:column; align-items:center; padding:0 8px; min-width:100px; }
+.pipe-arrow { color:var(--text-muted); font-size:24px; margin-bottom:4px; }
+.pipe-fee { font-size:11px; color:var(--danger); font-family:'JetBrains Mono',monospace; font-weight:600; }
+.pipe-method { font-size:10px; color:var(--text-muted); text-transform:uppercase; margin-top:2px; }
+
+/* Entity Cards */
+.entity-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; }
+.entity-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px; cursor:pointer; transition:border-color 0.15s; }
+.entity-card:hover { border-color:var(--accent); }
+.entity-name { font-size:16px; font-weight:600; margin-bottom:4px; }
+.entity-type { font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:16px; }
+.entity-stat { display:flex; justify-content:space-between; padding:6px 0; font-size:13px; }
+.entity-stat .label { color:var(--text-dim); }
+.entity-stat .value { font-family:'JetBrains Mono',monospace; font-weight:500; }
+
+/* Investor Table */
+.investor-row { cursor:pointer; }
+.investor-row:hover td { background:var(--surface-2); }
+
+/* Buttons */
+.btn { display:inline-flex; align-items:center; gap:8px; padding:8px 16px; border-radius:8px; border:none; cursor:pointer; font-size:13px; font-weight:600; font-family:'DM Sans',sans-serif; transition:all 0.15s; }
+.btn-primary { background:var(--accent); color:#fff; }
+.btn-primary:hover { background:var(--accent-dim); }
+.btn-ghost { background:transparent; color:var(--text-dim); border:1px solid var(--border); }
+.btn-ghost:hover { background:var(--surface-2); color:var(--text); }
+
+/* Form elements */
+.form-group { margin-bottom:16px; }
+.form-label { display:block; font-size:12px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px; }
+.form-input, .form-select { width:100%; padding:10px 12px; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:14px; font-family:'DM Sans',sans-serif; }
+.form-input:focus, .form-select:focus { outline:none; border-color:var(--accent); }
+.form-select option { background:var(--surface); }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+
+/* Modal */
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; z-index:100; }
+.modal { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:32px; width:90%; max-width:640px; max-height:90vh; overflow-y:auto; }
+.modal-title { font-size:20px; font-weight:700; margin-bottom:24px; }
+
+/* Tabs (for transaction detail) */
+.detail-tabs { display:flex; gap:8px; margin-bottom:24px; }
+.detail-tab { padding:8px 16px; border-radius:8px; cursor:pointer; font-size:13px; font-weight:500; color:var(--text-dim); background:transparent; border:1px solid transparent; }
+.detail-tab.active { background:var(--accent-dim); color:#fff; border-color:var(--accent); }
+.detail-tab:hover:not(.active) { background:var(--surface-2); }
+
+/* Allocation list */
+.alloc-item { display:flex; justify-content:space-between; align-items:center; padding:12px 16px; background:var(--surface-2); border-radius:8px; margin-bottom:8px; }
+.alloc-name { font-weight:600; }
+.alloc-entity { font-size:11px; color:var(--text-muted); }
+.alloc-amount { font-family:'JetBrains Mono',monospace; font-weight:600; }
+.alloc-pct { font-size:12px; color:var(--text-dim); margin-left:8px; }
+
+/* Charts container */
+.chart-container { position:relative; height:280px; }
+
+/* Loading */
+.loading { display:flex; align-items:center; justify-content:center; padding:60px; color:var(--text-muted); }
+.spinner { width:24px; height:24px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; margin-right:12px; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* Scrollbar */
+::-webkit-scrollbar { width:6px; height:6px; }
+::-webkit-scrollbar-track { background:var(--bg); }
+::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+
+/* Hidden */
+.hidden { display:none !important; }
+
+/* Responsive */
+@media(max-width:768px) {
+  .sidebar { display:none; }
+  .main { margin-left:0; padding:16px; }
+  .kpi-grid { grid-template-columns:1fr 1fr; }
+  .pipeline { flex-direction:column; }
+  .pipe-connector { transform:rotate(90deg); }
+}
+</style>
+</head>
+<body>
+
+<!-- PASSWORD GATE -->
+<div id="lockScreen" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0e17;z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column">
+  <div style="text-align:center;max-width:360px;padding:2rem">
+    <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:1.6rem;background:linear-gradient(135deg,#e2e8f0,#94a3b8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:0.4rem">Capital Tracker</div>
+    <div style="font-size:0.72rem;color:#5a6a85;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:2.5rem">Armada Operations — Authorized Access Only</div>
+    <input id="pwInput" type="password" placeholder="Enter password" autofocus
+      style="width:100%;padding:0.85rem 1rem;background:#111827;border:1px solid #2a3550;border-radius:8px;color:#e2e8f0;font-family:'DM Sans',sans-serif;font-size:0.95rem;outline:none;margin-bottom:0.75rem;text-align:center;letter-spacing:0.1em"
+      onkeydown="if(event.key==='Enter')checkPw()">
+    <button onclick="checkPw()"
+      style="width:100%;padding:0.75rem;background:#3b82f6;border:none;border-radius:8px;color:#fff;font-family:'DM Sans',sans-serif;font-size:0.85rem;font-weight:600;cursor:pointer;letter-spacing:0.04em;transition:background 0.2s"
+      onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">Access Dashboard</button>
+    <div id="pwError" style="color:#ef4444;font-size:0.78rem;margin-top:0.75rem;display:none">Incorrect password</div>
+  </div>
+</div>
+<script>
+const PW_HASH='8eb129401724dc94fe4b29f3a68e649d513a6c4a3b84b183f71467265fb01d25';
+function checkPw(){
+  const h=CryptoJS.SHA256(document.getElementById('pwInput').value).toString();
+  if(h===PW_HASH){document.getElementById('lockScreen').style.display='none';sessionStorage.setItem('ct_auth','1');}
+  else{const e=document.getElementById('pwError');e.style.display='block';document.getElementById('pwInput').value='';document.getElementById('pwInput').focus();setTimeout(()=>e.style.display='none',2000);}
+}
+if(sessionStorage.getItem('ct_auth')==='1')document.getElementById('lockScreen').style.display='none';
+</script>
+
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <h1>Capital Tracker</h1>
+    <p>Armada Operations</p>
+  </div>
+  <div class="nav">
+    <div class="nav-item active" data-view="overview" onclick="navigate('overview')">
+      <span class="nav-icon">&#9632;</span> Overview
+    </div>
+    <div class="nav-item" data-view="transactions" onclick="navigate('transactions')">
+      <span class="nav-icon">&#8644;</span> Transactions
+    </div>
+    <div class="nav-item" data-view="investors" onclick="navigate('investors')">
+      <span class="nav-icon">&#9679;</span> Investors
+    </div>
+    <div class="nav-item" data-view="accounts" onclick="navigate('accounts')">
+      <span class="nav-icon">&#9733;</span> Accounts
+    </div>
+    <div class="nav-item" data-view="entities" onclick="navigate('entities')">
+      <span class="nav-icon">&#9830;</span> Entities
+    </div>
+    <div class="nav-item" data-view="audit" onclick="navigate('audit')">
+      <span class="nav-icon">&#128196;</span> Audit Log
+    </div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="api-status">
+      <span class="api-dot" id="apiDot"></span>
+      <span id="apiStatusText">Connecting...</span>
+    </div>
+  </div>
+</nav>
+
+<!-- Main Content -->
+<main class="main">
+
+  <!-- OVERVIEW VIEW -->
+  <div id="view-overview">
+    <div class="page-header">
+      <h2>Global Overview</h2>
+      <p>Real-time capital flow tracking across all entities</p>
+    </div>
+    <div class="kpi-grid" id="overviewKPIs"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Capital Distribution by Status</span></div>
+        <div class="chart-container"><canvas id="statusChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Entity Flow Summary</span></div>
+        <div class="chart-container"><canvas id="entityChart"></canvas></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Recent Transaction Chains</span>
+        <button class="btn btn-primary" onclick="navigate('transactions')">View All</button>
+      </div>
+      <div id="recentChains"></div>
+    </div>
+  </div>
+
+  <!-- TRANSACTIONS VIEW -->
+  <div id="view-transactions" class="hidden">
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <div>
+        <h2>Transaction Chains</h2>
+        <p>Multi-step capital movement tracking</p>
+      </div>
+      <button class="btn btn-primary" onclick="showNewChainModal()">+ New Transaction</button>
+    </div>
+    <div class="card" style="padding:12px 16px;margin-bottom:16px;">
+      <div style="display:flex;gap:12px;align-items:center;">
+        <span style="font-size:12px;color:var(--text-muted);">Filter:</span>
+        <button class="btn btn-ghost filter-btn active" data-status="" onclick="filterChains('')">All</button>
+        <button class="btn btn-ghost filter-btn" data-status="pending" onclick="filterChains('pending')">Pending</button>
+        <button class="btn btn-ghost filter-btn" data-status="in_transit" onclick="filterChains('in_transit')">In Transit</button>
+        <button class="btn btn-ghost filter-btn" data-status="completed" onclick="filterChains('completed')">Completed</button>
+      </div>
+    </div>
+    <div id="chainsList"></div>
+  </div>
+
+  <!-- TRANSACTION DETAIL VIEW -->
+  <div id="view-chain-detail" class="hidden">
+    <div class="page-header">
+      <div style="display:flex;align-items:center;gap:16px;">
+        <button class="btn btn-ghost" onclick="navigate('transactions')">&larr; Back</button>
+        <div>
+          <h2 id="chainRefCode"></h2>
+          <p id="chainDescription"></p>
+        </div>
+      </div>
+    </div>
+    <div class="kpi-grid" id="chainKPIs"></div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Transaction Flow Pipeline</span>
+        <button class="btn btn-ghost" id="addStepBtn" onclick="showAddStepModal()">+ Add Step</button>
+      </div>
+      <div class="pipeline" id="flowPipeline"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Investor Allocations</span></div>
+        <div id="chainAllocations"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Transfer Steps</span></div>
+        <div id="chainStepsTable"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INVESTORS VIEW -->
+  <div id="view-investors" class="hidden">
+    <div class="page-header">
+      <h2>Investor Overview</h2>
+      <p>Per-investor capital attribution and flow tracking</p>
+    </div>
+    <div class="kpi-grid" id="investorKPIs"></div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Investor Summary</span></div>
+      <div id="investorTable"></div>
+    </div>
+  </div>
+
+  <!-- ACCOUNTS VIEW -->
+  <div id="view-accounts" class="hidden">
+    <div class="page-header">
+      <h2>Account Overview</h2>
+      <p>Per-account balance and flow tracking</p>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Account Flow Summary</span></div>
+      <div id="accountTable"></div>
+    </div>
+  </div>
+
+  <!-- ENTITIES VIEW -->
+  <div id="view-entities" class="hidden">
+    <div class="page-header">
+      <h2>Entity Overview</h2>
+      <p>Aggregate capital tracking by entity</p>
+    </div>
+    <div class="entity-grid" id="entityGrid"></div>
+  </div>
+
+  <!-- AUDIT VIEW -->
+  <div id="view-audit" class="hidden">
+    <div class="page-header">
+      <h2>Audit Trail</h2>
+      <p>Immutable log of all system actions</p>
+    </div>
+    <div class="card">
+      <div id="auditTable"></div>
+    </div>
+  </div>
+
+</main>
+
+<!-- New Transaction Modal -->
+<div class="modal-overlay hidden" id="newChainModal">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+      <h3 class="modal-title" style="margin:0;">New Transaction Chain</h3>
+      <button class="btn btn-ghost" onclick="closeModal('newChainModal')">&times;</button>
+    </div>
+    <form id="newChainForm" onsubmit="submitNewChain(event)">
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <input class="form-input" name="description" placeholder="e.g., Lyman Phillips withdrawal">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Original Amount ($)</label>
+          <input class="form-input mono" name="original_amount" type="number" step="0.01" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Capital Type</label>
+          <select class="form-select" name="capital_type" required>
+            <option value="lp_capital">LP Capital</option>
+            <option value="gp_capital">GP Capital</option>
+            <option value="fee_revenue">Fee Revenue</option>
+            <option value="operating_funds">Operating Funds</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Source Account</label>
+          <select class="form-select" name="source_account_id" id="sourceAccountSelect" required></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Destination Account (optional)</label>
+          <select class="form-select" name="destination_account_id" id="destAccountSelect">
+            <option value="">-- Not specified --</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('newChainModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Create Transaction</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Add Step Modal -->
+<div class="modal-overlay hidden" id="addStepModal">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+      <h3 class="modal-title" style="margin:0;">Add Transfer Step</h3>
+      <button class="btn btn-ghost" onclick="closeModal('addStepModal')">&times;</button>
+    </div>
+    <form id="addStepForm" onsubmit="submitAddStep(event)">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Amount Sent ($)</label>
+          <input class="form-input mono" name="amount_sent" type="number" step="0.01" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fee ($)</label>
+          <input class="form-input mono" name="fee" type="number" step="0.01" value="0" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Destination Account</label>
+          <select class="form-select" name="to_account_id" id="stepDestSelect" required></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Transfer Method</label>
+          <select class="form-select" name="transfer_method">
+            <option value="wire">Wire Transfer</option>
+            <option value="ach">ACH</option>
+            <option value="blockchain">Blockchain</option>
+            <option value="internal">Internal Transfer</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">External Reference (optional)</label>
+        <input class="form-input" name="external_ref" placeholder="e.g., bank ref or tx hash">
+      </div>
+      <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('addStepModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Add Step</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+const RENDER_API = 'https://capital-tracker-api-armada.onrender.com/api';
+const LOCAL_API = 'http://localhost:8000/api';
+let API = LOCAL_API;
+
+// Auto-detect: use Render API if not on localhost
+if (!window.location.hostname.match(/^(localhost|127\.0\.0\.1)$/)) {
+  API = RENDER_API;
+}
+let currentView = 'overview';
+let currentChainId = null;
+let allAccounts = [];
+let entityChartInst = null;
+let statusChartInst = null;
+
+// ── API helpers ──
+async function api(path, opts = {}) {
+  const res = await fetch(`${API}${path}`, {
+    headers: { 'Content-Type': 'application/json', ...opts.headers },
+    ...opts,
+  });
+  if (!res.ok) throw new Error(`API ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
+function fmt(n) {
+  const num = parseFloat(n);
+  if (isNaN(num)) return '$0.00';
+  return '$' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+// ── Navigation ──
+function navigate(view, data) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const navItem = document.querySelector(`.nav-item[data-view="${view}"]`);
+  if (navItem) navItem.classList.add('active');
+
+  document.querySelectorAll('[id^="view-"]').forEach(v => v.classList.add('hidden'));
+
+  if (view === 'chain-detail') {
+    document.getElementById('view-chain-detail').classList.remove('hidden');
+    loadChainDetail(data);
+  } else {
+    document.getElementById(`view-${view}`).classList.remove('hidden');
+    if (view === 'overview') loadOverview();
+    else if (view === 'transactions') loadTransactions();
+    else if (view === 'investors') loadInvestors();
+    else if (view === 'accounts') loadAccounts();
+    else if (view === 'entities') loadEntities();
+    else if (view === 'audit') loadAudit();
+  }
+  currentView = view;
+}
+
+// ── Overview ──
+async function loadOverview() {
+  try {
+    const [overview, entities, chains] = await Promise.all([
+      api('/dashboard/overview'),
+      api('/dashboard/entities'),
+      api('/transactions?limit=5'),
+    ]);
+
+    document.getElementById('overviewKPIs').innerHTML = `
+      <div class="kpi-card"><div class="kpi-label">AUM in Motion</div><div class="kpi-value accent">${fmt(overview.total_aum_in_motion)}</div><div class="kpi-sub">Pending + In Transit</div></div>
+      <div class="kpi-card"><div class="kpi-label">Completed</div><div class="kpi-value positive">${fmt(overview.total_completed)}</div><div class="kpi-sub">${overview.chain_count_completed} chains</div></div>
+      <div class="kpi-card"><div class="kpi-label">In Transit</div><div class="kpi-value warning">${fmt(overview.total_in_transit)}</div><div class="kpi-sub">${overview.chain_count_in_transit} chains</div></div>
+      <div class="kpi-card"><div class="kpi-label">Pending</div><div class="kpi-value">${fmt(overview.total_pending)}</div><div class="kpi-sub">${overview.chain_count_pending} chains</div></div>
+      <div class="kpi-card"><div class="kpi-label">Total Fees</div><div class="kpi-value negative">${fmt(overview.total_fees_collected)}</div><div class="kpi-sub">All chains</div></div>
+      <div class="kpi-card"><div class="kpi-label">Failed</div><div class="kpi-value ${overview.chain_count_failed > 0 ? 'negative' : ''}">${overview.chain_count_failed}</div><div class="kpi-sub">Chains</div></div>
+    `;
+
+    // Status chart
+    if (statusChartInst) statusChartInst.destroy();
+    statusChartInst = new Chart(document.getElementById('statusChart'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Completed', 'In Transit', 'Pending', 'Failed'],
+        datasets: [{
+          data: [
+            parseFloat(overview.total_completed),
+            parseFloat(overview.total_in_transit),
+            parseFloat(overview.total_pending),
+            0,
+          ],
+          backgroundColor: ['#10b981', '#f59e0b', '#8b5cf6', '#ef4444'],
+          borderWidth: 0,
+        }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', padding: 16 } } },
+        cutout: '65%',
+      },
+    });
+
+    // Entity chart
+    if (entityChartInst) entityChartInst.destroy();
+    const entData = entities.filter(e => parseFloat(e.total_outgoing) > 0 || parseFloat(e.total_incoming) > 0);
+    entityChartInst = new Chart(document.getElementById('entityChart'), {
+      type: 'bar',
+      data: {
+        labels: entData.map(e => e.entity_name),
+        datasets: [
+          { label: 'Outgoing', data: entData.map(e => parseFloat(e.total_outgoing)), backgroundColor: '#ef444480' },
+          { label: 'Incoming', data: entData.map(e => parseFloat(e.total_incoming)), backgroundColor: '#10b98180' },
+        ],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#94a3b8' } } },
+        scales: {
+          x: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: '#2a3550' } },
+          y: { ticks: { color: '#64748b', callback: v => '$' + (v / 1000) + 'k' }, grid: { color: '#2a3550' } },
+        },
+      },
+    });
+
+    // Recent chains
+    document.getElementById('recentChains').innerHTML = chains.length ? renderChainsTable(chains) : '<p style="color:var(--text-muted);padding:20px;">No transactions yet.</p>';
+  } catch (err) {
+    console.error('Failed to load overview:', err);
+  }
+}
+
+function renderChainsTable(chains) {
+  return `<table>
+    <thead><tr><th>Reference</th><th>Description</th><th>Amount</th><th>Fees</th><th>Final</th><th>Status</th><th>Type</th><th>Date</th></tr></thead>
+    <tbody>${chains.map(c => `
+      <tr style="cursor:pointer" onclick="navigate('chain-detail','${c.id}')">
+        <td class="mono" style="color:var(--accent);font-weight:600;">${c.reference_code}</td>
+        <td>${c.description || '—'}</td>
+        <td class="mono">${fmt(c.original_amount)}</td>
+        <td class="mono" style="color:var(--danger)">${parseFloat(c.total_fees) > 0 ? '-' + fmt(c.total_fees) : '$0.00'}</td>
+        <td class="mono" style="color:var(--success)">${c.final_amount ? fmt(c.final_amount) : '—'}</td>
+        <td><span class="badge badge-${c.status}">${c.status.replace('_', ' ')}</span></td>
+        <td><span class="cap-badge cap-${c.capital_type}">${c.capital_type.replace('_', ' ')}</span></td>
+        <td style="color:var(--text-dim)">${fmtDate(c.initiated_at)}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+// ── Transactions ──
+let chainFilter = '';
+async function loadTransactions() {
+  const url = chainFilter ? `/transactions?status=${chainFilter}` : '/transactions';
+  const chains = await api(url);
+  document.getElementById('chainsList').innerHTML = chains.length
+    ? `<div class="card" style="padding:0;">${renderChainsTable(chains)}</div>`
+    : '<div class="card"><p style="color:var(--text-muted);">No transactions found.</p></div>';
+}
+function filterChains(status) {
+  chainFilter = status;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.status === status));
+  loadTransactions();
+}
+
+// ── Chain Detail ──
+async function loadChainDetail(chainId) {
+  currentChainId = chainId;
+  const chain = await api(`/transactions/${chainId}`);
+
+  document.getElementById('chainRefCode').textContent = chain.reference_code;
+  document.getElementById('chainDescription').textContent = chain.description || 'No description';
+
+  const canAddStep = !['completed', 'cancelled', 'failed'].includes(chain.status);
+  document.getElementById('addStepBtn').classList.toggle('hidden', !canAddStep);
+
+  // KPIs
+  document.getElementById('chainKPIs').innerHTML = `
+    <div class="kpi-card"><div class="kpi-label">Original Amount</div><div class="kpi-value accent">${fmt(chain.original_amount)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Total Fees</div><div class="kpi-value negative">${fmt(chain.total_fees)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Final Amount</div><div class="kpi-value positive">${chain.final_amount ? fmt(chain.final_amount) : '—'}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Status</div><div style="margin-top:8px;"><span class="badge badge-${chain.status}">${chain.status.replace('_',' ')}</span></div></div>
+    <div class="kpi-card"><div class="kpi-label">Capital Type</div><div style="margin-top:8px;"><span class="cap-badge cap-${chain.capital_type}">${chain.capital_type.replace('_',' ')}</span></div></div>
+    <div class="kpi-card"><div class="kpi-label">Steps</div><div class="kpi-value">${chain.steps.length}</div></div>
+  `;
+
+  // Flow Pipeline
+  renderPipeline(chain);
+
+  // Allocations
+  const allocHtml = chain.allocations.length
+    ? chain.allocations.map(a => `
+      <div class="alloc-item">
+        <div><div class="alloc-name">${a.investor_name || 'Unknown'}</div><div class="alloc-entity">${a.source_entity_name || ''}</div></div>
+        <div style="text-align:right;"><span class="alloc-amount">${fmt(a.allocation_amount)}</span>${a.allocation_pct ? `<span class="alloc-pct">${parseFloat(a.allocation_pct).toFixed(1)}%</span>` : ''}</div>
+      </div>`).join('')
+    : '<p style="color:var(--text-muted);">No allocations assigned.</p>';
+  document.getElementById('chainAllocations').innerHTML = allocHtml;
+
+  // Steps table
+  const stepsHtml = chain.steps.length
+    ? `<table><thead><tr><th>#</th><th>From</th><th>To</th><th>Sent</th><th>Fee</th><th>Received</th><th>Method</th><th>Status</th></tr></thead>
+      <tbody>${chain.steps.map(s => `
+        <tr>
+          <td class="mono">${s.step_order}</td>
+          <td><div style="font-weight:500;">${s.from_account_name}</div><div style="font-size:10px;color:var(--text-muted);">${s.from_entity_name || ''}</div></td>
+          <td><div style="font-weight:500;">${s.to_account_name}</div><div style="font-size:10px;color:var(--text-muted);">${s.to_entity_name || ''}</div></td>
+          <td class="mono">${fmt(s.amount_sent)}</td>
+          <td class="mono" style="color:var(--danger)">${parseFloat(s.fee) > 0 ? '-' + fmt(s.fee) : '—'}</td>
+          <td class="mono" style="color:var(--success)">${fmt(s.amount_received)}</td>
+          <td><span style="font-size:11px;color:var(--text-dim);text-transform:uppercase;">${s.transfer_method || '—'}</span></td>
+          <td><span class="badge badge-${s.status}">${s.status}</span></td>
+        </tr>`).join('')}
+      </tbody></table>`
+    : '<p style="color:var(--text-muted);">No transfer steps yet.</p>';
+  document.getElementById('chainStepsTable').innerHTML = stepsHtml;
+}
+
+function renderPipeline(chain) {
+  const pipeline = document.getElementById('flowPipeline');
+  if (!chain.steps.length) {
+    pipeline.innerHTML = `
+      <div class="pipe-node pending">
+        <div class="node-entity">${chain.source_entity_name || ''}</div>
+        <div class="node-account">${chain.source_account_name || 'Source'}</div>
+        <div class="node-amount">${fmt(chain.original_amount)}</div>
+        <div class="node-status"><span class="badge badge-pending">pending</span></div>
+      </div>
+      <div class="pipe-connector"><div class="pipe-arrow">&#8594;</div><div class="pipe-method">awaiting steps</div></div>
+      <div class="pipe-node pending">
+        <div class="node-entity">${chain.destination_entity_name || ''}</div>
+        <div class="node-account">${chain.destination_account_name || 'Destination TBD'}</div>
+        <div class="node-amount">—</div>
+      </div>`;
+    return;
+  }
+
+  let html = '';
+  // First node (source)
+  const first = chain.steps[0];
+  html += `<div class="pipe-node ${first.status}">
+    <div class="node-entity">${first.from_entity_name || ''}</div>
+    <div class="node-account">${first.from_account_name}</div>
+    <div class="node-amount">${fmt(first.amount_sent)}</div>
+  </div>`;
+
+  chain.steps.forEach(s => {
+    html += `<div class="pipe-connector">
+      <div class="pipe-arrow">&#8594;</div>
+      <div class="pipe-fee">${parseFloat(s.fee) > 0 ? '-' + fmt(s.fee) : 'No fee'}</div>
+      <div class="pipe-method">${s.transfer_method || ''}</div>
+    </div>`;
+    html += `<div class="pipe-node ${s.status}">
+      <div class="node-entity">${s.to_entity_name || ''}</div>
+      <div class="node-account">${s.to_account_name}</div>
+      <div class="node-amount">${fmt(s.amount_received)}</div>
+      <div class="node-status"><span class="badge badge-${s.status}">${s.status}</span></div>
+    </div>`;
+  });
+
+  pipeline.innerHTML = html;
+}
+
+// ── Investors ──
+async function loadInvestors() {
+  const investors = await api('/dashboard/investors');
+  const totalAlloc = investors.reduce((s, i) => s + parseFloat(i.total_allocated), 0);
+  const totalCompleted = investors.reduce((s, i) => s + parseFloat(i.total_completed), 0);
+
+  document.getElementById('investorKPIs').innerHTML = `
+    <div class="kpi-card"><div class="kpi-label">Total Investors</div><div class="kpi-value accent">${investors.length}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Total Allocated</div><div class="kpi-value">${fmt(totalAlloc)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Total Completed</div><div class="kpi-value positive">${fmt(totalCompleted)}</div></div>
+  `;
+
+  document.getElementById('investorTable').innerHTML = investors.length
+    ? `<table><thead><tr><th>Investor</th><th>Total Allocated</th><th>In Transit</th><th>Completed</th><th>Fees</th><th>Net Received</th></tr></thead>
+      <tbody>${investors.map(i => `
+        <tr>
+          <td style="font-weight:600;">${i.investor_name}</td>
+          <td class="mono">${fmt(i.total_allocated)}</td>
+          <td class="mono" style="color:var(--warning)">${fmt(i.total_in_transit)}</td>
+          <td class="mono" style="color:var(--success)">${fmt(i.total_completed)}</td>
+          <td class="mono" style="color:var(--danger)">${fmt(i.total_fees)}</td>
+          <td class="mono" style="font-weight:600;">${fmt(i.net_received)}</td>
+        </tr>`).join('')}
+      </tbody></table>`
+    : '<p style="color:var(--text-muted);">No investor allocations yet.</p>';
+}
+
+// ── Accounts ──
+async function loadAccounts() {
+  const accounts = await api('/dashboard/accounts');
+  document.getElementById('accountTable').innerHTML = `<table>
+    <thead><tr><th>Account</th><th>Entity</th><th>Type</th><th>Total In</th><th>Total Out</th><th>Net Flow</th><th>Pending In</th><th>Pending Out</th></tr></thead>
+    <tbody>${accounts.map(a => `
+      <tr>
+        <td style="font-weight:600;">${a.account_name}</td>
+        <td style="color:var(--text-dim);">${a.entity_name}</td>
+        <td><span style="font-size:11px;text-transform:uppercase;color:var(--text-muted);">${a.account_type}</span></td>
+        <td class="mono" style="color:var(--success)">${fmt(a.total_incoming)}</td>
+        <td class="mono" style="color:var(--danger)">${fmt(a.total_outgoing)}</td>
+        <td class="mono" style="font-weight:600;color:${parseFloat(a.net_flow) >= 0 ? 'var(--success)' : 'var(--danger)'}">${fmt(a.net_flow)}</td>
+        <td class="mono" style="color:var(--text-dim)">${fmt(a.pending_incoming)}</td>
+        <td class="mono" style="color:var(--text-dim)">${fmt(a.pending_outgoing)}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+// ── Entities ──
+async function loadEntities() {
+  const entities = await api('/dashboard/entities');
+  document.getElementById('entityGrid').innerHTML = entities.map(e => `
+    <div class="entity-card">
+      <div class="entity-name">${e.entity_name}</div>
+      <div class="entity-type">${e.chain_count} chain${e.chain_count !== 1 ? 's' : ''}</div>
+      <div class="entity-stat"><span class="label">Outgoing</span><span class="value" style="color:var(--danger)">${fmt(e.total_outgoing)}</span></div>
+      <div class="entity-stat"><span class="label">Incoming</span><span class="value" style="color:var(--success)">${fmt(e.total_incoming)}</span></div>
+      <div class="entity-stat"><span class="label">Fees Paid</span><span class="value" style="color:var(--warning)">${fmt(e.total_fees)}</span></div>
+      <div class="entity-stat" style="border-top:1px solid var(--border);padding-top:12px;margin-top:8px;">
+        <span class="label" style="font-weight:600;">Net Flow</span>
+        <span class="value" style="font-weight:700;color:${parseFloat(e.total_incoming) - parseFloat(e.total_outgoing) >= 0 ? 'var(--success)' : 'var(--danger)'}">
+          ${fmt(parseFloat(e.total_incoming) - parseFloat(e.total_outgoing))}
+        </span>
+      </div>
+    </div>`).join('');
+}
+
+// ── Audit ──
+async function loadAudit() {
+  const logs = await api('/audit?limit=100');
+  document.getElementById('auditTable').innerHTML = logs.length
+    ? `<table><thead><tr><th>Time</th><th>Type</th><th>Action</th><th>Field</th><th>Old</th><th>New</th><th>By</th></tr></thead>
+      <tbody>${logs.map(l => `
+        <tr>
+          <td style="color:var(--text-dim);font-size:12px;">${fmtDate(l.performed_at)}</td>
+          <td><span style="font-size:11px;text-transform:uppercase;color:var(--accent);">${l.entity_type}</span></td>
+          <td><span class="badge badge-${l.action === 'create' ? 'completed' : l.action === 'complete' ? 'completed' : 'in_transit'}">${l.action}</span></td>
+          <td class="mono" style="font-size:12px;">${l.field_name || '—'}</td>
+          <td style="color:var(--text-muted);font-size:12px;">${l.old_value || '—'}</td>
+          <td style="font-size:12px;">${l.new_value || '—'}</td>
+          <td style="color:var(--text-dim);font-size:12px;">${l.performed_by}</td>
+        </tr>`).join('')}
+      </tbody></table>`
+    : '<p style="color:var(--text-muted);">No audit entries yet.</p>';
+}
+
+// ── Modals & Forms ──
+async function loadAccountOptions() {
+  allAccounts = await api('/accounts');
+  const opts = allAccounts.map(a => `<option value="${a.id}">${a.name} (${a.account_type})</option>`).join('');
+  document.getElementById('sourceAccountSelect').innerHTML = opts;
+  document.getElementById('destAccountSelect').innerHTML = '<option value="">-- Not specified --</option>' + opts;
+  document.getElementById('stepDestSelect').innerHTML = opts;
+}
+
+function showNewChainModal() {
+  loadAccountOptions();
+  document.getElementById('newChainModal').classList.remove('hidden');
+}
+
+function showAddStepModal() {
+  loadAccountOptions();
+  document.getElementById('addStepModal').classList.remove('hidden');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.add('hidden');
+}
+
+async function submitNewChain(e) {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const body = {
+    description: fd.get('description') || null,
+    original_amount: parseFloat(fd.get('original_amount')),
+    capital_type: fd.get('capital_type'),
+    source_account_id: fd.get('source_account_id'),
+    destination_account_id: fd.get('destination_account_id') || null,
+  };
+  try {
+    const chain = await api('/transactions', { method: 'POST', body: JSON.stringify(body) });
+    closeModal('newChainModal');
+    e.target.reset();
+    navigate('chain-detail', chain.id);
+  } catch (err) {
+    alert('Error creating transaction: ' + err.message);
+  }
+}
+
+async function submitAddStep(e) {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const body = {
+    to_account_id: fd.get('to_account_id'),
+    amount_sent: parseFloat(fd.get('amount_sent')),
+    fee: parseFloat(fd.get('fee')),
+    transfer_method: fd.get('transfer_method'),
+    external_ref: fd.get('external_ref') || null,
+  };
+  try {
+    await api(`/transactions/${currentChainId}/steps`, { method: 'POST', body: JSON.stringify(body) });
+    closeModal('addStepModal');
+    e.target.reset();
+    loadChainDetail(currentChainId);
+  } catch (err) {
+    alert('Error adding step: ' + err.message);
+  }
+}
+
+// ── API Health Check ──
+async function checkAPI() {
+  try {
+    await api('/health');
+    document.getElementById('apiDot').className = 'api-dot online';
+    document.getElementById('apiStatusText').textContent = 'API Connected';
+    return true;
+  } catch {
+    document.getElementById('apiDot').className = 'api-dot offline';
+    document.getElementById('apiStatusText').textContent = 'API Offline';
+    return false;
+  }
+}
+
+// ── Init ──
+async function init() {
+  const online = await checkAPI();
+  if (online) {
+    loadOverview();
+  }
+  setInterval(checkAPI, 30000);
+}
+init();
+</script>
+</body>
+</html>
