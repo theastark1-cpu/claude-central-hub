@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Task Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0e17;--surface:#111827;--surface2:#1a2236;--surface3:#222d45;
+  --border:#2a3550;--text:#e2e8f0;--text-dim:#8494b0;--text-muted:#5a6a85;
+  --accent:#3b82f6;--green:#10b981;--green-dim:rgba(16,185,129,0.12);
+  --red:#ef4444;--red-dim:rgba(239,68,68,0.12);--amber:#f59e0b;
+  --amber-dim:rgba(245,158,11,0.12);--purple:#8b5cf6;--cyan:#06b6d4;
+}
+html{font-size:15px}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden}
+.noise{position:fixed;top:0;left:0;width:100%;height:100%;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:9999}
+.glow-orb{position:fixed;width:600px;height:600px;border-radius:50%;pointer-events:none;z-index:0}
+.glow-orb.one{top:-200px;right:-100px;background:radial-gradient(circle,rgba(59,130,246,0.06) 0%,transparent 70%)}
+.glow-orb.two{bottom:-300px;left:-200px;background:radial-gradient(circle,rgba(139,92,246,0.04) 0%,transparent 70%)}
+
+header{padding:2rem 2.5rem 1.5rem;border-bottom:1px solid var(--border);position:relative;z-index:1;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:1rem}
+.logo-block h1{font-family:'Playfair Display',serif;font-weight:800;font-size:1.8rem;letter-spacing:-0.02em;background:linear-gradient(135deg,#e2e8f0 0%,#94a3b8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo-block .sub{font-size:0.8rem;color:var(--text-muted);letter-spacing:0.15em;text-transform:uppercase;margin-top:0.25rem}
+.status-badge{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.5rem 1rem;font-family:'JetBrains Mono',monospace;font-size:0.85rem;color:var(--accent);display:flex;align-items:center;gap:0.5rem}
+.status-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+.dashboard{padding:1.5rem 2.5rem 3rem;position:relative;z-index:1;max-width:900px;margin:0 auto}
+
+/* KPI row */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:1.5rem}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.15rem 1.35rem;position:relative;overflow:hidden;transition:border-color 0.3s,transform 0.2s}
+.kpi:hover{border-color:var(--accent);transform:translateY(-2px)}
+.kpi .label{font-size:0.65rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-muted);margin-bottom:0.4rem}
+.kpi .value{font-family:'JetBrains Mono',monospace;font-size:1.45rem;font-weight:600;letter-spacing:-0.02em}
+.kpi .stripe{position:absolute;top:0;left:0;right:0;height:3px}
+.kpi.blue .stripe{background:linear-gradient(90deg,var(--accent),#60a5fa)}
+.kpi.green .stripe{background:linear-gradient(90deg,var(--green),#34d399)}
+.kpi.amber .stripe{background:linear-gradient(90deg,var(--amber),#fbbf24)}
+.kpi.red .stripe{background:linear-gradient(90deg,var(--red),#f87171)}
+
+/* Add task bar */
+.add-bar{display:flex;gap:0.75rem;margin-bottom:1.5rem}
+.add-bar input{flex:1;padding:0.85rem 1rem;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.9rem;outline:none;transition:border-color 0.2s}
+.add-bar input:focus{border-color:var(--accent)}
+.add-bar input::placeholder{color:var(--text-muted)}
+.add-bar button{padding:0.85rem 1.5rem;background:var(--accent);border:none;border-radius:10px;color:#fff;font-family:'DM Sans',sans-serif;font-size:0.85rem;font-weight:600;cursor:pointer;transition:background 0.2s;white-space:nowrap}
+.add-bar button:hover{background:#2563eb}
+
+/* Task cards */
+.task-list{display:flex;flex-direction:column;gap:0.75rem}
+.task-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.15rem 1.35rem;transition:border-color 0.3s,transform 0.2s;animation:fadeUp 0.4s ease both}
+.task-card:hover{border-color:rgba(59,130,246,0.3)}
+.task-card.done{opacity:0.5}
+.task-card.done .task-name{text-decoration:line-through;color:var(--text-muted)}
+
+.task-top{display:flex;align-items:center;gap:0.75rem;margin-bottom:0.65rem}
+.task-check{width:22px;height:22px;border-radius:6px;border:2px solid var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0}
+.task-check:hover{border-color:var(--accent)}
+.task-check.checked{background:var(--green);border-color:var(--green)}
+.task-check.checked::after{content:'✓';color:#fff;font-size:0.75rem;font-weight:700}
+.task-check.in-progress{background:var(--amber);border-color:var(--amber)}
+.task-check.in-progress::after{content:'→';color:#fff;font-size:0.75rem;font-weight:700}
+
+.task-name{flex:1;font-size:0.95rem;font-weight:500}
+.task-status{font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;padding:0.2rem 0.55rem;border-radius:4px;font-weight:600;cursor:pointer;transition:all 0.2s;user-select:none}
+.task-status.pending{background:var(--surface3);color:var(--text-muted)}
+.task-status.in-progress{background:var(--amber-dim);color:var(--amber)}
+.task-status.done{background:var(--green-dim);color:var(--green)}
+
+.task-delete{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1rem;padding:0.25rem;transition:color 0.2s;opacity:0;flex-shrink:0}
+.task-card:hover .task-delete{opacity:1}
+.task-delete:hover{color:var(--red)}
+
+/* Reminder controls */
+.task-reminder{display:flex;align-items:center;gap:0.65rem;flex-wrap:wrap}
+.reminder-toggle{display:flex;align-items:center;gap:0.4rem;font-size:0.72rem;color:var(--text-muted);cursor:pointer;user-select:none;transition:color 0.2s}
+.reminder-toggle:hover{color:var(--text-dim)}
+.reminder-toggle .bell{font-size:0.85rem}
+.reminder-toggle.active{color:var(--amber)}
+.reminder-toggle.active .bell{animation:ring 0.5s ease}
+@keyframes ring{0%{transform:rotate(0)}25%{transform:rotate(15deg)}50%{transform:rotate(-15deg)}75%{transform:rotate(10deg)}100%{transform:rotate(0)}}
+
+.reminder-select{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:0.3rem 0.5rem;color:var(--text-dim);font-family:'DM Sans',sans-serif;font-size:0.72rem;outline:none;cursor:pointer;transition:border-color 0.2s}
+.reminder-select:focus{border-color:var(--accent)}
+.reminder-select option{background:var(--surface2);color:var(--text)}
+
+.reminder-info{font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:var(--text-muted);display:flex;align-items:center;gap:0.35rem}
+.reminder-info .dot{width:5px;height:5px;border-radius:50%;background:var(--amber);animation:pulse 2s infinite}
+
+.custom-input{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:0.3rem 0.5rem;color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:0.72rem;outline:none;width:50px;text-align:center}
+.custom-input:focus{border-color:var(--accent)}
+
+/* Filter tabs */
+.filter-bar{display:flex;gap:0.25rem;margin-bottom:1.25rem;border-bottom:1px solid var(--border)}
+.filter-tab{padding:0.55rem 1rem;font-size:0.75rem;font-weight:500;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;letter-spacing:0.03em}
+.filter-tab:hover{color:var(--text-dim)}
+.filter-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.kpi{animation:fadeUp 0.6s ease both}
+
+footer{text-align:center;padding:2rem;font-size:0.7rem;color:var(--text-muted);letter-spacing:0.05em}
+
+/* Responsive */
+@media(max-width:600px){
+  header{padding:1.5rem 1.25rem 1rem}
+  .dashboard{padding:1rem 1.25rem 2rem}
+  .add-bar{flex-direction:column}
+  .add-bar button{width:100%}
+  .task-delete{opacity:1}
+}
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="glow-orb one"></div>
+<div class="glow-orb two"></div>
+
+<!-- PASSWORD GATE -->
+<div id="lockScreen" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0e17;z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column">
+  <div style="text-align:center;max-width:360px;padding:2rem">
+    <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:1.6rem;background:linear-gradient(135deg,#e2e8f0,#94a3b8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:0.4rem">Task Dashboard</div>
+    <div style="font-size:0.72rem;color:#5a6a85;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:2.5rem">Authorized Access Only</div>
+    <input id="pwInput" type="password" placeholder="Enter password" autofocus
+      style="width:100%;padding:0.85rem 1rem;background:#111827;border:1px solid #2a3550;border-radius:8px;color:#e2e8f0;font-family:'DM Sans',sans-serif;font-size:0.95rem;outline:none;margin-bottom:0.75rem;text-align:center;letter-spacing:0.1em"
+      onkeydown="if(event.key==='Enter')checkPw()">
+    <button onclick="checkPw()"
+      style="width:100%;padding:0.75rem;background:#3b82f6;border:none;border-radius:8px;color:#fff;font-family:'DM Sans',sans-serif;font-size:0.85rem;font-weight:600;cursor:pointer;letter-spacing:0.04em;transition:background 0.2s"
+      onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">Access Dashboard</button>
+    <div id="pwError" style="color:#ef4444;font-size:0.78rem;margin-top:0.75rem;display:none">Incorrect password</div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" style="display:none">
+<header>
+  <div class="logo-block">
+    <h1>Task Dashboard</h1>
+    <div class="sub">Personal Task Tracker</div>
+  </div>
+  <div class="status-badge" id="statusBadge">0 Active Reminders</div>
+</header>
+
+<div class="dashboard">
+  <!-- KPI Summary -->
+  <div class="kpi-row" id="kpiRow">
+    <div class="kpi blue"><div class="stripe"></div><div class="label">Total Tasks</div><div class="value" id="kpiTotal">0</div></div>
+    <div class="kpi amber"><div class="stripe"></div><div class="label">In Progress</div><div class="value" id="kpiProgress">0</div></div>
+    <div class="kpi green"><div class="stripe"></div><div class="label">Completed</div><div class="value" id="kpiDone">0</div></div>
+    <div class="kpi red"><div class="stripe"></div><div class="label">Pending</div><div class="value" id="kpiPending">0</div></div>
+  </div>
+
+  <!-- Filter tabs -->
+  <div class="filter-bar">
+    <div class="filter-tab active" data-filter="all" onclick="setFilter('all')">All</div>
+    <div class="filter-tab" data-filter="pending" onclick="setFilter('pending')">Pending</div>
+    <div class="filter-tab" data-filter="in-progress" onclick="setFilter('in-progress')">In Progress</div>
+    <div class="filter-tab" data-filter="done" onclick="setFilter('done')">Done</div>
+  </div>
+
+  <!-- Add task -->
+  <div class="add-bar">
+    <input type="text" id="newTaskInput" placeholder="Add a new task..." onkeydown="if(event.key==='Enter')addTask()">
+    <button onclick="addTask()">+ Add Task</button>
+  </div>
+
+  <!-- Task list -->
+  <div class="task-list" id="taskList"></div>
+</div>
+
+<footer>Task Dashboard &mdash; Persistent Reminders via Browser Notifications</footer>
+</div>
+
+<script>
+// ===== PASSWORD =====
+// Password: "todo2026" — CryptoJS SHA256 hash
+const PW_HASH = '642905494fc12dfadc1787f908d2783cced3b48a9c62261a432db88ce297ec32';
+
+function checkPw(){
+  const input = document.getElementById('pwInput').value;
+  const hash = CryptoJS.SHA256(input).toString();
+  if(hash === PW_HASH){
+    document.getElementById('lockScreen').style.display='none';
+    document.getElementById('app').style.display='block';
+    init();
+  } else {
+    document.getElementById('pwError').style.display='block';
+    document.getElementById('pwInput').value='';
+    document.getElementById('pwInput').focus();
+  }
+}
+
+// ===== DATA =====
+const STORAGE_KEY = 'taskDashboard_tasks';
+const DEFAULT_TASKS = [
+  {id:genId(),name:'David Anderson account test',status:'pending',reminder:null,createdAt:Date.now()},
+  {id:genId(),name:'Wires',status:'pending',reminder:null,createdAt:Date.now()},
+  {id:genId(),name:'Move money',status:'pending',reminder:null,createdAt:Date.now()},
+  {id:genId(),name:'Mitchell Squires check',status:'pending',reminder:null,createdAt:Date.now()},
+  {id:genId(),name:'Get broker statement setup',status:'pending',reminder:null,createdAt:Date.now()},
+  {id:genId(),name:'Get Charalece some videos for the Tracker',status:'pending',reminder:null,createdAt:Date.now()},
+];
+
+let tasks = [];
+let activeFilter = 'all';
+let reminderTimers = {};
+
+function genId(){ return 'task_' + Math.random().toString(36).substr(2,9) + Date.now().toString(36) }
+
+function loadTasks(){
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if(saved){
+    try { tasks = JSON.parse(saved); } catch(e){ tasks = [...DEFAULT_TASKS]; }
+  } else {
+    tasks = [...DEFAULT_TASKS];
+  }
+}
+
+function saveTasks(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+}
+
+// ===== NOTIFICATIONS =====
+function requestNotificationPermission(){
+  if('Notification' in window && Notification.permission === 'default'){
+    Notification.requestPermission();
+  }
+}
+
+function sendNotification(taskName){
+  if('Notification' in window && Notification.permission === 'granted'){
+    const n = new Notification('Task Reminder', {
+      body: taskName,
+      icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🔔</text></svg>',
+      tag: 'task-reminder-' + taskName,
+      requireInteraction: true
+    });
+    n.onclick = function(){ window.focus(); n.close(); };
+  }
+}
+
+// ===== REMINDERS =====
+function startReminder(taskId, intervalMs){
+  stopReminder(taskId);
+  const task = tasks.find(t => t.id === taskId);
+  if(!task || task.status === 'done') return;
+
+  task.reminder = { interval: intervalMs, nextFire: Date.now() + intervalMs };
+  saveTasks();
+
+  reminderTimers[taskId] = setInterval(() => {
+    const t = tasks.find(x => x.id === taskId);
+    if(!t || t.status === 'done'){
+      stopReminder(taskId);
+      return;
+    }
+    t.reminder.nextFire = Date.now() + intervalMs;
+    saveTasks();
+    sendNotification(t.name);
+    render();
+  }, intervalMs);
+
+  render();
+}
+
+function stopReminder(taskId){
+  if(reminderTimers[taskId]){
+    clearInterval(reminderTimers[taskId]);
+    delete reminderTimers[taskId];
+  }
+  const task = tasks.find(t => t.id === taskId);
+  if(task){
+    task.reminder = null;
+    saveTasks();
+  }
+}
+
+function restoreReminders(){
+  tasks.forEach(t => {
+    if(t.reminder && t.status !== 'done'){
+      const remaining = t.reminder.nextFire - Date.now();
+      const interval = t.reminder.interval;
+      if(remaining > 0){
+        // Fire after remaining time, then switch to regular interval
+        reminderTimers[t.id] = setTimeout(() => {
+          sendNotification(t.name);
+          t.reminder.nextFire = Date.now() + interval;
+          saveTasks();
+          render();
+          startReminder(t.id, interval);
+        }, remaining);
+      } else {
+        // Overdue — fire now then start interval
+        sendNotification(t.name);
+        startReminder(t.id, interval);
+      }
+    }
+  });
+}
+
+// ===== ACTIONS =====
+function addTask(){
+  const input = document.getElementById('newTaskInput');
+  const name = input.value.trim();
+  if(!name) return;
+  tasks.unshift({id:genId(), name, status:'pending', reminder:null, createdAt:Date.now()});
+  saveTasks();
+  input.value = '';
+  render();
+}
+
+function cycleStatus(taskId){
+  const task = tasks.find(t => t.id === taskId);
+  if(!task) return;
+  const cycle = ['pending','in-progress','done'];
+  const idx = cycle.indexOf(task.status);
+  task.status = cycle[(idx+1) % cycle.length];
+  if(task.status === 'done') stopReminder(taskId);
+  saveTasks();
+  render();
+}
+
+function deleteTask(taskId){
+  stopReminder(taskId);
+  tasks = tasks.filter(t => t.id !== taskId);
+  saveTasks();
+  render();
+}
+
+function setFilter(f){
+  activeFilter = f;
+  document.querySelectorAll('.filter-tab').forEach(el => {
+    el.classList.toggle('active', el.dataset.filter === f);
+  });
+  render();
+}
+
+// ===== RENDER =====
+function formatInterval(ms){
+  const mins = Math.round(ms / 60000);
+  if(mins < 60) return mins + 'm';
+  const hrs = Math.floor(mins / 60);
+  const rm = mins % 60;
+  return rm ? hrs + 'h ' + rm + 'm' : hrs + 'h';
+}
+
+function formatCountdown(ms){
+  const secs = Math.max(0, Math.round(ms / 1000));
+  if(secs < 60) return secs + 's';
+  const mins = Math.floor(secs / 60);
+  const rs = secs % 60;
+  if(mins < 60) return mins + 'm ' + rs + 's';
+  const hrs = Math.floor(mins / 60);
+  return hrs + 'h ' + (mins % 60) + 'm';
+}
+
+function render(){
+  // KPIs
+  const total = tasks.length;
+  const done = tasks.filter(t => t.status === 'done').length;
+  const inProg = tasks.filter(t => t.status === 'in-progress').length;
+  const pending = tasks.filter(t => t.status === 'pending').length;
+  document.getElementById('kpiTotal').textContent = total;
+  document.getElementById('kpiDone').textContent = done;
+  document.getElementById('kpiProgress').textContent = inProg;
+  document.getElementById('kpiPending').textContent = pending;
+
+  // Active reminders count
+  const activeReminders = tasks.filter(t => t.reminder && t.status !== 'done').length;
+  document.getElementById('statusBadge').textContent = activeReminders + ' Active Reminder' + (activeReminders !== 1 ? 's' : '');
+
+  // Filter
+  let filtered = tasks;
+  if(activeFilter !== 'all'){
+    filtered = tasks.filter(t => t.status === activeFilter);
+  }
+
+  // Render tasks
+  const list = document.getElementById('taskList');
+  list.innerHTML = filtered.map(t => {
+    const checkClass = t.status === 'done' ? 'checked' : t.status === 'in-progress' ? 'in-progress' : '';
+    const statusClass = t.status;
+    const statusLabel = t.status === 'in-progress' ? 'In Progress' : t.status.charAt(0).toUpperCase() + t.status.slice(1);
+    const hasReminder = t.reminder && t.status !== 'done';
+    const countdown = hasReminder ? formatCountdown(t.reminder.nextFire - Date.now()) : '';
+    const intervalVal = t.reminder ? t.reminder.interval : '';
+
+    return `
+      <div class="task-card ${t.status === 'done' ? 'done' : ''}" data-id="${t.id}">
+        <div class="task-top">
+          <div class="task-check ${checkClass}" onclick="cycleStatus('${t.id}')" title="Click to change status"></div>
+          <div class="task-name">${escHtml(t.name)}</div>
+          <div class="task-status ${statusClass}" onclick="cycleStatus('${t.id}')">${statusLabel}</div>
+          <button class="task-delete" onclick="deleteTask('${t.id}')" title="Delete task">&#x2715;</button>
+        </div>
+        <div class="task-reminder">
+          <span class="reminder-toggle ${hasReminder ? 'active' : ''}" onclick="toggleReminderUI('${t.id}')">
+            <span class="bell">${hasReminder ? '🔔' : '🔕'}</span>
+            ${hasReminder ? 'Reminder On' : 'Set Reminder'}
+          </span>
+          ${t.status !== 'done' ? `
+            <select class="reminder-select" id="sel_${t.id}" onchange="onReminderChange('${t.id}')">
+              <option value="">Off</option>
+              <option value="300000" ${intervalVal===300000?'selected':''}>5 min</option>
+              <option value="900000" ${intervalVal===900000?'selected':''}>15 min</option>
+              <option value="1800000" ${intervalVal===1800000?'selected':''}>30 min</option>
+              <option value="3600000" ${intervalVal===3600000?'selected':''}>1 hour</option>
+              <option value="7200000" ${intervalVal===7200000?'selected':''}>2 hours</option>
+              <option value="14400000" ${intervalVal===14400000?'selected':''}>4 hours</option>
+              <option value="28800000" ${intervalVal===28800000?'selected':''}>8 hours</option>
+              <option value="86400000" ${intervalVal===86400000?'selected':''}>24 hours</option>
+              <option value="custom" ${intervalVal && ![300000,900000,1800000,3600000,7200000,14400000,28800000,86400000].includes(intervalVal)?'selected':''}>Custom</option>
+            </select>
+            ${intervalVal && ![300000,900000,1800000,3600000,7200000,14400000,28800000,86400000].includes(intervalVal) && intervalVal ? `
+              <input class="custom-input" type="number" min="1" value="${Math.round(intervalVal/60000)}" onchange="setCustomReminder('${t.id}', this.value)" title="Minutes">
+              <span style="font-size:0.68rem;color:var(--text-muted)">min</span>
+            ` : ''}
+          ` : ''}
+          ${hasReminder ? `<span class="reminder-info"><span class="dot"></span>Next in ${countdown} (every ${formatInterval(t.reminder.interval)})</span>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  if(filtered.length === 0){
+    list.innerHTML = '<div style="text-align:center;padding:3rem;color:var(--text-muted);font-size:0.85rem">' +
+      (activeFilter === 'all' ? 'No tasks yet. Add one above!' : 'No ' + activeFilter + ' tasks.') + '</div>';
+  }
+}
+
+function escHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function toggleReminderUI(taskId){
+  const task = tasks.find(t => t.id === taskId);
+  if(!task) return;
+  if(task.reminder){
+    stopReminder(taskId);
+    render();
+  } else {
+    // Default to 2 hours
+    requestNotificationPermission();
+    startReminder(taskId, 7200000);
+  }
+}
+
+function onReminderChange(taskId){
+  const sel = document.getElementById('sel_' + taskId);
+  if(!sel) return;
+  const val = sel.value;
+  if(val === ''){
+    stopReminder(taskId);
+    render();
+  } else if(val === 'custom'){
+    // Show custom input — re-render with custom field visible
+    const task = tasks.find(t => t.id === taskId);
+    if(task){
+      requestNotificationPermission();
+      startReminder(taskId, 600000); // default 10 min for custom
+    }
+  } else {
+    requestNotificationPermission();
+    startReminder(taskId, parseInt(val));
+  }
+}
+
+function setCustomReminder(taskId, minutes){
+  const mins = parseInt(minutes);
+  if(isNaN(mins) || mins < 1) return;
+  requestNotificationPermission();
+  startReminder(taskId, mins * 60000);
+}
+
+// ===== COUNTDOWN TICKER =====
+setInterval(() => {
+  const infos = document.querySelectorAll('.reminder-info');
+  if(infos.length > 0) render();
+}, 30000); // refresh countdown display every 30s
+
+// ===== INIT =====
+function init(){
+  requestNotificationPermission();
+  loadTasks();
+  restoreReminders();
+  render();
+}
+</script>
+</body>
+</html>
