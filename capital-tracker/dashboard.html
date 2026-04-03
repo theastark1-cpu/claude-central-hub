@@ -542,7 +542,7 @@ const INVESTORS = [
 ];
 
 // ── localStorage Data Store ──
-const STORAGE_KEY = 'ct_data_v2';
+const STORAGE_KEY = 'ct_data_v3';
 
 function uid() {
   return 'xxxx-xxxx-xxxx-xxxx'.replace(/x/g, () => Math.floor(Math.random()*16).toString(16));
@@ -561,59 +561,6 @@ function getStore() {
   let store = loadStore();
   if (!store) {
     store = { chains: [], auditLog: [], nextRef: 1 };
-    const now = new Date().toISOString();
-
-    // Seed: Completed chain — Lyman Phillips $106k
-    store.chains.push({
-      id: uid(), reference_code: 'TXN-2026-0001',
-      description: '[Armada Prime] Lyman Phillips withdrawal - Brokerage to external via crypto',
-      original_amount: 106000, total_fees: 5, final_amount: 105995, currency: 'USD',
-      source_account_id: 'a-ap-brk', destination_account_id: 'a-ex-bnk',
-      capital_type: 'lp_withdrawal', status: 'completed',
-      initiated_at: now, completed_at: now, created_at: now,
-      steps: [
-        {id:uid(),step_order:1,from_account_id:'a-ap-brk',to_account_id:'a-ap-bnk',amount_sent:106000,fee:2,amount_received:105998,transfer_method:'wire',status:'completed',initiated_at:now,completed_at:now},
-        {id:uid(),step_order:2,from_account_id:'a-ap-bnk',to_account_id:'a-ap-tw',amount_sent:105998,fee:3,amount_received:105995,transfer_method:'ach',status:'completed',initiated_at:now,completed_at:now},
-        {id:uid(),step_order:3,from_account_id:'a-ap-tw',to_account_id:'a-ex-bnk',amount_sent:105995,fee:0,amount_received:105995,transfer_method:'blockchain',status:'completed',initiated_at:now,completed_at:now},
-      ],
-      allocations: [{id:uid(),investor_id:'i-1',source_entity_id:'e-ap',allocation_amount:106000,allocation_pct:100}],
-    });
-
-    // Seed: In-transit chain — Split $150k
-    store.chains.push({
-      id: uid(), reference_code: 'TXN-2026-0002',
-      description: '[Armada Prime] Split withdrawal - Lyman Phillips + Armada Capital allocation',
-      original_amount: 150000, total_fees: 15, final_amount: null, currency: 'USD',
-      source_account_id: 'a-ap-brk', destination_account_id: null,
-      capital_type: 'lp_withdrawal', status: 'in_transit',
-      initiated_at: now, completed_at: null, created_at: now,
-      steps: [
-        {id:uid(),step_order:1,from_account_id:'a-ap-brk',to_account_id:'a-ap-bnk',amount_sent:150000,fee:15,amount_received:149985,transfer_method:'wire',status:'completed',initiated_at:now,completed_at:now},
-      ],
-      allocations: [
-        {id:uid(),investor_id:'i-1',source_entity_id:'e-ap',allocation_amount:106000,allocation_pct:70.67},
-        {id:uid(),investor_id:'i-2',source_entity_id:'e-ac',allocation_amount:44000,allocation_pct:29.33},
-      ],
-    });
-
-    // Seed: Pending chain — GP Distribution $45k
-    store.chains.push({
-      id: uid(), reference_code: 'TXN-2026-0003',
-      description: '[Armada Capital] GP Distribution - Operating funds transfer',
-      original_amount: 45000, total_fees: 0, final_amount: null, currency: 'USD',
-      source_account_id: 'a-ac-bnk', destination_account_id: null,
-      capital_type: 'gp_withdrawal', status: 'pending',
-      initiated_at: now, completed_at: null, created_at: now,
-      steps: [], allocations: [],
-    });
-
-    store.nextRef = 4;
-    store.auditLog = [
-      {entity_type:'transaction_chain',action:'create',new_value:'TXN-2026-0001',performed_by:'system',performed_at:now},
-      {entity_type:'transaction_chain',action:'complete',field_name:'status',old_value:'in_transit',new_value:'completed',performed_by:'system',performed_at:now},
-      {entity_type:'transaction_chain',action:'create',new_value:'TXN-2026-0002',performed_by:'system',performed_at:now},
-      {entity_type:'transaction_chain',action:'create',new_value:'TXN-2026-0003',performed_by:'system',performed_at:now},
-    ];
     saveStore(store);
   }
   return store;
