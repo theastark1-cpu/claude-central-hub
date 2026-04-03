@@ -49,7 +49,7 @@ body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text)
 .api-status { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-muted); }
 .api-dot { width:8px; height:8px; border-radius:50%; }
 .api-dot.online { background:var(--success); box-shadow:0 0 6px var(--success); }
-.api-dot.offline { background:var(--danger); box-shadow:0 0 6px var(--danger); }
+.api-dot.offline { background:var(--warning); box-shadow:0 0 6px var(--warning); }
 
 /* Main Content */
 .main { margin-left:260px; flex:1; padding:32px; min-height:100vh; overflow-y:auto; height:100vh; }
@@ -128,6 +128,8 @@ tr:hover td { background:var(--surface-2); }
 .btn { display:inline-flex; align-items:center; gap:8px; padding:8px 16px; border-radius:8px; border:none; cursor:pointer; font-size:13px; font-weight:600; font-family:'DM Sans',sans-serif; transition:all 0.15s; }
 .btn-primary { background:var(--accent); color:#fff; }
 .btn-primary:hover { background:var(--accent-dim); }
+.btn-success { background:var(--success); color:#fff; }
+.btn-success:hover { opacity:0.85; }
 .btn-ghost { background:transparent; color:var(--text-dim); border:1px solid var(--border); }
 .btn-ghost:hover { background:var(--surface-2); color:var(--text); }
 .entity-tag.active { background:var(--surface-2); color:var(--text); border-color:var(--text) !important; }
@@ -239,8 +241,8 @@ if(sessionStorage.getItem('ct_auth')==='1')document.getElementById('lockScreen')
   </div>
   <div class="sidebar-footer">
     <div class="api-status">
-      <span class="api-dot" id="apiDot"></span>
-      <span id="apiStatusText">Connecting...</span>
+      <span class="api-dot offline" id="apiDot"></span>
+      <span id="apiStatusText">Local Mode</span>
     </div>
   </div>
 </nav>
@@ -320,6 +322,9 @@ if(sessionStorage.getItem('ct_auth')==='1')document.getElementById('lockScreen')
         <div>
           <h2 id="chainRefCode"></h2>
           <p id="chainDescription"></p>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:8px;">
+          <button class="btn btn-success hidden" id="completeChainBtn" onclick="completeChain()">&#10003; Complete Chain</button>
         </div>
       </div>
     </div>
@@ -500,29 +505,24 @@ if(sessionStorage.getItem('ct_auth')==='1')document.getElementById('lockScreen')
 </div>
 
 <script>
-const RENDER_API = 'https://capital-tracker-api-armada.onrender.com/api';
-const LOCAL_API = 'http://localhost:8000/api';
-let API = LOCAL_API;
+// ══════════════════════════════════════════════════════════════
+// CAPITAL TRACKER — Fully offline localStorage-powered engine
+// ══════════════════════════════════════════════════════════════
 
-// Auto-detect: use Render API if not on localhost
-if (!window.location.hostname.match(/^(localhost|127\.0\.0\.1)$/)) {
-  API = RENDER_API;
-}
 let currentView = 'overview';
 let currentChainId = null;
-let allAccounts = [];
 let entityChartInst = null;
 let statusChartInst = null;
 
-// ── Embedded fallback data (used when API is unreachable) ──
-const FALLBACK_ENTITIES = [
+// ── Reference Data (entities, accounts, investors) ──
+const ENTITIES = [
   {id:"e-ap",name:"Armada Prime LLP",entity_type:"llp"},
   {id:"e-ac",name:"Armada Capital Group LLP",entity_type:"llp"},
   {id:"e-rk",name:"Royal KKS",entity_type:"group"},
   {id:"e-ca",name:"Cascade",entity_type:"group"},
   {id:"e-ex",name:"External",entity_type:"external"},
 ];
-const FALLBACK_ACCOUNTS = [
+const ACCOUNTS = [
   {id:"a-ap-brk",entity_id:"e-ap",name:"Armada Prime Brokerage",account_type:"brokerage",provider:"Catalyst",account_number_last4:null},
   {id:"a-ap-bnk",entity_id:"e-ap",name:"Armada Prime Bank",account_type:"bank",provider:"Grasshopper",account_number_last4:"4521"},
   {id:"a-ap-tw",entity_id:"e-ap",name:"Armada Prime Trust Wallet",account_type:"crypto",provider:"Trust Wallet",account_number_last4:null},
@@ -534,26 +534,128 @@ const FALLBACK_ACCOUNTS = [
   {id:"a-ca-tw",entity_id:"e-ca",name:"Cascade Trust Wallet",account_type:"crypto",provider:"Trust Wallet",account_number_last4:null},
   {id:"a-ex-bnk",entity_id:"e-ex",name:"External Recipient",account_type:"bank",provider:null,account_number_last4:null},
 ];
+const INVESTORS = [
+  {id:"i-1",name:"Lyman Phillips"},{id:"i-2",name:"Philip Okala"},
+  {id:"i-3",name:"NC Opportunity Fund, LP"},{id:"i-4",name:"Sarah Martinez"},
+  {id:"i-5",name:"David Chen"},{id:"i-6",name:"Apex Holdings LLC"},
+  {id:"i-7",name:"Robert Williams"},{id:"i-8",name:"Jennifer Park"},
+];
 
-// ── API helpers ──
-async function api(path, opts = {}) {
-  const res = await fetch(`${API}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...opts.headers },
-    ...opts,
-  });
-  if (!res.ok) throw new Error(`API ${res.status}: ${await res.text()}`);
-  return res.json();
+// ── localStorage Data Store ──
+const STORAGE_KEY = 'ct_data_v2';
+
+function uid() {
+  return 'xxxx-xxxx-xxxx-xxxx'.replace(/x/g, () => Math.floor(Math.random()*16).toString(16));
 }
 
+function loadStore() {
+  try { const r = localStorage.getItem(STORAGE_KEY); if (r) return JSON.parse(r); } catch {}
+  return null;
+}
+
+function saveStore(store) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+}
+
+function getStore() {
+  let store = loadStore();
+  if (!store) {
+    store = { chains: [], auditLog: [], nextRef: 1 };
+    const now = new Date().toISOString();
+
+    // Seed: Completed chain — Lyman Phillips $106k
+    store.chains.push({
+      id: uid(), reference_code: 'TXN-2026-0001',
+      description: '[Armada Prime] Lyman Phillips withdrawal - Brokerage to external via crypto',
+      original_amount: 106000, total_fees: 5, final_amount: 105995, currency: 'USD',
+      source_account_id: 'a-ap-brk', destination_account_id: 'a-ex-bnk',
+      capital_type: 'lp_withdrawal', status: 'completed',
+      initiated_at: now, completed_at: now, created_at: now,
+      steps: [
+        {id:uid(),step_order:1,from_account_id:'a-ap-brk',to_account_id:'a-ap-bnk',amount_sent:106000,fee:2,amount_received:105998,transfer_method:'wire',status:'completed',initiated_at:now,completed_at:now},
+        {id:uid(),step_order:2,from_account_id:'a-ap-bnk',to_account_id:'a-ap-tw',amount_sent:105998,fee:3,amount_received:105995,transfer_method:'ach',status:'completed',initiated_at:now,completed_at:now},
+        {id:uid(),step_order:3,from_account_id:'a-ap-tw',to_account_id:'a-ex-bnk',amount_sent:105995,fee:0,amount_received:105995,transfer_method:'blockchain',status:'completed',initiated_at:now,completed_at:now},
+      ],
+      allocations: [{id:uid(),investor_id:'i-1',source_entity_id:'e-ap',allocation_amount:106000,allocation_pct:100}],
+    });
+
+    // Seed: In-transit chain — Split $150k
+    store.chains.push({
+      id: uid(), reference_code: 'TXN-2026-0002',
+      description: '[Armada Prime] Split withdrawal - Lyman Phillips + Armada Capital allocation',
+      original_amount: 150000, total_fees: 15, final_amount: null, currency: 'USD',
+      source_account_id: 'a-ap-brk', destination_account_id: null,
+      capital_type: 'lp_withdrawal', status: 'in_transit',
+      initiated_at: now, completed_at: null, created_at: now,
+      steps: [
+        {id:uid(),step_order:1,from_account_id:'a-ap-brk',to_account_id:'a-ap-bnk',amount_sent:150000,fee:15,amount_received:149985,transfer_method:'wire',status:'completed',initiated_at:now,completed_at:now},
+      ],
+      allocations: [
+        {id:uid(),investor_id:'i-1',source_entity_id:'e-ap',allocation_amount:106000,allocation_pct:70.67},
+        {id:uid(),investor_id:'i-2',source_entity_id:'e-ac',allocation_amount:44000,allocation_pct:29.33},
+      ],
+    });
+
+    // Seed: Pending chain — GP Distribution $45k
+    store.chains.push({
+      id: uid(), reference_code: 'TXN-2026-0003',
+      description: '[Armada Capital] GP Distribution - Operating funds transfer',
+      original_amount: 45000, total_fees: 0, final_amount: null, currency: 'USD',
+      source_account_id: 'a-ac-bnk', destination_account_id: null,
+      capital_type: 'gp_withdrawal', status: 'pending',
+      initiated_at: now, completed_at: null, created_at: now,
+      steps: [], allocations: [],
+    });
+
+    store.nextRef = 4;
+    store.auditLog = [
+      {entity_type:'transaction_chain',action:'create',new_value:'TXN-2026-0001',performed_by:'system',performed_at:now},
+      {entity_type:'transaction_chain',action:'complete',field_name:'status',old_value:'in_transit',new_value:'completed',performed_by:'system',performed_at:now},
+      {entity_type:'transaction_chain',action:'create',new_value:'TXN-2026-0002',performed_by:'system',performed_at:now},
+      {entity_type:'transaction_chain',action:'create',new_value:'TXN-2026-0003',performed_by:'system',performed_at:now},
+    ];
+    saveStore(store);
+  }
+  return store;
+}
+
+// ── Name resolvers ──
+function acctName(id) { const a = ACCOUNTS.find(x => x.id === id); return a ? a.name : (id || '—'); }
+function acctEntity(id) { const a = ACCOUNTS.find(x => x.id === id); if (!a) return ''; const e = ENTITIES.find(x => x.id === a.entity_id); return e ? e.name : ''; }
+function entityName(id) { const e = ENTITIES.find(x => x.id === id); return e ? e.name : ''; }
+function investorName(id) { const i = INVESTORS.find(x => x.id === id); return i ? i.name : 'Unknown'; }
+
+function enrichChain(c) {
+  return {
+    ...c,
+    source_account_name: acctName(c.source_account_id),
+    source_entity_name: acctEntity(c.source_account_id),
+    destination_account_name: c.destination_account_id ? acctName(c.destination_account_id) : null,
+    destination_entity_name: c.destination_account_id ? acctEntity(c.destination_account_id) : null,
+    steps: (c.steps||[]).map(s => ({
+      ...s,
+      from_account_name: acctName(s.from_account_id),
+      from_entity_name: acctEntity(s.from_account_id),
+      to_account_name: acctName(s.to_account_id),
+      to_entity_name: acctEntity(s.to_account_id),
+    })),
+    allocations: (c.allocations||[]).map(a => ({
+      ...a,
+      investor_name: investorName(a.investor_id),
+      source_entity_name: entityName(a.source_entity_id),
+    })),
+  };
+}
+
+// ── Helpers ──
 function fmt(n) {
   const num = parseFloat(n);
   if (isNaN(num)) return '$0.00';
-  return '$' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return '$' + num.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
 }
-
 function fmtDate(d) {
   if (!d) return '—';
-  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return new Date(d).toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 
 // ── Navigation ──
@@ -561,7 +663,6 @@ function navigate(view, data) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   const navItem = document.querySelector(`.nav-item[data-view="${view}"]`);
   if (navItem) navItem.classList.add('active');
-
   document.querySelectorAll('[id^="view-"]').forEach(v => v.classList.add('hidden'));
 
   if (view === 'chain-detail') {
@@ -579,81 +680,10 @@ function navigate(view, data) {
   currentView = view;
 }
 
-// ── Overview ──
-async function loadOverview() {
-  try {
-    const [overview, entities, chains] = await Promise.all([
-      api('/dashboard/overview'),
-      api('/dashboard/entities'),
-      api('/transactions?limit=5'),
-    ]);
-
-    document.getElementById('overviewKPIs').innerHTML = `
-      <div class="kpi-card"><div class="kpi-label">AUM in Motion</div><div class="kpi-value accent">${fmt(overview.total_aum_in_motion)}</div><div class="kpi-sub">Pending + In Transit</div></div>
-      <div class="kpi-card"><div class="kpi-label">Completed</div><div class="kpi-value positive">${fmt(overview.total_completed)}</div><div class="kpi-sub">${overview.chain_count_completed} chains</div></div>
-      <div class="kpi-card"><div class="kpi-label">In Transit</div><div class="kpi-value warning">${fmt(overview.total_in_transit)}</div><div class="kpi-sub">${overview.chain_count_in_transit} chains</div></div>
-      <div class="kpi-card"><div class="kpi-label">Pending</div><div class="kpi-value">${fmt(overview.total_pending)}</div><div class="kpi-sub">${overview.chain_count_pending} chains</div></div>
-      <div class="kpi-card"><div class="kpi-label">Total Fees</div><div class="kpi-value negative">${fmt(overview.total_fees_collected)}</div><div class="kpi-sub">All chains</div></div>
-      <div class="kpi-card"><div class="kpi-label">Failed</div><div class="kpi-value ${overview.chain_count_failed > 0 ? 'negative' : ''}">${overview.chain_count_failed}</div><div class="kpi-sub">Chains</div></div>
-    `;
-
-    // Status chart
-    if (statusChartInst) statusChartInst.destroy();
-    statusChartInst = new Chart(document.getElementById('statusChart'), {
-      type: 'doughnut',
-      data: {
-        labels: ['Completed', 'In Transit', 'Pending', 'Failed'],
-        datasets: [{
-          data: [
-            parseFloat(overview.total_completed),
-            parseFloat(overview.total_in_transit),
-            parseFloat(overview.total_pending),
-            0,
-          ],
-          backgroundColor: ['#10b981', '#f59e0b', '#8b5cf6', '#ef4444'],
-          borderWidth: 0,
-        }],
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', padding: 16 } } },
-        cutout: '65%',
-      },
-    });
-
-    // Entity chart
-    if (entityChartInst) entityChartInst.destroy();
-    const entData = entities.filter(e => parseFloat(e.total_outgoing) > 0 || parseFloat(e.total_incoming) > 0);
-    entityChartInst = new Chart(document.getElementById('entityChart'), {
-      type: 'bar',
-      data: {
-        labels: entData.map(e => e.entity_name),
-        datasets: [
-          { label: 'Outgoing', data: entData.map(e => parseFloat(e.total_outgoing)), backgroundColor: '#ef444480' },
-          { label: 'Incoming', data: entData.map(e => parseFloat(e.total_incoming)), backgroundColor: '#10b98180' },
-        ],
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { labels: { color: '#94a3b8' } } },
-        scales: {
-          x: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: '#2a3550' } },
-          y: { ticks: { color: '#64748b', callback: v => '$' + (v / 1000) + 'k' }, grid: { color: '#2a3550' } },
-        },
-      },
-    });
-
-    // Recent chains
-    document.getElementById('recentChains').innerHTML = chains.length ? renderChainsTable(chains) : '<p style="color:var(--text-muted);padding:20px;">No transactions yet.</p>';
-  } catch (err) {
-    console.error('Failed to load overview:', err);
-  }
-}
-
+// ── Entity Tag Helpers ──
 const ENTITY_COLORS = {'Armada Prime':'var(--accent)','Armada Capital':'var(--purple)','Cascade':'var(--warning)'};
 
 function getEntityTag(chain) {
-  // Extract entity tag from description prefix [Entity] or from source account entity name
   const match = chain.description && chain.description.match(/^\[([^\]]+)\]/);
   if (match) return match[1];
   if (chain.source_entity_name) {
@@ -684,35 +714,139 @@ function renderChainsTable(chains) {
         <td>${renderEntityBadge(entity)}</td>
         <td>${desc}</td>
         <td class="mono">${fmt(c.original_amount)}</td>
-        <td class="mono" style="color:var(--danger)">${parseFloat(c.total_fees) > 0 ? '-' + fmt(c.total_fees) : '$0.00'}</td>
+        <td class="mono" style="color:var(--danger)">${parseFloat(c.total_fees||0) > 0 ? '-'+fmt(c.total_fees) : '$0.00'}</td>
         <td class="mono" style="color:var(--success)">${c.final_amount ? fmt(c.final_amount) : '—'}</td>
-        <td><span class="badge badge-${c.status}">${c.status.replace('_', ' ')}</span></td>
-        <td><span class="cap-badge cap-${c.capital_type}">${c.capital_type.replace('_', ' ')}</span></td>
-        <td style="color:var(--text-dim)">${fmtDate(c.initiated_at)}</td>
+        <td><span class="badge badge-${c.status}">${c.status.replace('_',' ')}</span></td>
+        <td><span class="cap-badge cap-${c.capital_type}">${c.capital_type.replace('_',' ')}</span></td>
+        <td style="color:var(--text-dim)">${fmtDate(c.initiated_at||c.created_at)}</td>
       </tr>`;
     }).join('')}
     </tbody>
   </table>`;
 }
 
+// ── Aggregation Helpers ──
+function getOverview() {
+  const store = getStore();
+  const chains = store.chains;
+  const completed = chains.filter(c => c.status==='completed');
+  const inTransit = chains.filter(c => c.status==='in_transit');
+  const pending = chains.filter(c => c.status==='pending');
+  return {
+    total_aum_in_motion: inTransit.reduce((s,c)=>s+c.original_amount,0) + pending.reduce((s,c)=>s+c.original_amount,0),
+    total_completed: completed.reduce((s,c)=>s+(c.final_amount||c.original_amount),0),
+    total_in_transit: inTransit.reduce((s,c)=>s+c.original_amount,0),
+    total_pending: pending.reduce((s,c)=>s+c.original_amount,0),
+    total_fees: chains.reduce((s,c)=>s+(c.total_fees||0),0),
+    chain_count_total: chains.length,
+    chain_count_completed: completed.length,
+    chain_count_in_transit: inTransit.length,
+    chain_count_pending: pending.length,
+  };
+}
+
+function getEntitySummaries() {
+  const store = getStore();
+  const result = {};
+  ENTITIES.forEach(e => { result[e.id] = {entity_name:e.name,chain_count:0,total_outgoing:0,total_incoming:0,total_fees:0}; });
+  store.chains.forEach(c => {
+    const srcAcct = ACCOUNTS.find(a => a.id === c.source_account_id);
+    if (srcAcct && result[srcAcct.entity_id]) {
+      result[srcAcct.entity_id].chain_count++;
+      result[srcAcct.entity_id].total_outgoing += c.original_amount;
+      result[srcAcct.entity_id].total_fees += (c.total_fees||0);
+    }
+    (c.steps||[]).forEach(s => {
+      const toAcct = ACCOUNTS.find(a => a.id === s.to_account_id);
+      const fromAcct = ACCOUNTS.find(a => a.id === s.from_account_id);
+      if (toAcct && fromAcct && fromAcct.entity_id !== toAcct.entity_id && result[toAcct.entity_id]) {
+        result[toAcct.entity_id].total_incoming += s.amount_received;
+      }
+    });
+  });
+  return Object.values(result);
+}
+
+function getAccountSummaries() {
+  const store = getStore();
+  return ACCOUNTS.map(acct => {
+    let ti=0,to=0,pi=0,po=0;
+    store.chains.forEach(c => {
+      (c.steps||[]).forEach(s => {
+        if (s.to_account_id===acct.id) { ti+=s.amount_received; if(s.status!=='completed') pi+=s.amount_received; }
+        if (s.from_account_id===acct.id) { to+=s.amount_sent; if(s.status!=='completed') po+=s.amount_sent; }
+      });
+    });
+    return {account_name:acct.name, entity_name:acctEntity(acct.id), account_type:acct.account_type, total_incoming:ti, total_outgoing:to, net_flow:ti-to, pending_incoming:pi, pending_outgoing:po};
+  });
+}
+
+function getInvestorSummaries() {
+  const store = getStore();
+  const invMap = {};
+  store.chains.forEach(c => {
+    (c.allocations||[]).forEach(a => {
+      if (!invMap[a.investor_id]) invMap[a.investor_id] = {investor_name:investorName(a.investor_id),total_allocated:0,total_in_transit:0,total_completed:0,total_fees:0,net_received:0};
+      const inv = invMap[a.investor_id];
+      inv.total_allocated += a.allocation_amount;
+      if (c.status==='completed') {
+        const pct = (a.allocation_pct||0)/100;
+        inv.total_completed += (c.final_amount||c.original_amount)*pct;
+        inv.total_fees += (c.total_fees||0)*pct;
+        inv.net_received += ((c.final_amount||c.original_amount))*pct;
+      } else if (c.status==='in_transit') {
+        inv.total_in_transit += a.allocation_amount;
+      }
+    });
+  });
+  return Object.values(invMap);
+}
+
+// ── Overview ──
+function loadOverview() {
+  try {
+    const ov = getOverview();
+    const entities = getEntitySummaries();
+    const store = getStore();
+    const chains = store.chains.slice().sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,5).map(enrichChain);
+
+    document.getElementById('overviewKPIs').innerHTML = `
+      <div class="kpi-card"><div class="kpi-label">AUM in Motion</div><div class="kpi-value accent">${fmt(ov.total_aum_in_motion)}</div><div class="kpi-sub">Pending + In Transit</div></div>
+      <div class="kpi-card"><div class="kpi-label">Completed</div><div class="kpi-value positive">${fmt(ov.total_completed)}</div><div class="kpi-sub">${ov.chain_count_completed} chains</div></div>
+      <div class="kpi-card"><div class="kpi-label">In Transit</div><div class="kpi-value warning">${fmt(ov.total_in_transit)}</div><div class="kpi-sub">${ov.chain_count_in_transit} chains</div></div>
+      <div class="kpi-card"><div class="kpi-label">Pending</div><div class="kpi-value" style="color:var(--purple)">${fmt(ov.total_pending)}</div><div class="kpi-sub">${ov.chain_count_pending} chains</div></div>
+      <div class="kpi-card"><div class="kpi-label">Total Fees</div><div class="kpi-value negative">${fmt(ov.total_fees)}</div></div>
+      <div class="kpi-card"><div class="kpi-label">Total Chains</div><div class="kpi-value">${ov.chain_count_total}</div></div>
+    `;
+
+    if (statusChartInst) statusChartInst.destroy();
+    statusChartInst = new Chart(document.getElementById('statusChart'), {
+      type:'doughnut',
+      data:{labels:['Completed','In Transit','Pending'],datasets:[{data:[ov.total_completed,ov.total_in_transit,ov.total_pending],backgroundColor:['#10b98180','#f59e0b80','#8b5cf680'],borderColor:['#10b981','#f59e0b','#8b5cf6'],borderWidth:1}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#94a3b8',padding:16}}},cutout:'65%'},
+    });
+
+    if (entityChartInst) entityChartInst.destroy();
+    const entData = entities.filter(e => e.total_outgoing > 0 || e.total_incoming > 0);
+    entityChartInst = new Chart(document.getElementById('entityChart'), {
+      type:'bar',
+      data:{labels:entData.map(e=>e.entity_name),datasets:[{label:'Outgoing',data:entData.map(e=>e.total_outgoing),backgroundColor:'#ef444480'},{label:'Incoming',data:entData.map(e=>e.total_incoming),backgroundColor:'#10b98180'}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#94a3b8'}}},scales:{x:{ticks:{color:'#64748b',font:{size:10}},grid:{color:'#2a3550'}},y:{ticks:{color:'#64748b',callback:v=>'$'+(v/1000)+'k'},grid:{color:'#2a3550'}}}},
+    });
+
+    document.getElementById('recentChains').innerHTML = chains.length ? renderChainsTable(chains) : '<p style="color:var(--text-muted);padding:20px;">No transactions yet.</p>';
+  } catch(err) { console.error('Overview error:', err); }
+}
+
 // ── Transactions ──
 let chainFilter = '';
 let entityFilter = '';
 
-async function loadTransactions() {
-  const url = chainFilter ? `/transactions?status=${chainFilter}` : '/transactions';
-  let chains = [];
-  try {
-    chains = await api(url);
-  } catch { chains = []; }
-
-  // Apply entity filter client-side
-  if (entityFilter) {
-    chains = chains.filter(c => {
-      const tag = getEntityTag(c);
-      return tag === entityFilter;
-    });
-  }
+function loadTransactions() {
+  const store = getStore();
+  let chains = store.chains.slice().sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).map(enrichChain);
+  if (chainFilter) chains = chains.filter(c => c.status === chainFilter);
+  if (entityFilter) chains = chains.filter(c => getEntityTag(c) === entityFilter);
 
   document.getElementById('chainsList').innerHTML = chains.length
     ? `<div class="card" style="padding:0;">${renderChainsTable(chains)}</div>`
@@ -730,17 +864,20 @@ function filterEntity(entity) {
 }
 
 // ── Chain Detail ──
-async function loadChainDetail(chainId) {
+function loadChainDetail(chainId) {
   currentChainId = chainId;
-  const chain = await api(`/transactions/${chainId}`);
+  const store = getStore();
+  const raw = store.chains.find(c => c.id === chainId);
+  if (!raw) { alert('Transaction not found'); return; }
+  const chain = enrichChain(raw);
 
   document.getElementById('chainRefCode').textContent = chain.reference_code;
-  document.getElementById('chainDescription').textContent = chain.description || 'No description';
+  document.getElementById('chainDescription').textContent = (chain.description||'No description').replace(/^\[[^\]]+\]\s*/,'');
 
-  const canAddStep = !['completed', 'cancelled', 'failed'].includes(chain.status);
+  const canAddStep = !['completed','cancelled','failed'].includes(chain.status);
   document.getElementById('addStepBtn').classList.toggle('hidden', !canAddStep);
+  document.getElementById('completeChainBtn').classList.toggle('hidden', !canAddStep || chain.steps.length === 0);
 
-  // KPIs
   document.getElementById('chainKPIs').innerHTML = `
     <div class="kpi-card"><div class="kpi-label">Original Amount</div><div class="kpi-value accent">${fmt(chain.original_amount)}</div></div>
     <div class="kpi-card"><div class="kpi-label">Total Fees</div><div class="kpi-value negative">${fmt(chain.total_fees)}</div></div>
@@ -750,36 +887,31 @@ async function loadChainDetail(chainId) {
     <div class="kpi-card"><div class="kpi-label">Steps</div><div class="kpi-value">${chain.steps.length}</div></div>
   `;
 
-  // Flow Pipeline
   renderPipeline(chain);
 
-  // Allocations
-  const allocHtml = chain.allocations.length
+  document.getElementById('chainAllocations').innerHTML = chain.allocations.length
     ? chain.allocations.map(a => `
       <div class="alloc-item">
-        <div><div class="alloc-name">${a.investor_name || 'Unknown'}</div><div class="alloc-entity">${a.source_entity_name || ''}</div></div>
+        <div><div class="alloc-name">${a.investor_name||'Unknown'}</div><div class="alloc-entity">${a.source_entity_name||''}</div></div>
         <div style="text-align:right;"><span class="alloc-amount">${fmt(a.allocation_amount)}</span>${a.allocation_pct ? `<span class="alloc-pct">${parseFloat(a.allocation_pct).toFixed(1)}%</span>` : ''}</div>
       </div>`).join('')
     : '<p style="color:var(--text-muted);">No allocations assigned.</p>';
-  document.getElementById('chainAllocations').innerHTML = allocHtml;
 
-  // Steps table
-  const stepsHtml = chain.steps.length
+  document.getElementById('chainStepsTable').innerHTML = chain.steps.length
     ? `<table><thead><tr><th>#</th><th>From</th><th>To</th><th>Sent</th><th>Fee</th><th>Received</th><th>Method</th><th>Status</th></tr></thead>
       <tbody>${chain.steps.map(s => `
         <tr>
           <td class="mono">${s.step_order}</td>
-          <td><div style="font-weight:500;">${s.from_account_name}</div><div style="font-size:10px;color:var(--text-muted);">${s.from_entity_name || ''}</div></td>
-          <td><div style="font-weight:500;">${s.to_account_name}</div><div style="font-size:10px;color:var(--text-muted);">${s.to_entity_name || ''}</div></td>
+          <td><div style="font-weight:500;">${s.from_account_name}</div><div style="font-size:10px;color:var(--text-muted);">${s.from_entity_name||''}</div></td>
+          <td><div style="font-weight:500;">${s.to_account_name}</div><div style="font-size:10px;color:var(--text-muted);">${s.to_entity_name||''}</div></td>
           <td class="mono">${fmt(s.amount_sent)}</td>
-          <td class="mono" style="color:var(--danger)">${parseFloat(s.fee) > 0 ? '-' + fmt(s.fee) : '—'}</td>
+          <td class="mono" style="color:var(--danger)">${parseFloat(s.fee)>0 ? '-'+fmt(s.fee) : '—'}</td>
           <td class="mono" style="color:var(--success)">${fmt(s.amount_received)}</td>
-          <td><span style="font-size:11px;color:var(--text-dim);text-transform:uppercase;">${s.transfer_method || '—'}</span></td>
+          <td><span style="font-size:11px;color:var(--text-dim);text-transform:uppercase;">${s.transfer_method||'—'}</span></td>
           <td><span class="badge badge-${s.status}">${s.status}</span></td>
         </tr>`).join('')}
       </tbody></table>`
     : '<p style="color:var(--text-muted);">No transfer steps yet.</p>';
-  document.getElementById('chainStepsTable').innerHTML = stepsHtml;
 }
 
 function renderPipeline(chain) {
@@ -787,51 +919,34 @@ function renderPipeline(chain) {
   if (!chain.steps.length) {
     pipeline.innerHTML = `
       <div class="pipe-node pending">
-        <div class="node-entity">${chain.source_entity_name || ''}</div>
-        <div class="node-account">${chain.source_account_name || 'Source'}</div>
+        <div class="node-entity">${chain.source_entity_name||''}</div>
+        <div class="node-account">${chain.source_account_name||'Source'}</div>
         <div class="node-amount">${fmt(chain.original_amount)}</div>
         <div class="node-status"><span class="badge badge-pending">pending</span></div>
       </div>
       <div class="pipe-connector"><div class="pipe-arrow">&#8594;</div><div class="pipe-method">awaiting steps</div></div>
       <div class="pipe-node pending">
-        <div class="node-entity">${chain.destination_entity_name || ''}</div>
-        <div class="node-account">${chain.destination_account_name || 'Destination TBD'}</div>
+        <div class="node-entity">${chain.destination_entity_name||''}</div>
+        <div class="node-account">${chain.destination_account_name||'Destination TBD'}</div>
         <div class="node-amount">—</div>
       </div>`;
     return;
   }
-
   let html = '';
-  // First node (source)
   const first = chain.steps[0];
-  html += `<div class="pipe-node ${first.status}">
-    <div class="node-entity">${first.from_entity_name || ''}</div>
-    <div class="node-account">${first.from_account_name}</div>
-    <div class="node-amount">${fmt(first.amount_sent)}</div>
-  </div>`;
-
+  html += `<div class="pipe-node ${first.status}"><div class="node-entity">${first.from_entity_name||''}</div><div class="node-account">${first.from_account_name}</div><div class="node-amount">${fmt(first.amount_sent)}</div></div>`;
   chain.steps.forEach(s => {
-    html += `<div class="pipe-connector">
-      <div class="pipe-arrow">&#8594;</div>
-      <div class="pipe-fee">${parseFloat(s.fee) > 0 ? '-' + fmt(s.fee) : 'No fee'}</div>
-      <div class="pipe-method">${s.transfer_method || ''}</div>
-    </div>`;
-    html += `<div class="pipe-node ${s.status}">
-      <div class="node-entity">${s.to_entity_name || ''}</div>
-      <div class="node-account">${s.to_account_name}</div>
-      <div class="node-amount">${fmt(s.amount_received)}</div>
-      <div class="node-status"><span class="badge badge-${s.status}">${s.status}</span></div>
-    </div>`;
+    html += `<div class="pipe-connector"><div class="pipe-arrow">&#8594;</div><div class="pipe-fee">${parseFloat(s.fee)>0?'-'+fmt(s.fee):'No fee'}</div><div class="pipe-method">${s.transfer_method||''}</div></div>`;
+    html += `<div class="pipe-node ${s.status}"><div class="node-entity">${s.to_entity_name||''}</div><div class="node-account">${s.to_account_name}</div><div class="node-amount">${fmt(s.amount_received)}</div><div class="node-status"><span class="badge badge-${s.status}">${s.status}</span></div></div>`;
   });
-
   pipeline.innerHTML = html;
 }
 
 // ── Investors ──
-async function loadInvestors() {
-  const investors = await api('/dashboard/investors');
-  const totalAlloc = investors.reduce((s, i) => s + parseFloat(i.total_allocated), 0);
-  const totalCompleted = investors.reduce((s, i) => s + parseFloat(i.total_completed), 0);
+function loadInvestors() {
+  const investors = getInvestorSummaries();
+  const totalAlloc = investors.reduce((s,i) => s+i.total_allocated, 0);
+  const totalCompleted = investors.reduce((s,i) => s+i.total_completed, 0);
 
   document.getElementById('investorKPIs').innerHTML = `
     <div class="kpi-card"><div class="kpi-label">Total Investors</div><div class="kpi-value accent">${investors.length}</div></div>
@@ -855,8 +970,8 @@ async function loadInvestors() {
 }
 
 // ── Accounts ──
-async function loadAccounts() {
-  const accounts = await api('/dashboard/accounts');
+function loadAccounts() {
+  const accounts = getAccountSummaries();
   document.getElementById('accountTable').innerHTML = `<table>
     <thead><tr><th>Account</th><th>Entity</th><th>Type</th><th>Total In</th><th>Total Out</th><th>Net Flow</th><th>Pending In</th><th>Pending Out</th></tr></thead>
     <tbody>${accounts.map(a => `
@@ -866,7 +981,7 @@ async function loadAccounts() {
         <td><span style="font-size:11px;text-transform:uppercase;color:var(--text-muted);">${a.account_type}</span></td>
         <td class="mono" style="color:var(--success)">${fmt(a.total_incoming)}</td>
         <td class="mono" style="color:var(--danger)">${fmt(a.total_outgoing)}</td>
-        <td class="mono" style="font-weight:600;color:${parseFloat(a.net_flow) >= 0 ? 'var(--success)' : 'var(--danger)'}">${fmt(a.net_flow)}</td>
+        <td class="mono" style="font-weight:600;color:${a.net_flow>=0?'var(--success)':'var(--danger)'}">${fmt(a.net_flow)}</td>
         <td class="mono" style="color:var(--text-dim)">${fmt(a.pending_incoming)}</td>
         <td class="mono" style="color:var(--text-dim)">${fmt(a.pending_outgoing)}</td>
       </tr>`).join('')}
@@ -875,58 +990,55 @@ async function loadAccounts() {
 }
 
 // ── Entities ──
-async function loadEntities() {
-  const entities = await api('/dashboard/entities');
+function loadEntities() {
+  const entities = getEntitySummaries();
   document.getElementById('entityGrid').innerHTML = entities.map(e => `
     <div class="entity-card">
       <div class="entity-name">${e.entity_name}</div>
-      <div class="entity-type">${e.chain_count} chain${e.chain_count !== 1 ? 's' : ''}</div>
+      <div class="entity-type">${e.chain_count} chain${e.chain_count!==1?'s':''}</div>
       <div class="entity-stat"><span class="label">Outgoing</span><span class="value" style="color:var(--danger)">${fmt(e.total_outgoing)}</span></div>
       <div class="entity-stat"><span class="label">Incoming</span><span class="value" style="color:var(--success)">${fmt(e.total_incoming)}</span></div>
       <div class="entity-stat"><span class="label">Fees Paid</span><span class="value" style="color:var(--warning)">${fmt(e.total_fees)}</span></div>
       <div class="entity-stat" style="border-top:1px solid var(--border);padding-top:12px;margin-top:8px;">
         <span class="label" style="font-weight:600;">Net Flow</span>
-        <span class="value" style="font-weight:700;color:${parseFloat(e.total_incoming) - parseFloat(e.total_outgoing) >= 0 ? 'var(--success)' : 'var(--danger)'}">
-          ${fmt(parseFloat(e.total_incoming) - parseFloat(e.total_outgoing))}
+        <span class="value" style="font-weight:700;color:${e.total_incoming-e.total_outgoing>=0?'var(--success)':'var(--danger)'}">
+          ${fmt(e.total_incoming - e.total_outgoing)}
         </span>
       </div>
     </div>`).join('');
 }
 
 // ── Audit ──
-async function loadAudit() {
-  const logs = await api('/audit?limit=100');
+function loadAudit() {
+  const store = getStore();
+  const logs = store.auditLog.slice().reverse();
   document.getElementById('auditTable').innerHTML = logs.length
     ? `<table><thead><tr><th>Time</th><th>Type</th><th>Action</th><th>Field</th><th>Old</th><th>New</th><th>By</th></tr></thead>
       <tbody>${logs.map(l => `
         <tr>
           <td style="color:var(--text-dim);font-size:12px;">${fmtDate(l.performed_at)}</td>
           <td><span style="font-size:11px;text-transform:uppercase;color:var(--accent);">${l.entity_type}</span></td>
-          <td><span class="badge badge-${l.action === 'create' ? 'completed' : l.action === 'complete' ? 'completed' : 'in_transit'}">${l.action}</span></td>
-          <td class="mono" style="font-size:12px;">${l.field_name || '—'}</td>
-          <td style="color:var(--text-muted);font-size:12px;">${l.old_value || '—'}</td>
-          <td style="font-size:12px;">${l.new_value || '—'}</td>
-          <td style="color:var(--text-dim);font-size:12px;">${l.performed_by}</td>
+          <td><span class="badge badge-${l.action==='create'?'completed':l.action==='complete'?'completed':'in_transit'}">${l.action}</span></td>
+          <td class="mono" style="font-size:12px;">${l.field_name||'—'}</td>
+          <td style="color:var(--text-muted);font-size:12px;">${l.old_value||'—'}</td>
+          <td style="font-size:12px;">${l.new_value||'—'}</td>
+          <td style="color:var(--text-dim);font-size:12px;">${l.performed_by||'system'}</td>
         </tr>`).join('')}
       </tbody></table>`
     : '<p style="color:var(--text-muted);">No audit entries yet.</p>';
 }
 
 // ── Modals & Forms ──
-let allEntities = [];
-
-function buildAccountOptgroups(accounts, entities) {
+function buildAccountOptgroups() {
   const entityMap = {};
-  entities.forEach(e => { entityMap[e.id] = e.name; });
-
+  ENTITIES.forEach(e => { entityMap[e.id] = e.name; });
   const grouped = {};
-  const entityOrder = entities.map(e => e.name);
-  accounts.forEach(a => {
+  const entityOrder = ENTITIES.map(e => e.name);
+  ACCOUNTS.forEach(a => {
     const eName = entityMap[a.entity_id] || 'Unknown';
     if (!grouped[eName]) grouped[eName] = [];
     grouped[eName].push(a);
   });
-
   let opts = '';
   entityOrder.forEach(entityName => {
     const accts = grouped[entityName];
@@ -942,19 +1054,8 @@ function buildAccountOptgroups(accounts, entities) {
   return opts;
 }
 
-async function loadAccountOptions() {
-  let accounts, entities;
-  try {
-    [accounts, entities] = await Promise.all([api('/accounts'), api('/entities')]);
-  } catch {
-    // API unreachable — use embedded fallback data
-    accounts = FALLBACK_ACCOUNTS;
-    entities = FALLBACK_ENTITIES;
-  }
-  allAccounts = accounts;
-  allEntities = entities;
-
-  const opts = buildAccountOptgroups(accounts, entities);
+function loadAccountOptions() {
+  const opts = buildAccountOptgroups();
   document.getElementById('sourceAccountSelect').innerHTML = opts;
   document.getElementById('destAccountSelect').innerHTML = '<option value="">-- Not specified --</option>' + opts;
   document.getElementById('stepDestSelect').innerHTML = opts;
@@ -965,57 +1066,50 @@ function showNewChainModal() {
   document.getElementById('newChainModal').classList.remove('hidden');
 }
 
-async function showAddStepModal() {
-  await loadAccountOptions();
+function showAddStepModal() {
+  loadAccountOptions();
+  const store = getStore();
+  const raw = store.chains.find(c => c.id === currentChainId);
+  if (!raw) return;
+  const chain = enrichChain(raw);
 
-  // Build the trail showing the chain path so far
-  const chain = await api(`/transactions/${currentChainId}`);
   let trailHtml = '<div class="form-label" style="margin-bottom:8px;">ACCOUNT TRAIL</div>';
   trailHtml += '<div style="display:flex;align-items:center;gap:0;overflow-x:auto;padding:8px 0;">';
 
   if (chain.steps.length === 0) {
-    // No steps yet — show source only
     trailHtml += `<div style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;text-align:center;min-width:120px;">
-      <div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;">${chain.source_entity_name || ''}</div>
-      <div style="font-size:12px;font-weight:600;">${chain.source_account_name || 'Source'}</div>
+      <div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;">${chain.source_entity_name||''}</div>
+      <div style="font-size:12px;font-weight:600;">${chain.source_account_name||'Source'}</div>
       <div class="mono" style="font-size:14px;color:var(--success);margin-top:4px;">${fmt(chain.original_amount)}</div>
     </div>`;
     trailHtml += `<div style="color:var(--text-muted);padding:0 6px;font-size:18px;">&#8594;</div>`;
     trailHtml += `<div style="background:var(--surface-3);border:2px dashed var(--accent);border-radius:8px;padding:10px 14px;text-align:center;min-width:120px;">
       <div style="font-size:11px;color:var(--accent);font-weight:600;">NEXT STEP</div>
     </div>`;
-    // Pre-fill amount
     document.getElementById('stepAmountInput').value = parseFloat(chain.original_amount);
   } else {
-    // Show source node
     const firstStep = chain.steps[0];
     trailHtml += `<div style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;text-align:center;min-width:110px;">
-      <div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;">${firstStep.from_entity_name || ''}</div>
+      <div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;">${firstStep.from_entity_name||''}</div>
       <div style="font-size:11px;font-weight:600;">${firstStep.from_account_name}</div>
       <div class="mono" style="font-size:13px;color:var(--success);margin-top:2px;">${fmt(firstStep.amount_sent)}</div>
     </div>`;
-
-    // Show each intermediate step
     chain.steps.forEach(s => {
       trailHtml += `<div style="display:flex;flex-direction:column;align-items:center;padding:0 4px;">
         <div style="color:var(--text-muted);font-size:16px;">&#8594;</div>
-        <div style="font-size:9px;color:var(--danger);font-family:'JetBrains Mono',monospace;">${parseFloat(s.fee) > 0 ? '-' + fmt(s.fee) : ''}</div>
+        <div style="font-size:9px;color:var(--danger);font-family:'JetBrains Mono',monospace;">${parseFloat(s.fee)>0?'-'+fmt(s.fee):''}</div>
       </div>`;
-      trailHtml += `<div style="background:var(--surface-2);border:1px solid ${s.status === 'completed' ? 'var(--success)' : 'var(--border)'};border-radius:8px;padding:10px 14px;text-align:center;min-width:110px;">
-        <div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;">${s.to_entity_name || ''}</div>
+      trailHtml += `<div style="background:var(--surface-2);border:1px solid ${s.status==='completed'?'var(--success)':'var(--border)'};border-radius:8px;padding:10px 14px;text-align:center;min-width:110px;">
+        <div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;">${s.to_entity_name||''}</div>
         <div style="font-size:11px;font-weight:600;">${s.to_account_name}</div>
         <div class="mono" style="font-size:13px;color:var(--success);margin-top:2px;">${fmt(s.amount_received)}</div>
       </div>`;
     });
-
-    // Show "next step" placeholder
     const lastStep = chain.steps[chain.steps.length - 1];
     trailHtml += `<div style="color:var(--text-muted);padding:0 6px;font-size:18px;">&#8594;</div>`;
     trailHtml += `<div style="background:var(--surface-3);border:2px dashed var(--accent);border-radius:8px;padding:10px 14px;text-align:center;min-width:110px;">
       <div style="font-size:11px;color:var(--accent);font-weight:600;">NEXT STEP</div>
     </div>`;
-
-    // Pre-fill amount from last step's received amount
     document.getElementById('stepAmountInput').value = parseFloat(lastStep.amount_received);
   }
 
@@ -1024,76 +1118,108 @@ async function showAddStepModal() {
   document.getElementById('addStepModal').classList.remove('hidden');
 }
 
-function closeModal(id) {
-  document.getElementById(id).classList.add('hidden');
-}
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
-async function submitNewChain(e) {
+// ── Submit: New Chain ──
+function submitNewChain(e) {
   e.preventDefault();
   const fd = new FormData(e.target);
   const entityTag = fd.get('entity_tag') || '';
   const rawDesc = fd.get('description') || '';
-  const description = entityTag ? `[${entityTag}] ${rawDesc}` : rawDesc || null;
-  const body = {
-    description: description,
+  const description = entityTag ? `[${entityTag}] ${rawDesc}` : rawDesc;
+  const now = new Date().toISOString();
+
+  const store = getStore();
+  const refNum = String(store.nextRef).padStart(4, '0');
+  const refCode = `TXN-2026-${refNum}`;
+  store.nextRef++;
+
+  const chain = {
+    id: uid(), reference_code: refCode, description: description,
     original_amount: parseFloat(fd.get('original_amount')),
-    capital_type: fd.get('capital_type'),
+    total_fees: 0, final_amount: null, currency: 'USD',
     source_account_id: fd.get('source_account_id'),
     destination_account_id: fd.get('destination_account_id') || null,
+    capital_type: fd.get('capital_type'), status: 'pending',
+    initiated_at: now, completed_at: null, created_at: now,
+    steps: [], allocations: [],
   };
-  try {
-    const chain = await api('/transactions', { method: 'POST', body: JSON.stringify(body) });
-    closeModal('newChainModal');
-    e.target.reset();
-    navigate('chain-detail', chain.id);
-  } catch (err) {
-    alert('Error creating transaction: ' + err.message);
-  }
+
+  store.chains.push(chain);
+  store.auditLog.push({entity_type:'transaction_chain',action:'create',new_value:refCode,performed_by:'user',performed_at:now});
+  saveStore(store);
+
+  closeModal('newChainModal');
+  e.target.reset();
+  navigate('chain-detail', chain.id);
 }
 
-async function submitAddStep(e) {
+// ── Submit: Add Step ──
+function submitAddStep(e) {
   e.preventDefault();
   const fd = new FormData(e.target);
-  const body = {
-    to_account_id: fd.get('to_account_id'),
-    amount_sent: parseFloat(fd.get('amount_sent')),
-    fee: parseFloat(fd.get('fee')),
+  const now = new Date().toISOString();
+  const store = getStore();
+  const chain = store.chains.find(c => c.id === currentChainId);
+  if (!chain) { alert('Chain not found'); return; }
+
+  const existingSteps = (chain.steps||[]).sort((a,b) => a.step_order - b.step_order);
+  let fromAccountId, nextOrder;
+  if (existingSteps.length) {
+    const last = existingSteps[existingSteps.length-1];
+    fromAccountId = last.to_account_id;
+    nextOrder = last.step_order + 1;
+  } else {
+    fromAccountId = chain.source_account_id;
+    nextOrder = 1;
+  }
+
+  const amountSent = parseFloat(fd.get('amount_sent'));
+  const fee = parseFloat(fd.get('fee'));
+
+  chain.steps.push({
+    id: uid(), step_order: nextOrder,
+    from_account_id: fromAccountId, to_account_id: fd.get('to_account_id'),
+    amount_sent: amountSent, fee: fee, amount_received: amountSent - fee,
     transfer_method: fd.get('transfer_method'),
     external_ref: fd.get('external_ref') || null,
-  };
-  try {
-    await api(`/transactions/${currentChainId}/steps`, { method: 'POST', body: JSON.stringify(body) });
-    closeModal('addStepModal');
-    e.target.reset();
-    loadChainDetail(currentChainId);
-  } catch (err) {
-    alert('Error adding step: ' + err.message);
-  }
+    status: 'pending', initiated_at: now, completed_at: null,
+  });
+  chain.status = 'in_transit';
+  chain.total_fees = chain.steps.reduce((s,st) => s + st.fee, 0);
+
+  store.auditLog.push({entity_type:'transfer_step',action:'create',new_value:`Step ${nextOrder} on ${chain.reference_code}`,performed_by:'user',performed_at:now});
+  saveStore(store);
+
+  closeModal('addStepModal');
+  e.target.reset();
+  loadChainDetail(currentChainId);
 }
 
-// ── API Health Check ──
-async function checkAPI() {
-  try {
-    await api('/health');
-    document.getElementById('apiDot').className = 'api-dot online';
-    document.getElementById('apiStatusText').textContent = 'API Connected';
-    return true;
-  } catch {
-    document.getElementById('apiDot').className = 'api-dot offline';
-    document.getElementById('apiStatusText').textContent = 'API Offline';
-    return false;
-  }
+// ── Complete Chain ──
+function completeChain() {
+  if (!confirm('Mark this transaction chain as completed? All steps will be marked completed.')) return;
+  const now = new Date().toISOString();
+  const store = getStore();
+  const chain = store.chains.find(c => c.id === currentChainId);
+  if (!chain || !chain.steps.length) return;
+
+  chain.steps.forEach(s => { s.status = 'completed'; s.completed_at = now; });
+  const lastStep = chain.steps[chain.steps.length - 1];
+  chain.final_amount = lastStep.amount_received;
+  chain.total_fees = chain.steps.reduce((s,st) => s + st.fee, 0);
+  chain.destination_account_id = lastStep.to_account_id;
+  chain.status = 'completed';
+  chain.completed_at = now;
+
+  store.auditLog.push({entity_type:'transaction_chain',action:'complete',field_name:'status',old_value:'in_transit',new_value:'completed',performed_by:'user',performed_at:now,metadata:{final_amount:String(chain.final_amount)}});
+  saveStore(store);
+  loadChainDetail(currentChainId);
 }
 
 // ── Init ──
-async function init() {
-  const online = await checkAPI();
-  if (online) {
-    loadOverview();
-  }
-  setInterval(checkAPI, 30000);
-}
-init();
+getStore(); // Initialize store with seed data if needed
+loadOverview();
 </script>
 </body>
 </html>
