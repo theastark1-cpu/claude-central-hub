@@ -97,7 +97,7 @@ tr:hover td { background:var(--surface-2); }
 
 /* Flow Pipeline */
 .pipeline { display:flex; align-items:center; gap:0; overflow-x:auto; padding:24px 0; }
-.pipe-node { flex-shrink:0; background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:16px 20px; min-width:160px; text-align:center; position:relative; }
+.pipe-node { flex-shrink:0; background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:16px 20px; width:200px; min-height:130px; text-align:center; position:relative; display:flex; flex-direction:column; justify-content:center; }
 .pipe-node.completed { border-color:var(--success); }
 .pipe-node.pending { border-color:var(--text-muted); opacity:0.6; }
 .pipe-node.in_transit { border-color:var(--warning); }
@@ -105,6 +105,9 @@ tr:hover td { background:var(--surface-2); }
 .pipe-node .node-account { font-size:13px; font-weight:600; margin-bottom:8px; }
 .pipe-node .node-amount { font-size:18px; font-weight:700; font-family:'JetBrains Mono',monospace; color:var(--success); }
 .pipe-node .node-status { margin-top:8px; }
+.pipe-node .node-delete { position:absolute; top:6px; right:8px; background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:14px; padding:2px 6px; border-radius:4px; opacity:0; transition:opacity 0.15s; }
+.pipe-node:hover .node-delete { opacity:1; }
+.pipe-node .node-delete:hover { color:var(--danger); background:var(--danger-bg); }
 .pipe-connector { flex-shrink:0; display:flex; flex-direction:column; align-items:center; padding:0 8px; min-width:100px; }
 .pipe-arrow { color:var(--text-muted); font-size:24px; margin-bottom:4px; }
 .pipe-fee { font-size:11px; color:var(--danger); font-family:'JetBrains Mono',monospace; font-weight:600; }
@@ -325,6 +328,7 @@ if(sessionStorage.getItem('ct_auth')==='1')document.getElementById('lockScreen')
         </div>
         <div style="margin-left:auto;display:flex;gap:8px;">
           <button class="btn btn-success hidden" id="completeChainBtn" onclick="completeChain()">&#10003; Complete Chain</button>
+          <button class="btn btn-ghost" id="deleteChainBtn" onclick="deleteChain()" style="color:var(--danger);border-color:var(--danger);">&#10005; Delete Chain</button>
         </div>
       </div>
     </div>
@@ -879,12 +883,15 @@ function renderPipeline(chain) {
       </div>`;
     return;
   }
+  const canEdit = !['completed','cancelled','failed'].includes(chain.status);
   let html = '';
   const first = chain.steps[0];
   html += `<div class="pipe-node ${first.status}"><div class="node-entity">${first.from_entity_name||''}</div><div class="node-account">${first.from_account_name}</div><div class="node-amount">${fmt(first.amount_sent)}</div></div>`;
-  chain.steps.forEach(s => {
+  chain.steps.forEach((s, idx) => {
+    const isLast = idx === chain.steps.length - 1;
+    const deleteBtn = canEdit && isLast ? `<button class="node-delete" onclick="event.stopPropagation();deleteStep(${idx})" title="Delete step">&times;</button>` : '';
     html += `<div class="pipe-connector"><div class="pipe-arrow">&#8594;</div><div class="pipe-fee">${parseFloat(s.fee)>0?'-'+fmt(s.fee):'No fee'}</div><div class="pipe-method">${s.transfer_method||''}</div></div>`;
-    html += `<div class="pipe-node ${s.status}"><div class="node-entity">${s.to_entity_name||''}</div><div class="node-account">${s.to_account_name}</div><div class="node-amount">${fmt(s.amount_received)}</div><div class="node-status"><span class="badge badge-${s.status}">${s.status}</span></div></div>`;
+    html += `<div class="pipe-node ${s.status}">${deleteBtn}<div class="node-entity">${s.to_entity_name||''}</div><div class="node-account">${s.to_account_name}</div><div class="node-amount">${fmt(s.amount_received)}</div><div class="node-status"><span class="badge badge-${s.status}">${s.status}</span></div></div>`;
   });
   pipeline.innerHTML = html;
 }
@@ -1164,8 +1171,40 @@ function completeChain() {
   loadChainDetail(currentChainId);
 }
 
+// ── Delete Step (removes last step only) ──
+function deleteStep(stepIndex) {
+  if (!confirm('Delete this transfer step?')) return;
+  const now = new Date().toISOString();
+  const store = getStore();
+  const chain = store.chains.find(c => c.id === currentChainId);
+  if (!chain) return;
+
+  const removed = chain.steps.splice(stepIndex, 1)[0];
+  chain.total_fees = chain.steps.reduce((s,st) => s + st.fee, 0);
+  if (chain.steps.length === 0) chain.status = 'pending';
+
+  store.auditLog.push({entity_type:'transfer_step',action:'delete',old_value:`Step ${removed.step_order} on ${chain.reference_code}`,performed_by:'user',performed_at:now});
+  saveStore(store);
+  loadChainDetail(currentChainId);
+}
+
+// ── Delete Chain ──
+function deleteChain() {
+  if (!confirm('Permanently delete this entire transaction chain? This cannot be undone.')) return;
+  const now = new Date().toISOString();
+  const store = getStore();
+  const idx = store.chains.findIndex(c => c.id === currentChainId);
+  if (idx === -1) return;
+  const ref = store.chains[idx].reference_code;
+  store.chains.splice(idx, 1);
+
+  store.auditLog.push({entity_type:'transaction_chain',action:'delete',old_value:ref,performed_by:'user',performed_at:now});
+  saveStore(store);
+  navigate('transactions');
+}
+
 // ── Init ──
-getStore(); // Initialize store with seed data if needed
+getStore();
 loadOverview();
 </script>
 </body>
