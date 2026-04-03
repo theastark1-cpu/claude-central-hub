@@ -177,6 +177,34 @@ tr:hover td { background:var(--surface-2); }
 ::-webkit-scrollbar-track { background:var(--bg); }
 ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
 
+/* Sub-Flow Cards */
+.subflow-card { background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:20px; margin-bottom:16px; position:relative; }
+.subflow-card.sf-completed { border-color:var(--success); }
+.subflow-card.sf-in_transit { border-color:var(--warning); }
+.subflow-card.sf-pending { border-color:var(--text-muted); }
+.subflow-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; }
+.subflow-label { font-size:15px; font-weight:600; }
+.subflow-meta { display:flex; gap:8px; align-items:center; }
+.subflow-amount { font-family:'JetBrains Mono',monospace; font-size:18px; font-weight:700; color:var(--accent); }
+.subflow-actions { display:flex; gap:6px; }
+.subflow-pipeline { display:flex; align-items:center; gap:0; overflow-x:auto; padding:8px 0; }
+.sf-node { flex-shrink:0; background:var(--surface-3); border:1px solid var(--border); border-radius:8px; padding:10px 14px; width:160px; min-height:80px; text-align:center; display:flex; flex-direction:column; justify-content:center; }
+.sf-node.completed { border-color:var(--success); }
+.sf-node.pending { border-color:var(--text-muted); opacity:0.7; }
+.sf-node .sf-entity { font-size:9px; color:var(--text-muted); text-transform:uppercase; margin-bottom:2px; }
+.sf-node .sf-account { font-size:11px; font-weight:600; margin-bottom:4px; }
+.sf-node .sf-amount { font-size:14px; font-weight:700; font-family:'JetBrains Mono',monospace; color:var(--success); }
+.sf-connector { flex-shrink:0; display:flex; flex-direction:column; align-items:center; padding:0 6px; min-width:70px; }
+.sf-connector .sf-arrow { color:var(--text-muted); font-size:18px; }
+.sf-connector .sf-fee { font-size:10px; color:var(--danger); font-family:'JetBrains Mono',monospace; }
+.sf-connector .sf-method-label { font-size:9px; color:var(--text-muted); text-transform:uppercase; }
+.subflow-progress { margin-top:12px; display:flex; align-items:center; gap:12px; }
+.progress-bar { flex:1; height:4px; background:var(--border); border-radius:2px; overflow:hidden; }
+.progress-fill { height:100%; border-radius:2px; transition:width 0.3s; }
+.progress-fill.completed { background:var(--success); }
+.progress-fill.in_transit { background:var(--warning); }
+.progress-fill.pending { background:var(--text-muted); }
+
 /* Hidden */
 .hidden { display:none !important; }
 
@@ -340,6 +368,18 @@ if(sessionStorage.getItem('ct_auth')==='1')document.getElementById('lockScreen')
       </div>
       <div class="pipeline" id="flowPipeline"></div>
     </div>
+    <!-- Sub-Flows Section -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <span class="card-title">Sub-Flows</span>
+          <span id="subflowSummary" style="font-size:12px;color:var(--text-muted);margin-left:12px;"></span>
+        </div>
+        <button class="btn btn-primary" id="addSubflowBtn" onclick="showSubflowModal()">+ Add Sub-Flow</button>
+      </div>
+      <div id="subflowsList"></div>
+    </div>
+
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
       <div class="card">
         <div class="card-header"><span class="card-title">Investor Allocations</span></div>
@@ -502,6 +542,110 @@ if(sessionStorage.getItem('ct_auth')==='1')document.getElementById('lockScreen')
       </div>
       <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;">
         <button type="button" class="btn btn-ghost" onclick="closeModal('addStepModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Add Step</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Add Sub-Flow Modal -->
+<div class="modal-overlay hidden" id="subflowModal">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+      <h3 class="modal-title" style="margin:0;">Add Sub-Flow</h3>
+      <button class="btn btn-ghost" onclick="closeModal('subflowModal')">&times;</button>
+    </div>
+    <div id="subflowRemaining" style="margin-bottom:20px;padding:12px 16px;background:var(--surface-2);border-radius:8px;"></div>
+    <form id="subflowForm" onsubmit="submitSubflow(event)">
+      <div class="form-group">
+        <label class="form-label">Label / Description</label>
+        <input class="form-input" name="sf_label" placeholder="e.g., Lyman Phillips - March distribution" required>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Amount ($)</label>
+          <input class="form-input mono" name="sf_amount" id="sfAmountInput" type="number" step="0.01" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Capital Type</label>
+          <select class="form-select" name="sf_capital_type">
+            <option value="gp_withdrawal">GP Withdrawal</option>
+            <option value="lp_withdrawal">LP Withdrawal</option>
+            <option value="lp_deposit">LP Deposit</option>
+            <option value="cascade_withdrawal">Cascade Withdrawal</option>
+            <option value="tq_withdrawal">TQ Withdrawal</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Destination Account</label>
+          <select class="form-select" name="sf_dest_account_id" id="sfDestSelect" required></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Transfer Method</label>
+          <select class="form-select" name="sf_method">
+            <option value="wire">Wire Transfer</option>
+            <option value="ach">ACH</option>
+            <option value="blockchain">Blockchain</option>
+            <option value="internal">Internal Transfer</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Fee ($)</label>
+          <input class="form-input mono" name="sf_fee" type="number" step="0.01" value="0" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Recipient / Notes (optional)</label>
+          <input class="form-input" name="sf_notes" placeholder="e.g., investor name, purpose">
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('subflowModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Add Sub-Flow</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Sub-Flow Step Modal -->
+<div class="modal-overlay hidden" id="sfStepModal">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+      <h3 class="modal-title" style="margin:0;">Add Step to Sub-Flow</h3>
+      <button class="btn btn-ghost" onclick="closeModal('sfStepModal')">&times;</button>
+    </div>
+    <div id="sfStepTrail" style="margin-bottom:24px;"></div>
+    <form id="sfStepForm" onsubmit="submitSfStep(event)">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Amount Sent ($)</label>
+          <input class="form-input mono" name="sfs_amount" id="sfsAmountInput" type="number" step="0.01" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fee ($)</label>
+          <input class="form-input mono" name="sfs_fee" type="number" step="0.01" value="0" required>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Next Destination Account</label>
+          <select class="form-select" name="sfs_to_account_id" id="sfsDestSelect" required></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Transfer Method</label>
+          <select class="form-select" name="sfs_method">
+            <option value="wire">Wire Transfer</option>
+            <option value="ach">ACH</option>
+            <option value="blockchain">Blockchain</option>
+            <option value="internal">Internal Transfer</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('sfStepModal')">Cancel</button>
         <button type="submit" class="btn btn-primary">Add Step</button>
       </div>
     </form>
@@ -863,6 +1007,74 @@ function loadChainDetail(chainId) {
         </tr>`).join('')}
       </tbody></table>`
     : '<p style="color:var(--text-muted);">No transfer steps yet.</p>';
+
+  // Sub-flows
+  renderSubflows(raw);
+}
+
+function renderSubflows(chain) {
+  const subflows = chain.subflows || [];
+  const totalAllocated = subflows.reduce((s, sf) => s + sf.amount, 0);
+  const remaining = chain.original_amount - totalAllocated;
+  const canAdd = !['completed','cancelled','failed'].includes(chain.status);
+
+  document.getElementById('addSubflowBtn').classList.toggle('hidden', !canAdd);
+  document.getElementById('subflowSummary').innerHTML = subflows.length
+    ? `${subflows.length} sub-flow${subflows.length!==1?'s':''} &middot; <span class="mono">${fmt(totalAllocated)}</span> allocated &middot; <span class="mono" style="color:${remaining>0?'var(--warning)':'var(--success)'}">${fmt(remaining)}</span> remaining`
+    : '';
+
+  if (!subflows.length) {
+    document.getElementById('subflowsList').innerHTML = '<p style="color:var(--text-muted);">No sub-flows yet. Break down the total amount into individual payments.</p>';
+    return;
+  }
+
+  document.getElementById('subflowsList').innerHTML = subflows.map((sf, idx) => {
+    const sfStatus = sf.status || 'pending';
+    const sfSteps = sf.steps || [];
+    const completedSteps = sfSteps.filter(s => s.status === 'completed').length;
+    const progressPct = sfSteps.length ? Math.round((completedSteps / sfSteps.length) * 100) : 0;
+    const netReceived = sfSteps.length ? sfSteps[sfSteps.length-1].amount_received : sf.amount - (sf.fee||0);
+
+    // Build mini pipeline
+    let pipeHtml = '';
+    pipeHtml += `<div class="sf-node ${sfSteps.length ? sfSteps[0].status : 'pending'}"><div class="sf-entity">${acctEntity(sf.from_account_id || chain.source_account_id)}</div><div class="sf-account">${acctName(sf.from_account_id || chain.source_account_id)}</div><div class="sf-amount">${fmt(sf.amount)}</div></div>`;
+
+    if (sfSteps.length) {
+      sfSteps.forEach(s => {
+        pipeHtml += `<div class="sf-connector"><div class="sf-arrow">&#8594;</div><div class="sf-fee">${parseFloat(s.fee)>0?'-'+fmt(s.fee):''}</div><div class="sf-method-label">${s.transfer_method||''}</div></div>`;
+        pipeHtml += `<div class="sf-node ${s.status}"><div class="sf-entity">${acctEntity(s.to_account_id)}</div><div class="sf-account">${acctName(s.to_account_id)}</div><div class="sf-amount">${fmt(s.amount_received)}</div></div>`;
+      });
+    } else {
+      pipeHtml += `<div class="sf-connector"><div class="sf-arrow">&#8594;</div><div class="sf-fee">${parseFloat(sf.fee||0)>0?'-'+fmt(sf.fee):''}</div><div class="sf-method-label">${sf.method||''}</div></div>`;
+      pipeHtml += `<div class="sf-node pending"><div class="sf-entity">${acctEntity(sf.dest_account_id)}</div><div class="sf-account">${acctName(sf.dest_account_id)}</div><div class="sf-amount">${fmt(sf.amount - (sf.fee||0))}</div></div>`;
+    }
+
+    return `<div class="subflow-card sf-${sfStatus}">
+      <div class="subflow-header">
+        <div>
+          <div class="subflow-label">${sf.label}</div>
+          <div style="margin-top:4px;display:flex;gap:8px;align-items:center;">
+            <span class="badge badge-${sfStatus}">${sfStatus.replace('_',' ')}</span>
+            <span class="cap-badge cap-${sf.capital_type||chain.capital_type}">${(sf.capital_type||chain.capital_type).replace('_',' ')}</span>
+            ${sf.notes ? `<span style="font-size:11px;color:var(--text-dim);">${sf.notes}</span>` : ''}
+          </div>
+        </div>
+        <div class="subflow-meta">
+          <span class="subflow-amount">${fmt(sf.amount)}</span>
+          <div class="subflow-actions">
+            ${canAdd && sfStatus!=='completed' ? `<button class="btn btn-ghost" onclick="showSfStepModal(${idx})" style="font-size:11px;padding:4px 10px;">+ Step</button>` : ''}
+            ${canAdd && sfStatus!=='completed' && sfSteps.length > 0 ? `<button class="btn btn-ghost" onclick="completeSubflow(${idx})" style="font-size:11px;padding:4px 10px;color:var(--success);border-color:var(--success);">&#10003;</button>` : ''}
+            ${canAdd ? `<button class="btn btn-ghost" onclick="deleteSubflow(${idx})" style="font-size:11px;padding:4px 10px;color:var(--danger);border-color:var(--danger);">&times;</button>` : ''}
+          </div>
+        </div>
+      </div>
+      <div class="subflow-pipeline">${pipeHtml}</div>
+      ${sfSteps.length ? `<div class="subflow-progress">
+        <div class="progress-bar"><div class="progress-fill ${sfStatus}" style="width:${progressPct}%"></div></div>
+        <span style="font-size:11px;color:var(--text-muted);">${completedSteps}/${sfSteps.length} steps</span>
+      </div>` : ''}
+    </div>`;
+  }).join('');
 }
 
 function renderPipeline(chain) {
@@ -1201,6 +1413,203 @@ function deleteChain() {
   store.auditLog.push({entity_type:'transaction_chain',action:'delete',old_value:ref,performed_by:'user',performed_at:now});
   saveStore(store);
   navigate('transactions');
+}
+
+// ══════════════════════════════════════════════
+// ── Sub-Flow Functions ──
+// ══════════════════════════════════════════════
+let currentSfIndex = null;
+
+function showSubflowModal() {
+  loadAccountOptions();
+  const store = getStore();
+  const chain = store.chains.find(c => c.id === currentChainId);
+  if (!chain) return;
+
+  const subflows = chain.subflows || [];
+  const allocated = subflows.reduce((s, sf) => s + sf.amount, 0);
+  const remaining = chain.original_amount - allocated;
+
+  document.getElementById('subflowRemaining').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div><span style="font-size:12px;color:var(--text-muted);">TOTAL</span><div class="mono" style="font-size:16px;font-weight:700;">${fmt(chain.original_amount)}</div></div>
+      <div><span style="font-size:12px;color:var(--text-muted);">ALLOCATED</span><div class="mono" style="font-size:16px;font-weight:700;color:var(--accent);">${fmt(allocated)}</div></div>
+      <div><span style="font-size:12px;color:var(--text-muted);">REMAINING</span><div class="mono" style="font-size:16px;font-weight:700;color:${remaining>0?'var(--warning)':'var(--success)'};">${fmt(remaining)}</div></div>
+    </div>
+  `;
+  document.getElementById('sfAmountInput').value = remaining > 0 ? remaining.toFixed(2) : '';
+
+  // Populate destination dropdown
+  const opts = buildAccountOptgroups();
+  document.getElementById('sfDestSelect').innerHTML = opts;
+
+  document.getElementById('subflowModal').classList.remove('hidden');
+}
+
+function submitSubflow(e) {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const now = new Date().toISOString();
+  const store = getStore();
+  const chain = store.chains.find(c => c.id === currentChainId);
+  if (!chain) return;
+
+  if (!chain.subflows) chain.subflows = [];
+
+  const amount = parseFloat(fd.get('sf_amount'));
+  const fee = parseFloat(fd.get('sf_fee'));
+
+  chain.subflows.push({
+    id: uid(),
+    label: fd.get('sf_label'),
+    amount: amount,
+    fee: fee,
+    capital_type: fd.get('sf_capital_type'),
+    from_account_id: chain.source_account_id,
+    dest_account_id: fd.get('sf_dest_account_id'),
+    method: fd.get('sf_method'),
+    notes: fd.get('sf_notes') || '',
+    status: 'pending',
+    steps: [],
+    created_at: now,
+  });
+
+  store.auditLog.push({entity_type:'subflow',action:'create',new_value:`${fd.get('sf_label')} (${fmt(amount)}) on ${chain.reference_code}`,performed_by:'user',performed_at:now});
+  saveStore(store);
+
+  closeModal('subflowModal');
+  e.target.reset();
+  loadChainDetail(currentChainId);
+}
+
+function deleteSubflow(idx) {
+  if (!confirm('Delete this sub-flow?')) return;
+  const now = new Date().toISOString();
+  const store = getStore();
+  const chain = store.chains.find(c => c.id === currentChainId);
+  if (!chain || !chain.subflows) return;
+
+  const removed = chain.subflows.splice(idx, 1)[0];
+  store.auditLog.push({entity_type:'subflow',action:'delete',old_value:`${removed.label} (${fmt(removed.amount)})`,performed_by:'user',performed_at:now});
+  saveStore(store);
+  loadChainDetail(currentChainId);
+}
+
+function completeSubflow(idx) {
+  if (!confirm('Mark this sub-flow as completed?')) return;
+  const now = new Date().toISOString();
+  const store = getStore();
+  const chain = store.chains.find(c => c.id === currentChainId);
+  if (!chain || !chain.subflows || !chain.subflows[idx]) return;
+
+  const sf = chain.subflows[idx];
+  sf.status = 'completed';
+  sf.steps.forEach(s => { s.status = 'completed'; s.completed_at = now; });
+
+  store.auditLog.push({entity_type:'subflow',action:'complete',new_value:`${sf.label} completed`,performed_by:'user',performed_at:now});
+  saveStore(store);
+  loadChainDetail(currentChainId);
+}
+
+function showSfStepModal(sfIdx) {
+  currentSfIndex = sfIdx;
+  loadAccountOptions();
+  const store = getStore();
+  const chain = store.chains.find(c => c.id === currentChainId);
+  if (!chain || !chain.subflows) return;
+  const sf = chain.subflows[sfIdx];
+
+  // Build trail
+  let trailHtml = `<div class="form-label" style="margin-bottom:8px;">SUB-FLOW: ${sf.label}</div>`;
+  trailHtml += '<div style="display:flex;align-items:center;gap:0;overflow-x:auto;padding:8px 0;">';
+
+  const sfSteps = sf.steps || [];
+  if (sfSteps.length === 0) {
+    trailHtml += `<div style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;text-align:center;min-width:120px;">
+      <div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;">${acctEntity(sf.from_account_id || chain.source_account_id)}</div>
+      <div style="font-size:12px;font-weight:600;">${acctName(sf.from_account_id || chain.source_account_id)}</div>
+      <div class="mono" style="font-size:14px;color:var(--success);margin-top:4px;">${fmt(sf.amount)}</div>
+    </div>`;
+    trailHtml += `<div style="color:var(--text-muted);padding:0 6px;font-size:18px;">&#8594;</div>`;
+    trailHtml += `<div style="background:var(--surface-3);border:2px dashed var(--accent);border-radius:8px;padding:10px 14px;text-align:center;min-width:120px;">
+      <div style="font-size:11px;color:var(--accent);font-weight:600;">NEXT STEP</div>
+    </div>`;
+    document.getElementById('sfsAmountInput').value = sf.amount.toFixed(2);
+  } else {
+    const first = sfSteps[0];
+    trailHtml += `<div style="background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;text-align:center;min-width:110px;">
+      <div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;">${acctEntity(first.from_account_id)}</div>
+      <div style="font-size:11px;font-weight:600;">${acctName(first.from_account_id)}</div>
+      <div class="mono" style="font-size:13px;color:var(--success);margin-top:2px;">${fmt(first.amount_sent)}</div>
+    </div>`;
+    sfSteps.forEach(s => {
+      trailHtml += `<div style="display:flex;flex-direction:column;align-items:center;padding:0 4px;">
+        <div style="color:var(--text-muted);font-size:16px;">&#8594;</div>
+        <div style="font-size:9px;color:var(--danger);font-family:'JetBrains Mono',monospace;">${parseFloat(s.fee)>0?'-'+fmt(s.fee):''}</div>
+      </div>`;
+      trailHtml += `<div style="background:var(--surface-2);border:1px solid ${s.status==='completed'?'var(--success)':'var(--border)'};border-radius:8px;padding:10px 14px;text-align:center;min-width:110px;">
+        <div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;">${acctEntity(s.to_account_id)}</div>
+        <div style="font-size:11px;font-weight:600;">${acctName(s.to_account_id)}</div>
+        <div class="mono" style="font-size:13px;color:var(--success);margin-top:2px;">${fmt(s.amount_received)}</div>
+      </div>`;
+    });
+    const last = sfSteps[sfSteps.length-1];
+    trailHtml += `<div style="color:var(--text-muted);padding:0 6px;font-size:18px;">&#8594;</div>`;
+    trailHtml += `<div style="background:var(--surface-3);border:2px dashed var(--accent);border-radius:8px;padding:10px 14px;text-align:center;min-width:110px;">
+      <div style="font-size:11px;color:var(--accent);font-weight:600;">NEXT STEP</div>
+    </div>`;
+    document.getElementById('sfsAmountInput').value = last.amount_received.toFixed(2);
+  }
+
+  trailHtml += '</div>';
+  document.getElementById('sfStepTrail').innerHTML = trailHtml;
+
+  const opts = buildAccountOptgroups();
+  document.getElementById('sfsDestSelect').innerHTML = opts;
+
+  document.getElementById('sfStepModal').classList.remove('hidden');
+}
+
+function submitSfStep(e) {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const now = new Date().toISOString();
+  const store = getStore();
+  const chain = store.chains.find(c => c.id === currentChainId);
+  if (!chain || !chain.subflows || currentSfIndex === null) return;
+
+  const sf = chain.subflows[currentSfIndex];
+  if (!sf.steps) sf.steps = [];
+
+  const existingSteps = sf.steps.sort((a,b) => a.step_order - b.step_order);
+  let fromAccountId, nextOrder;
+  if (existingSteps.length) {
+    const last = existingSteps[existingSteps.length-1];
+    fromAccountId = last.to_account_id;
+    nextOrder = last.step_order + 1;
+  } else {
+    fromAccountId = sf.from_account_id || chain.source_account_id;
+    nextOrder = 1;
+  }
+
+  const amountSent = parseFloat(fd.get('sfs_amount'));
+  const fee = parseFloat(fd.get('sfs_fee'));
+
+  sf.steps.push({
+    id: uid(), step_order: nextOrder,
+    from_account_id: fromAccountId, to_account_id: fd.get('sfs_to_account_id'),
+    amount_sent: amountSent, fee: fee, amount_received: amountSent - fee,
+    transfer_method: fd.get('sfs_method'),
+    status: 'pending', initiated_at: now, completed_at: null,
+  });
+  sf.status = 'in_transit';
+
+  store.auditLog.push({entity_type:'subflow_step',action:'create',new_value:`Step ${nextOrder} on ${sf.label}`,performed_by:'user',performed_at:now});
+  saveStore(store);
+
+  closeModal('sfStepModal');
+  e.target.reset();
+  loadChainDetail(currentChainId);
 }
 
 // ── Init ──
