@@ -485,22 +485,19 @@ const FALLBACK_ENTITIES = [
   {id:"e-ac",name:"Armada Capital Group LLP",entity_type:"llp"},
   {id:"e-rk",name:"Royal KKS",entity_type:"group"},
   {id:"e-ca",name:"Cascade",entity_type:"group"},
-  {id:"e-tw",name:"Individual Trust Wallets",entity_type:"trust"},
   {id:"e-ex",name:"External",entity_type:"external"},
 ];
 const FALLBACK_ACCOUNTS = [
-  {id:"a-ap-brk",entity_id:"e-ap",name:"Armada Prime Brokerage",account_type:"brokerage",provider:"Schwab",account_number_last4:null},
-  {id:"a-ap-bnk",entity_id:"e-ap",name:"Armada Prime Bank",account_type:"bank",provider:"Chase",account_number_last4:"4521"},
+  {id:"a-ap-brk",entity_id:"e-ap",name:"Armada Prime Brokerage",account_type:"brokerage",provider:"Catalyst",account_number_last4:null},
+  {id:"a-ap-bnk",entity_id:"e-ap",name:"Armada Prime Bank",account_type:"bank",provider:"Grasshopper",account_number_last4:"4521"},
   {id:"a-ap-tw",entity_id:"e-ap",name:"Armada Prime Trust Wallet",account_type:"crypto",provider:"Trust Wallet",account_number_last4:null},
-  {id:"a-ac-bnk",entity_id:"e-ac",name:"Armada Capital Bank",account_type:"bank",provider:"Chase",account_number_last4:"8832"},
-  {id:"a-ac-brk",entity_id:"e-ac",name:"Armada Capital Brokerage",account_type:"brokerage",provider:"Schwab",account_number_last4:null},
+  {id:"a-ac-bnk",entity_id:"e-ac",name:"Armada Capital Bank",account_type:"bank",provider:"Grasshopper",account_number_last4:"8832"},
+  {id:"a-ac-brk",entity_id:"e-ac",name:"Armada Capital Brokerage",account_type:"brokerage",provider:"Catalyst",account_number_last4:null},
+  {id:"a-ac-tw",entity_id:"e-ac",name:"Armada Capital Trust Wallet",account_type:"crypto",provider:"Trust Wallet",account_number_last4:null},
   {id:"a-rk-cb",entity_id:"e-rk",name:"Royal KKS Coinbase",account_type:"crypto",provider:"Coinbase",account_number_last4:null},
   {id:"a-rk-bnk",entity_id:"e-rk",name:"Royal KKS Bank",account_type:"bank",provider:"Wells Fargo",account_number_last4:null},
-  {id:"a-ca-bnk",entity_id:"e-ca",name:"Cascade Bank",account_type:"bank",provider:"Bank of America",account_number_last4:null},
-  {id:"a-tw-a",entity_id:"e-tw",name:"Trust Wallet Alpha",account_type:"crypto",provider:"Trust Wallet",account_number_last4:null},
-  {id:"a-tw-b",entity_id:"e-tw",name:"Trust Wallet Beta",account_type:"crypto",provider:"Trust Wallet",account_number_last4:null},
+  {id:"a-ca-tw",entity_id:"e-ca",name:"Cascade Trust Wallet",account_type:"crypto",provider:"Trust Wallet",account_number_last4:null},
   {id:"a-ex-bnk",entity_id:"e-ex",name:"External Recipient",account_type:"bank",provider:null,account_number_last4:null},
-  {id:"a-ex-cry",entity_id:"e-ex",name:"External Crypto Wallet",account_type:"crypto",provider:null,account_number_last4:null},
 ];
 
 // ── API helpers ──

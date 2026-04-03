@@ -21,25 +21,22 @@ def seed_if_empty():
         armada_capital = Entity(name="Armada Capital Group LLP", entity_type="llp")
         royal_kks = Entity(name="Royal KKS", entity_type="group")
         cascade = Entity(name="Cascade", entity_type="group")
-        trust_wallets = Entity(name="Individual Trust Wallets", entity_type="trust")
         external = Entity(name="External", entity_type="external")
-        for e in [armada_prime, armada_capital, royal_kks, cascade, trust_wallets, external]:
+        for e in [armada_prime, armada_capital, royal_kks, cascade, external]:
             db.add(e)
         db.flush()
 
-        ap_brokerage = Account(entity_id=armada_prime.id, name="Armada Prime Brokerage", account_type="brokerage", provider="Schwab")
-        ap_bank = Account(entity_id=armada_prime.id, name="Armada Prime Bank", account_type="bank", provider="Chase", account_number_last4="4521")
+        ap_brokerage = Account(entity_id=armada_prime.id, name="Armada Prime Brokerage", account_type="brokerage", provider="Catalyst")
+        ap_bank = Account(entity_id=armada_prime.id, name="Armada Prime Bank", account_type="bank", provider="Grasshopper", account_number_last4="4521")
         ap_wallet = Account(entity_id=armada_prime.id, name="Armada Prime Trust Wallet", account_type="crypto", provider="Trust Wallet")
-        ac_bank = Account(entity_id=armada_capital.id, name="Armada Capital Bank", account_type="bank", provider="Chase", account_number_last4="8832")
-        ac_brokerage = Account(entity_id=armada_capital.id, name="Armada Capital Brokerage", account_type="brokerage", provider="Schwab")
+        ac_bank = Account(entity_id=armada_capital.id, name="Armada Capital Bank", account_type="bank", provider="Grasshopper", account_number_last4="8832")
+        ac_brokerage = Account(entity_id=armada_capital.id, name="Armada Capital Brokerage", account_type="brokerage", provider="Catalyst")
+        ac_wallet = Account(entity_id=armada_capital.id, name="Armada Capital Trust Wallet", account_type="crypto", provider="Trust Wallet")
         rkks_coinbase = Account(entity_id=royal_kks.id, name="Royal KKS Coinbase", account_type="crypto", provider="Coinbase")
         rkks_bank = Account(entity_id=royal_kks.id, name="Royal KKS Bank", account_type="bank", provider="Wells Fargo")
-        cascade_bank = Account(entity_id=cascade.id, name="Cascade Bank", account_type="bank", provider="Bank of America")
-        tw_1 = Account(entity_id=trust_wallets.id, name="Trust Wallet Alpha", account_type="crypto", provider="Trust Wallet")
-        tw_2 = Account(entity_id=trust_wallets.id, name="Trust Wallet Beta", account_type="crypto", provider="Trust Wallet")
+        cascade_tw = Account(entity_id=cascade.id, name="Cascade Trust Wallet", account_type="crypto", provider="Trust Wallet")
         ext_recipient = Account(entity_id=external.id, name="External Recipient", account_type="bank", is_external=True)
-        ext_crypto = Account(entity_id=external.id, name="External Crypto Wallet", account_type="crypto", is_external=True)
-        for a in [ap_brokerage, ap_bank, ap_wallet, ac_bank, ac_brokerage, rkks_coinbase, rkks_bank, cascade_bank, tw_1, tw_2, ext_recipient, ext_crypto]:
+        for a in [ap_brokerage, ap_bank, ap_wallet, ac_bank, ac_brokerage, ac_wallet, rkks_coinbase, rkks_bank, cascade_tw, ext_recipient]:
             db.add(a)
         db.flush()
 
