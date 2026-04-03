@@ -89,10 +89,11 @@ tr:hover td { background:var(--surface-2); }
 
 /* Capital Type Badges */
 .cap-badge { display:inline-block; padding:3px 8px; border-radius:4px; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
-.cap-lp_capital { background:var(--cyan-bg); color:var(--cyan); }
-.cap-gp_capital { background:var(--purple-bg); color:var(--purple); }
-.cap-fee_revenue { background:var(--warning-bg); color:var(--warning); }
-.cap-operating_funds { background:rgba(100,116,139,0.15); color:var(--text-dim); }
+.cap-gp_withdrawal { background:var(--purple-bg); color:var(--purple); }
+.cap-lp_withdrawal { background:var(--danger-bg); color:var(--danger); }
+.cap-lp_deposit { background:var(--success-bg); color:var(--success); }
+.cap-cascade_withdrawal { background:var(--warning-bg); color:var(--warning); }
+.cap-tq_withdrawal { background:var(--cyan-bg); color:var(--cyan); }
 
 /* Flow Pipeline */
 .pipeline { display:flex; align-items:center; gap:0; overflow-x:auto; padding:24px 0; }
@@ -390,10 +391,11 @@ if(sessionStorage.getItem('ct_auth')==='1')document.getElementById('lockScreen')
         <div class="form-group">
           <label class="form-label">Capital Type</label>
           <select class="form-select" name="capital_type" required>
-            <option value="lp_capital">LP Capital</option>
-            <option value="gp_capital">GP Capital</option>
-            <option value="fee_revenue">Fee Revenue</option>
-            <option value="operating_funds">Operating Funds</option>
+            <option value="gp_withdrawal">GP Withdrawal</option>
+            <option value="lp_withdrawal">LP Withdrawal</option>
+            <option value="lp_deposit">LP Deposit</option>
+            <option value="cascade_withdrawal">Cascade Withdrawal</option>
+            <option value="tq_withdrawal">TQ Withdrawal</option>
           </select>
         </div>
       </div>
