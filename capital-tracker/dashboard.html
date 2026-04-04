@@ -722,7 +722,11 @@ if(sessionStorage.getItem('ct_auth')==='1')document.getElementById('lockScreen')
             <option value="completed">Completed</option>
           </select>
         </div>
-        <div></div>
+        <div class="form-group">
+          <label class="form-label">Master Fee ($)</label>
+          <input class="form-input mono" name="ec_fee" id="ecFee" type="number" step="0.01" min="0" value="0" placeholder="0.00">
+          <span style="font-size:11px;color:var(--text-muted);margin-top:4px;display:block;">Fee deducted from the total amount at the transaction level</span>
+        </div>
       </div>
       <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;">
         <button type="button" class="btn btn-ghost" onclick="closeModal('editChainModal')">Cancel</button>
@@ -1124,12 +1128,13 @@ function loadChainDetail(chainId) {
   const canAddStep = !['completed','cancelled','failed'].includes(chain.status);
   document.getElementById('addStepBtn').classList.toggle('hidden', !canAddStep);
   document.getElementById('completeChainBtn').classList.toggle('hidden', !canAddStep || chain.steps.length === 0);
-  document.getElementById('editChainBtn').classList.toggle('hidden', ['completed'].includes(chain.status));
+  // Always show edit button regardless of status
 
-  // Calculate total fees from steps + sub-flows
+  // Calculate total fees from master + steps + sub-flows
+  const masterFee = raw.fee || 0;
   const stepFees = (raw.steps||[]).reduce((s,st) => s + (st.fee||0), 0);
   const sfFees = (raw.subflows||[]).reduce((s,sf) => s + (sf.fee||0) + (sf.steps||[]).reduce((ss,st) => ss + (st.fee||0), 0), 0);
-  const totalFees = stepFees + sfFees;
+  const totalFees = masterFee + stepFees + sfFees;
   const netAmount = chain.original_amount - totalFees;
 
   document.getElementById('chainKPIs').innerHTML = `
@@ -1868,6 +1873,7 @@ function showEditChainModal() {
   document.getElementById('ecAmount').value = chain.original_amount;
   document.getElementById('ecCapitalType').value = chain.capital_type;
   document.getElementById('ecStatus').value = chain.status;
+  document.getElementById('ecFee').value = chain.fee || 0;
 
   // Set entity radio
   document.querySelectorAll('input[name="ec_entity_tag"]').forEach(r => {
@@ -1901,6 +1907,7 @@ function submitEditChain(e) {
   chain.source_account_id = fd.get('ec_source_account_id');
   chain.destination_account_id = fd.get('ec_dest_account_id') || null;
   chain.status = fd.get('ec_status');
+  chain.fee = parseFloat(fd.get('ec_fee')) || 0;
 
   store.auditLog.push({entity_type:'transaction_chain',action:'update',old_value:oldDesc,new_value:chain.description,field_name:'edited',performed_by:'user',performed_at:now});
   saveStore(store);
