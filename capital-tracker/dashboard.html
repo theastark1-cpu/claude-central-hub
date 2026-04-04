@@ -1179,8 +1179,9 @@ function renderSubflows(chain) {
   const masterFee = chain.fee || 0;
   const receivedAmount = chain.original_amount - masterFee;
   const totalAllocated = subflows.reduce((s, sf) => s + sf.amount, 0);
-  const remaining = receivedAmount - totalAllocated;
   const sfFees = subflows.reduce((s, sf) => s + (sf.fee||0) + (sf.steps||[]).reduce((ss,st) => ss+(st.fee||0), 0), 0);
+  const totalUsed = totalAllocated + sfFees;
+  const remaining = receivedAmount - totalUsed;
   const canAdd = !['completed','cancelled','failed'].includes(chain.status);
 
   document.getElementById('addSubflowBtn').classList.toggle('hidden', !canAdd);
@@ -1194,11 +1195,10 @@ function renderSubflows(chain) {
   // Build tree visualization
   let html = '';
 
-  // Remaining bar — based on received amount (after master fee), sub-flow fees shown separately
+  // Remaining bar — allocated includes sub-flow amounts + their fees
   html += `<div class="sf-remaining-bar">
     <div class="sf-rb-item"><div class="sf-rb-label">Received</div><div class="sf-rb-value" style="color:var(--accent);">${fmt(receivedAmount)}</div></div>
-    <div class="sf-rb-item"><div class="sf-rb-label">Sub-Flow Fees</div><div class="sf-rb-value" style="color:var(--danger);">${sfFees > 0 ? '-'+fmt(sfFees) : fmt(0)}</div></div>
-    <div class="sf-rb-item"><div class="sf-rb-label">Allocated</div><div class="sf-rb-value" style="color:var(--text);">${fmt(totalAllocated)}</div></div>
+    <div class="sf-rb-item"><div class="sf-rb-label">Allocated + Fees</div><div class="sf-rb-value" style="color:var(--text);">${fmt(totalUsed)}</div></div>
     <div class="sf-rb-item"><div class="sf-rb-label">Unallocated</div><div class="sf-rb-value" style="color:${remaining>0.01?'var(--warning)':'var(--success)'};">${fmt(remaining)}</div></div>
     <div class="sf-rb-item"><div class="sf-rb-label">Sub-Flows</div><div class="sf-rb-value">${subflows.length}</div></div>
   </div>`;
@@ -1211,7 +1211,7 @@ function renderSubflows(chain) {
     <div class="sf-trunk-node">
       <div class="sf-trunk-entity">${acctEntity(chain.source_account_id)}</div>
       <div class="sf-trunk-account">${acctName(chain.source_account_id)}</div>
-      <div class="sf-trunk-amount">${fmt(chain.original_amount)}</div>
+      <div class="sf-trunk-amount">${fmt(receivedAmount)}</div>
       <div class="sf-trunk-sub">${subflows.length} payment${subflows.length!==1?'s':''}</div>
     </div>
   </div>`;
