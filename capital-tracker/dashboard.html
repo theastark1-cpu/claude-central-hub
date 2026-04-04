@@ -508,6 +508,18 @@ if(sessionStorage.getItem('ct_auth')==='1')document.getElementById('lockScreen')
           </select>
         </div>
       </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Assign to Investor (optional)</label>
+          <select class="form-select" name="investor_id" id="newChainInvestorSelect">
+            <option value="">-- No investor --</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Allocation % (optional)</label>
+          <input class="form-input mono" name="allocation_pct" type="number" step="0.01" min="0" max="100" placeholder="e.g. 100">
+        </div>
+      </div>
       <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;">
         <button type="button" class="btn btn-ghost" onclick="closeModal('newChainModal')">Cancel</button>
         <button type="submit" class="btn btn-primary">Create Transaction</button>
@@ -1495,7 +1507,8 @@ function loadInvestors() {
           <td class="mono">${fmt(allocated)}</td>
           <td>
             <div style="display:flex;gap:6px;">
-              <button class="btn btn-ghost" onclick="showAssignTxModal('${inv.id}')" title="Assign transaction" style="font-size:11px;">+ Assign Tx</button>
+              <button class="btn btn-ghost" onclick="showNewChainModal('${inv.id}')" title="Create new transaction for this investor" style="font-size:11px;">+ Create Tx</button>
+              <button class="btn btn-ghost" onclick="showAssignTxModal('${inv.id}')" title="Assign existing transaction" style="font-size:11px;">+ Assign</button>
               <button class="btn btn-ghost" onclick="showEditInvestorModal('${inv.id}')" title="Edit">&#9998;</button>
               <button class="btn btn-ghost" onclick="deleteInvestor('${inv.id}')" title="Delete" style="color:var(--danger);border-color:var(--danger);">&times;</button>
             </div>
@@ -1631,8 +1644,13 @@ function loadAccountOptions() {
   document.getElementById('stepDestSelect').innerHTML = opts;
 }
 
-function showNewChainModal() {
+function showNewChainModal(preSelectInvestorId) {
   loadAccountOptions();
+  // Populate investor dropdown
+  const allInv = getAllInvestors();
+  const invSelect = document.getElementById('newChainInvestorSelect');
+  invSelect.innerHTML = '<option value="">-- No investor --</option>' + allInv.map(i => `<option value="${i.id}">${i.name}</option>`).join('');
+  if (preSelectInvestorId) invSelect.value = preSelectInvestorId;
   document.getElementById('newChainModal').classList.remove('hidden');
 }
 
@@ -1704,15 +1722,29 @@ function submitNewChain(e) {
   const refCode = `TXN-2026-${refNum}`;
   store.nextRef++;
 
+  const amount = parseFloat(fd.get('original_amount'));
+  const investorId = fd.get('investor_id') || null;
+  const allocPct = fd.get('allocation_pct') ? parseFloat(fd.get('allocation_pct')) : null;
+
+  const allocations = [];
+  if (investorId) {
+    allocations.push({
+      investor_id: investorId,
+      allocation_amount: amount,
+      allocation_pct: allocPct,
+      source_entity_name: acctEntity(fd.get('source_account_id'))
+    });
+  }
+
   const chain = {
     id: uid(), reference_code: refCode, description: description,
-    original_amount: parseFloat(fd.get('original_amount')),
+    original_amount: amount,
     total_fees: 0, final_amount: null, currency: 'USD',
     source_account_id: fd.get('source_account_id'),
     destination_account_id: fd.get('destination_account_id') || null,
     capital_type: fd.get('capital_type'), status: 'pending',
     initiated_at: now, completed_at: null, created_at: now,
-    steps: [], allocations: [],
+    steps: [], allocations: allocations,
   };
 
   store.chains.push(chain);
