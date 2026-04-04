@@ -361,6 +361,7 @@ if(sessionStorage.getItem('ct_auth')==='1')document.getElementById('lockScreen')
           <p id="chainDescription"></p>
         </div>
         <div style="margin-left:auto;display:flex;gap:8px;">
+          <button class="btn btn-ghost" id="editChainBtn" onclick="showEditChainModal()">&#9998; Edit</button>
           <button class="btn btn-success hidden" id="completeChainBtn" onclick="completeChain()">&#10003; Complete Chain</button>
           <button class="btn btn-ghost" id="deleteChainBtn" onclick="deleteChain()" style="color:var(--danger);border-color:var(--danger);">&#10005; Delete Chain</button>
         </div>
@@ -653,6 +654,79 @@ if(sessionStorage.getItem('ct_auth')==='1')document.getElementById('lockScreen')
       <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;">
         <button type="button" class="btn btn-ghost" onclick="closeModal('sfStepModal')">Cancel</button>
         <button type="submit" class="btn btn-primary">Add Step</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Chain Modal -->
+<div class="modal-overlay hidden" id="editChainModal">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+      <h3 class="modal-title" style="margin:0;">Edit Transaction</h3>
+      <button class="btn btn-ghost" onclick="closeModal('editChainModal')">&times;</button>
+    </div>
+    <form id="editChainForm" onsubmit="submitEditChain(event)">
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <input class="form-input" name="ec_description" id="ecDescription">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Entity</label>
+        <div style="display:flex;gap:8px;">
+          <label style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;">
+            <input type="radio" name="ec_entity_tag" value="Armada Prime" style="accent-color:var(--accent);"> Armada Prime
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;">
+            <input type="radio" name="ec_entity_tag" value="Armada Capital" style="accent-color:var(--purple);"> Armada Capital
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px;">
+            <input type="radio" name="ec_entity_tag" value="Cascade" style="accent-color:var(--warning);"> Cascade
+          </label>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Original Amount ($)</label>
+          <input class="form-input mono" name="ec_amount" id="ecAmount" type="number" step="0.01" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Capital Type</label>
+          <select class="form-select" name="ec_capital_type" id="ecCapitalType">
+            <option value="gp_withdrawal">GP Withdrawal</option>
+            <option value="lp_withdrawal">LP Withdrawal</option>
+            <option value="lp_deposit">LP Deposit</option>
+            <option value="cascade_withdrawal">Cascade Withdrawal</option>
+            <option value="tq_withdrawal">TQ Withdrawal</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Source Account</label>
+          <select class="form-select" name="ec_source_account_id" id="ecSourceSelect" required></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Destination Account (optional)</label>
+          <select class="form-select" name="ec_dest_account_id" id="ecDestSelect">
+            <option value="">-- Not specified --</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-select" name="ec_status" id="ecStatus">
+            <option value="pending">Pending</option>
+            <option value="in_transit">In Transit</option>
+            <option value="completed">Completed</option>
+          </select>
+        </div>
+        <div></div>
+      </div>
+      <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('editChainModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
       </div>
     </form>
   </div>
@@ -1050,14 +1124,21 @@ function loadChainDetail(chainId) {
   const canAddStep = !['completed','cancelled','failed'].includes(chain.status);
   document.getElementById('addStepBtn').classList.toggle('hidden', !canAddStep);
   document.getElementById('completeChainBtn').classList.toggle('hidden', !canAddStep || chain.steps.length === 0);
+  document.getElementById('editChainBtn').classList.toggle('hidden', ['completed'].includes(chain.status));
+
+  // Calculate total fees from steps + sub-flows
+  const stepFees = (raw.steps||[]).reduce((s,st) => s + (st.fee||0), 0);
+  const sfFees = (raw.subflows||[]).reduce((s,sf) => s + (sf.fee||0) + (sf.steps||[]).reduce((ss,st) => ss + (st.fee||0), 0), 0);
+  const totalFees = stepFees + sfFees;
+  const netAmount = chain.original_amount - totalFees;
 
   document.getElementById('chainKPIs').innerHTML = `
     <div class="kpi-card"><div class="kpi-label">Original Amount</div><div class="kpi-value accent">${fmt(chain.original_amount)}</div></div>
-    <div class="kpi-card"><div class="kpi-label">Total Fees</div><div class="kpi-value negative">${fmt(chain.total_fees)}</div></div>
-    <div class="kpi-card"><div class="kpi-label">Final Amount</div><div class="kpi-value positive">${chain.final_amount ? fmt(chain.final_amount) : '—'}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Total Fees</div><div class="kpi-value negative">${totalFees > 0 ? '-'+fmt(totalFees) : fmt(0)}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Net Amount</div><div class="kpi-value positive">${fmt(netAmount)}</div></div>
     <div class="kpi-card"><div class="kpi-label">Status</div><div style="margin-top:8px;"><span class="badge badge-${chain.status}">${chain.status.replace('_',' ')}</span></div></div>
     <div class="kpi-card"><div class="kpi-label">Capital Type</div><div style="margin-top:8px;"><span class="cap-badge cap-${chain.capital_type}">${chain.capital_type.replace('_',' ')}</span></div></div>
-    <div class="kpi-card"><div class="kpi-label">Steps</div><div class="kpi-value">${chain.steps.length}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Sub-Flows</div><div class="kpi-value">${(raw.subflows||[]).length}</div></div>
   `;
 
   renderPipeline(chain);
@@ -1109,11 +1190,13 @@ function renderSubflows(chain) {
   let html = '';
 
   // Remaining bar
+  const netAfterFees = chain.original_amount - totalFees;
   html += `<div class="sf-remaining-bar">
     <div class="sf-rb-item"><div class="sf-rb-label">Total</div><div class="sf-rb-value" style="color:var(--accent);">${fmt(chain.original_amount)}</div></div>
+    <div class="sf-rb-item"><div class="sf-rb-label">Fees</div><div class="sf-rb-value" style="color:var(--danger);">${totalFees > 0 ? '-'+fmt(totalFees) : fmt(0)}</div></div>
+    <div class="sf-rb-item"><div class="sf-rb-label">Net Received</div><div class="sf-rb-value" style="color:var(--success);">${fmt(netAfterFees)}</div></div>
     <div class="sf-rb-item"><div class="sf-rb-label">Allocated</div><div class="sf-rb-value" style="color:var(--text);">${fmt(totalAllocated)}</div></div>
-    <div class="sf-rb-item"><div class="sf-rb-label">Fees</div><div class="sf-rb-value" style="color:var(--danger);">${fmt(totalFees)}</div></div>
-    <div class="sf-rb-item"><div class="sf-rb-label">Remaining</div><div class="sf-rb-value" style="color:${remaining>0.01?'var(--warning)':'var(--success)'};">${fmt(remaining)}</div></div>
+    <div class="sf-rb-item"><div class="sf-rb-label">Unallocated</div><div class="sf-rb-value" style="color:${remaining>0.01?'var(--warning)':'var(--success)'};">${fmt(remaining)}</div></div>
     <div class="sf-rb-item"><div class="sf-rb-label">Sub-Flows</div><div class="sf-rb-value">${subflows.length}</div></div>
   </div>`;
 
@@ -1767,6 +1850,62 @@ function submitSfStep(e) {
 
   closeModal('sfStepModal');
   e.target.reset();
+  loadChainDetail(currentChainId);
+}
+
+// ── Edit Chain ──
+function showEditChainModal() {
+  const store = getStore();
+  const chain = store.chains.find(c => c.id === currentChainId);
+  if (!chain) return;
+
+  // Parse entity tag and raw description
+  const match = chain.description && chain.description.match(/^\[([^\]]+)\]\s*(.*)/);
+  const entityTag = match ? match[1] : '';
+  const rawDesc = match ? match[2] : (chain.description || '');
+
+  document.getElementById('ecDescription').value = rawDesc;
+  document.getElementById('ecAmount').value = chain.original_amount;
+  document.getElementById('ecCapitalType').value = chain.capital_type;
+  document.getElementById('ecStatus').value = chain.status;
+
+  // Set entity radio
+  document.querySelectorAll('input[name="ec_entity_tag"]').forEach(r => {
+    r.checked = r.value === entityTag;
+  });
+
+  // Populate account dropdowns
+  const opts = buildAccountOptgroups();
+  document.getElementById('ecSourceSelect').innerHTML = opts;
+  document.getElementById('ecDestSelect').innerHTML = '<option value="">-- Not specified --</option>' + opts;
+  document.getElementById('ecSourceSelect').value = chain.source_account_id || '';
+  document.getElementById('ecDestSelect').value = chain.destination_account_id || '';
+
+  document.getElementById('editChainModal').classList.remove('hidden');
+}
+
+function submitEditChain(e) {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const now = new Date().toISOString();
+  const store = getStore();
+  const chain = store.chains.find(c => c.id === currentChainId);
+  if (!chain) return;
+
+  const oldDesc = chain.description;
+  const entityTag = fd.get('ec_entity_tag') || '';
+  const rawDesc = fd.get('ec_description') || '';
+  chain.description = entityTag ? `[${entityTag}] ${rawDesc}` : rawDesc;
+  chain.original_amount = parseFloat(fd.get('ec_amount'));
+  chain.capital_type = fd.get('ec_capital_type');
+  chain.source_account_id = fd.get('ec_source_account_id');
+  chain.destination_account_id = fd.get('ec_dest_account_id') || null;
+  chain.status = fd.get('ec_status');
+
+  store.auditLog.push({entity_type:'transaction_chain',action:'update',old_value:oldDesc,new_value:chain.description,field_name:'edited',performed_by:'user',performed_at:now});
+  saveStore(store);
+
+  closeModal('editChainModal');
   loadChainDetail(currentChainId);
 }
 
