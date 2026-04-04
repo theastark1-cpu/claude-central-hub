@@ -658,6 +658,78 @@ if(sessionStorage.getItem('ct_auth')==='1')document.getElementById('lockScreen')
   </div>
 </div>
 
+<!-- Edit Sub-Flow Modal -->
+<div class="modal-overlay hidden" id="editSfModal">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+      <h3 class="modal-title" style="margin:0;">Edit Sub-Flow</h3>
+      <button class="btn btn-ghost" onclick="closeModal('editSfModal')">&times;</button>
+    </div>
+    <form id="editSfForm" onsubmit="submitEditSubflow(event)">
+      <div class="form-group">
+        <label class="form-label">Label / Description</label>
+        <input class="form-input" name="esf_label" id="esfLabel" required>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Amount ($)</label>
+          <input class="form-input mono" name="esf_amount" id="esfAmount" type="number" step="0.01" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Capital Type</label>
+          <select class="form-select" name="esf_capital_type" id="esfCapitalType">
+            <option value="gp_withdrawal">GP Withdrawal</option>
+            <option value="lp_withdrawal">LP Withdrawal</option>
+            <option value="lp_deposit">LP Deposit</option>
+            <option value="cascade_withdrawal">Cascade Withdrawal</option>
+            <option value="tq_withdrawal">TQ Withdrawal</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Destination Account</label>
+          <select class="form-select" name="esf_dest_account_id" id="esfDestSelect" required></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Transfer Method</label>
+          <select class="form-select" name="esf_method" id="esfMethod">
+            <option value="wire">Wire Transfer</option>
+            <option value="ach">ACH</option>
+            <option value="blockchain">Blockchain</option>
+            <option value="internal">Internal Transfer</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Fee ($)</label>
+          <input class="form-input mono" name="esf_fee" id="esfFee" type="number" step="0.01" value="0" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Recipient / Notes (optional)</label>
+          <input class="form-input" name="esf_notes" id="esfNotes">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-select" name="esf_status" id="esfStatus">
+            <option value="pending">Pending</option>
+            <option value="in_transit">In Transit</option>
+            <option value="completed">Completed</option>
+          </select>
+        </div>
+        <div></div>
+      </div>
+      <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('editSfModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
 // ══════════════════════════════════════════════════════════════
 // CAPITAL TRACKER — Fully offline localStorage-powered engine
@@ -1094,6 +1166,7 @@ function renderSubflows(chain) {
         </div>
       </div>
       <div class="sf-branch-actions">
+        ${canAdd ? `<button class="btn btn-ghost" onclick="showEditSubflowModal(${idx})" title="Edit">&#9998;</button>` : ''}
         ${canAdd && sfStatus!=='completed' ? `<button class="btn btn-ghost" onclick="showSfStepModal(${idx})" title="Add step">+ Step</button>` : ''}
         ${canAdd && sfStatus!=='completed' && stepCount > 0 ? `<button class="btn btn-ghost" onclick="completeSubflow(${idx})" style="color:var(--success);border-color:var(--success);" title="Complete">&#10003;</button>` : ''}
         ${canAdd ? `<button class="btn btn-ghost" onclick="deleteSubflow(${idx})" style="color:var(--danger);border-color:var(--danger);" title="Delete">&times;</button>` : ''}
@@ -1521,6 +1594,62 @@ function deleteSubflow(idx) {
   const removed = chain.subflows.splice(idx, 1)[0];
   store.auditLog.push({entity_type:'subflow',action:'delete',old_value:`${removed.label} (${fmt(removed.amount)})`,performed_by:'user',performed_at:now});
   saveStore(store);
+  loadChainDetail(currentChainId);
+}
+
+let editingSfIndex = null;
+
+function showEditSubflowModal(idx) {
+  const store = getStore();
+  const chain = store.chains.find(c => c.id === currentChainId);
+  if (!chain || !chain.subflows || !chain.subflows[idx]) return;
+
+  editingSfIndex = idx;
+  const sf = chain.subflows[idx];
+
+  // Populate the edit form
+  document.getElementById('esfLabel').value = sf.label || '';
+  document.getElementById('esfAmount').value = sf.amount || 0;
+  document.getElementById('esfFee').value = sf.fee || 0;
+  document.getElementById('esfNotes').value = sf.notes || '';
+  document.getElementById('esfCapitalType').value = sf.capital_type || chain.capital_type;
+  document.getElementById('esfMethod').value = sf.method || 'wire';
+  document.getElementById('esfStatus').value = sf.status || 'pending';
+
+  // Populate destination dropdown and select current
+  const opts = buildAccountOptgroups();
+  document.getElementById('esfDestSelect').innerHTML = opts;
+  document.getElementById('esfDestSelect').value = sf.dest_account_id || '';
+
+  document.getElementById('editSfModal').classList.remove('hidden');
+}
+
+function submitEditSubflow(e) {
+  e.preventDefault();
+  if (editingSfIndex === null) return;
+  const fd = new FormData(e.target);
+  const now = new Date().toISOString();
+  const store = getStore();
+  const chain = store.chains.find(c => c.id === currentChainId);
+  if (!chain || !chain.subflows || !chain.subflows[editingSfIndex]) return;
+
+  const sf = chain.subflows[editingSfIndex];
+  const oldLabel = sf.label;
+
+  sf.label = fd.get('esf_label');
+  sf.amount = parseFloat(fd.get('esf_amount'));
+  sf.fee = parseFloat(fd.get('esf_fee'));
+  sf.capital_type = fd.get('esf_capital_type');
+  sf.dest_account_id = fd.get('esf_dest_account_id');
+  sf.method = fd.get('esf_method');
+  sf.notes = fd.get('esf_notes') || '';
+  sf.status = fd.get('esf_status');
+
+  store.auditLog.push({entity_type:'subflow',action:'update',old_value:oldLabel,new_value:`${sf.label} (${fmt(sf.amount)})`,performed_by:'user',performed_at:now});
+  saveStore(store);
+
+  closeModal('editSfModal');
+  editingSfIndex = null;
   loadChainDetail(currentChainId);
 }
 
