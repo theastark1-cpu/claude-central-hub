@@ -203,6 +203,7 @@ tr:hover td { background:var(--surface-2); }
 .sf-branch-dest .sf-dest-account { font-size:11px; color:var(--text-dim); margin-bottom:6px; }
 .sf-branch-dest .sf-dest-amount { font-size:16px; font-weight:700; font-family:'JetBrains Mono',monospace; color:var(--success); }
 .sf-branch-dest .sf-dest-badges { display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; align-items:center; }
+.sf-branch-dest:hover { border-color:var(--accent) !important; box-shadow:0 0 12px rgba(99,102,241,0.15); transition:all 0.2s; }
 .sf-branch-actions { display:flex; gap:4px; margin-left:8px; flex-shrink:0; }
 .sf-branch-actions .btn { font-size:11px; padding:4px 8px; }
 .sf-empty { padding:24px; text-align:center; color:var(--text-muted); }
@@ -1237,7 +1238,7 @@ function renderSubflows(chain) {
         ${sfFees > 0 ? `<div class="sf-branch-fee">-${fmt(sfFees)}</div>` : ''}
         <div class="sf-branch-method">${sf.method||'—'}</div>
       </div>
-      <div class="sf-branch-dest sf-${sfStatus}">
+      <div class="sf-branch-dest sf-${sfStatus}" onclick="showEditSubflowModal(${idx})" style="cursor:pointer;" title="Click to edit">
         <div class="sf-dest-label">${sf.label}</div>
         <div class="sf-dest-entity">${acctEntity(finalDest)}</div>
         <div class="sf-dest-account">${acctName(finalDest)}</div>
@@ -1251,10 +1252,10 @@ function renderSubflows(chain) {
         </div>
       </div>
       <div class="sf-branch-actions">
-        ${canAdd ? `<button class="btn btn-ghost" onclick="showEditSubflowModal(${idx})" title="Edit">&#9998;</button>` : ''}
-        ${canAdd && sfStatus!=='completed' ? `<button class="btn btn-ghost" onclick="showSfStepModal(${idx})" title="Add step">+ Step</button>` : ''}
-        ${canAdd && sfStatus!=='completed' && stepCount > 0 ? `<button class="btn btn-ghost" onclick="completeSubflow(${idx})" style="color:var(--success);border-color:var(--success);" title="Complete">&#10003;</button>` : ''}
-        ${canAdd ? `<button class="btn btn-ghost" onclick="deleteSubflow(${idx})" style="color:var(--danger);border-color:var(--danger);" title="Delete">&times;</button>` : ''}
+        <button class="btn btn-ghost" onclick="showEditSubflowModal(${idx})" title="Edit">&#9998;</button>
+        ${sfStatus!=='completed' ? `<button class="btn btn-ghost" onclick="showSfStepModal(${idx})" title="Add step">+ Step</button>` : ''}
+        ${sfStatus!=='completed' && stepCount > 0 ? `<button class="btn btn-ghost" onclick="completeSubflow(${idx})" style="color:var(--success);border-color:var(--success);" title="Complete">&#10003;</button>` : ''}
+        <button class="btn btn-ghost" onclick="deleteSubflow(${idx})" style="color:var(--danger);border-color:var(--danger);" title="Delete">&times;</button>
       </div>
     </div>`;
   });
