@@ -674,6 +674,10 @@ if(sessionStorage.getItem('ct_auth')==='1')document.getElementById('lockScreen')
           </select>
         </div>
       </div>
+      <div class="form-group">
+        <label class="form-label">Notes (optional)</label>
+        <textarea class="form-input" name="sfs_notes" rows="2" placeholder="Any details about this step..." style="resize:vertical;"></textarea>
+      </div>
       <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;">
         <button type="button" class="btn btn-ghost" onclick="closeModal('sfStepModal')">Cancel</button>
         <button type="submit" class="btn btn-primary">Add Step</button>
@@ -959,7 +963,7 @@ const ACCOUNTS = [
   {id:"a-ac-tw",entity_id:"e-ac",name:"Armada Capital Trust Wallet",account_type:"crypto",provider:"Trust Wallet",account_number_last4:null},
   {id:"a-ac-inn",entity_id:"e-ac",name:"Armada Innovations",account_type:"brokerage",provider:"Solera",account_number_last4:null},
   {id:"a-rk-cb",entity_id:"e-rk",name:"Royal KKS Coinbase",account_type:"crypto",provider:"Coinbase",account_number_last4:null},
-  {id:"a-rk-bnk",entity_id:"e-rk",name:"Royal KKS Bank",account_type:"bank",provider:"Wells Fargo",account_number_last4:null},
+  {id:"a-rk-bnk",entity_id:"e-rk",name:"Royal KKS Collective",account_type:"bank",provider:"Solera",account_number_last4:null},
   {id:"a-ca-tw",entity_id:"e-ca",name:"Cascade Trust Wallet",account_type:"crypto",provider:"Trust Wallet",account_number_last4:null},
   {id:"a-ex-bnk",entity_id:"e-ex",name:"External Recipient",account_type:"bank",provider:null,account_number_last4:null},
 ];
@@ -2138,7 +2142,7 @@ function submitSfStep(e) {
     id: uid(), step_order: nextOrder,
     from_account_id: fromAccountId, to_account_id: fd.get('sfs_to_account_id'),
     amount_sent: amountSent, fee: fee, amount_received: amountSent - fee,
-    transfer_method: fd.get('sfs_method'),
+    transfer_method: fd.get('sfs_method'), notes: fd.get('sfs_notes') || '',
     status: 'pending', initiated_at: now, completed_at: null,
   });
   sf.status = 'in_transit';
