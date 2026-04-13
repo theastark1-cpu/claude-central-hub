@@ -204,6 +204,17 @@ tr:hover td { background:var(--surface-2); }
 .sf-branch-dest .sf-dest-amount { font-size:16px; font-weight:700; font-family:'JetBrains Mono',monospace; color:var(--success); }
 .sf-branch-dest .sf-dest-badges { display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; align-items:center; }
 .sf-branch-dest:hover { border-color:var(--accent) !important; box-shadow:0 0 12px rgba(99,102,241,0.15); transition:all 0.2s; }
+.sf-steps-pipeline { margin-top:8px; padding-left:8px; }
+.sf-step-row { display:flex; align-items:stretch; min-height:60px; }
+.sf-step-connector { display:flex; align-items:center; width:30px; flex-shrink:0; position:relative; }
+.sf-step-vline { position:absolute; left:6px; top:0; bottom:0; width:2px; background:var(--border); }
+.sf-step-dot { position:absolute; left:2px; top:50%; transform:translateY(-50%); width:10px; height:10px; border-radius:50%; background:var(--accent); border:2px solid var(--surface-2); z-index:1; }
+.sf-step-hline { position:absolute; left:12px; top:50%; width:18px; height:2px; background:var(--border); }
+.sf-step-card { flex:1; background:var(--surface-3); border:1px solid var(--border); border-radius:8px; padding:10px 14px; margin:4px 0; margin-left:4px; }
+.sf-step-card.sf-completed { border-color:var(--success); }
+.sf-step-card.sf-in_transit { border-color:var(--warning); }
+.sf-step-card.sf-pending { border-color:var(--text-muted); }
+.sf-step-row:last-child .sf-step-vline { bottom:50%; }
 .sf-branch-actions { display:flex; gap:4px; margin-left:8px; flex-shrink:0; }
 .sf-branch-actions .btn { font-size:11px; padding:4px 8px; }
 .sf-empty { padding:24px; text-align:center; color:var(--text-muted); }
@@ -1415,38 +1426,78 @@ function renderSubflows(chain) {
 
   subflows.forEach((sf, idx) => {
     const sfStatus = sf.status || 'pending';
-    const sfSteps = sf.steps || [];
-    const lastStep = sfSteps.length ? sfSteps[sfSteps.length-1] : null;
-    const finalDest = lastStep ? lastStep.to_account_id : sf.dest_account_id;
-    const finalAmount = lastStep ? lastStep.amount_received : sf.amount - (sf.fee||0);
-    const sfFees = (sf.fee||0) + sfSteps.reduce((s,st) => s+st.fee, 0);
+    const sfSteps = (sf.steps || []).sort((a,b) => a.step_order - b.step_order);
+    const sfFees = (sf.fee||0) + sfSteps.reduce((s,st) => s+(st.fee||0), 0);
     const stepCount = sfSteps.length;
 
+    // Header card for this sub-flow
     html += `<div class="sf-branch">
       <div class="sf-branch-line"></div>
       <div class="sf-branch-arrow">&#8594;</div>
       <div class="sf-branch-info">
-        ${sfFees > 0 ? `<div class="sf-branch-fee">-${fmt(sfFees)}</div>` : ''}
+        ${sf.fee > 0 ? `<div class="sf-branch-fee">-${fmt(sf.fee)}</div>` : ''}
         <div class="sf-branch-method">${sf.method||'—'}</div>
       </div>
-      <div class="sf-branch-dest sf-${sfStatus}" onclick="showEditSubflowModal(${idx})" style="cursor:pointer;" title="Click to edit">
-        <div class="sf-dest-label">${sf.label}</div>
-        <div class="sf-dest-entity">${acctEntity(finalDest)}</div>
-        <div class="sf-dest-account">${acctName(finalDest)}</div>
-        <div class="sf-dest-amount">${fmt(sf.amount)}</div>
-        ${finalAmount !== sf.amount ? `<div style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">Net: ${fmt(finalAmount)}</div>` : ''}
-        <div class="sf-dest-badges">
-          <span class="badge badge-${sfStatus}">${sfStatus.replace('_',' ')}</span>
-          <span class="cap-badge cap-${sf.capital_type||chain.capital_type}">${(sf.capital_type||chain.capital_type).replace('_',' ')}</span>
-          ${stepCount > 0 ? `<span style="font-size:10px;color:var(--text-muted);">${stepCount} step${stepCount!==1?'s':''}</span>` : ''}
-          ${sf.notes ? `<span style="font-size:10px;color:var(--text-dim);">${sf.notes}</span>` : ''}
+      <div style="flex:1;min-width:0;">
+        <!-- Sub-flow header card -->
+        <div class="sf-branch-dest sf-${sfStatus}" onclick="showEditSubflowModal(${idx})" style="cursor:pointer;" title="Click to edit">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div>
+              <div class="sf-dest-label">${sf.label}</div>
+              <div class="sf-dest-entity">${acctEntity(sf.dest_account_id)}</div>
+              <div class="sf-dest-account">${acctName(sf.dest_account_id)}</div>
+            </div>
+            <div style="text-align:right;">
+              <div class="sf-dest-amount">${fmt(sf.amount)}</div>
+              ${sfFees > 0 ? `<div style="font-size:11px;color:var(--danger);font-family:'JetBrains Mono',monospace;">Fees: -${fmt(sfFees)}</div>` : ''}
+            </div>
+          </div>
+          <div class="sf-dest-badges">
+            <span class="badge badge-${sfStatus}">${sfStatus.replace('_',' ')}</span>
+            <span class="cap-badge cap-${sf.capital_type||chain.capital_type}">${(sf.capital_type||chain.capital_type).replace('_',' ')}</span>
+            ${sf.notes ? `<span style="font-size:10px;color:var(--text-dim);">${sf.notes}</span>` : ''}
+          </div>
         </div>
-      </div>
-      <div class="sf-branch-actions">
-        <button class="btn btn-ghost" onclick="showEditSubflowModal(${idx})" title="Edit">&#9998;</button>
-        ${sfStatus!=='completed' ? `<button class="btn btn-ghost" onclick="showSfStepModal(${idx})" title="Add step">+ Step</button>` : ''}
-        ${sfStatus!=='completed' && stepCount > 0 ? `<button class="btn btn-ghost" onclick="completeSubflow(${idx})" style="color:var(--success);border-color:var(--success);" title="Complete">&#10003;</button>` : ''}
-        <button class="btn btn-ghost" onclick="deleteSubflow(${idx})" style="color:var(--danger);border-color:var(--danger);" title="Delete">&times;</button>
+
+        <!-- Step pipeline within this sub-flow -->
+        ${sfSteps.length ? `<div class="sf-steps-pipeline">
+          ${sfSteps.map((st, si) => `
+            <div class="sf-step-row">
+              <div class="sf-step-connector">
+                <div class="sf-step-vline"></div>
+                <div class="sf-step-dot"></div>
+                <div class="sf-step-hline"></div>
+              </div>
+              <div class="sf-step-card sf-${st.status}">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+                  <div style="flex:1;min-width:0;">
+                    <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;">Step ${st.step_order}</div>
+                    <div style="font-size:12px;color:var(--text-dim);margin:2px 0;">${acctName(st.from_account_id)} → ${acctName(st.to_account_id)}</div>
+                    ${st.notes ? `<div style="font-size:11px;color:var(--text-dim);margin-top:4px;font-style:italic;">${st.notes}</div>` : ''}
+                  </div>
+                  <div style="text-align:right;flex-shrink:0;">
+                    <div style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--success);">${fmt(st.amount_sent)}</div>
+                    ${st.fee > 0 ? `<div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--danger);">-${fmt(st.fee)} fee</div>` : ''}
+                    ${st.fee > 0 ? `<div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted);">Net: ${fmt(st.amount_received)}</div>` : ''}
+                  </div>
+                </div>
+                <div style="display:flex;gap:6px;margin-top:6px;align-items:center;">
+                  <span class="badge badge-${st.status}">${st.status}</span>
+                  <span style="font-size:10px;color:var(--text-muted);text-transform:uppercase;">${st.transfer_method||''}</span>
+                  <button class="btn btn-ghost" onclick="deleteSfStep(${idx},${si})" style="margin-left:auto;color:var(--danger);border-color:var(--danger);font-size:10px;padding:2px 6px;" title="Delete step">&times;</button>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>` : ''}
+
+        <!-- Actions bar -->
+        <div class="sf-branch-actions" style="margin-top:8px;">
+          <button class="btn btn-ghost" onclick="showEditSubflowModal(${idx})" title="Edit">&#9998;</button>
+          <button class="btn btn-ghost" onclick="showSfStepModal(${idx})" title="Add step">+ Step</button>
+          ${sfStatus!=='completed' && stepCount > 0 ? `<button class="btn btn-ghost" onclick="completeSubflow(${idx})" style="color:var(--success);border-color:var(--success);" title="Complete">&#10003;</button>` : ''}
+          <button class="btn btn-ghost" onclick="deleteSubflow(${idx})" style="color:var(--danger);border-color:var(--danger);" title="Delete">&times;</button>
+        </div>
       </div>
     </div>`;
   });
@@ -2050,6 +2101,22 @@ function completeSubflow(idx) {
   sf.steps.forEach(s => { s.status = 'completed'; s.completed_at = now; });
 
   store.auditLog.push({entity_type:'subflow',action:'complete',new_value:`${sf.label} completed`,performed_by:'user',performed_at:now});
+  saveStore(store);
+  loadChainDetail(currentChainId);
+}
+
+function deleteSfStep(sfIdx, stepIdx) {
+  if (!confirm('Delete this step?')) return;
+  const store = getStore();
+  const chain = store.chains.find(c => c.id === currentChainId);
+  if (!chain || !chain.subflows || !chain.subflows[sfIdx]) return;
+  const sf = chain.subflows[sfIdx];
+  if (!sf.steps || !sf.steps[stepIdx]) return;
+  const removed = sf.steps.splice(stepIdx, 1)[0];
+  // Re-number remaining steps
+  sf.steps.forEach((s, i) => { s.step_order = i + 1; });
+  if (!sf.steps.length) sf.status = 'pending';
+  store.auditLog.push({entity_type:'subflow_step',action:'delete',old_value:`Step from ${sf.label}`,performed_by:'user',performed_at:new Date().toISOString()});
   saveStore(store);
   loadChainDetail(currentChainId);
 }
