@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Armada Prime LLP — TPA Reports</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0e17;--surface:#111827;--surface2:#1a2236;--surface3:#222d45;
+  --border:#2a3550;--text:#e2e8f0;--text-dim:#8494b0;--text-muted:#5a6a85;
+  --accent:#3b82f6;--green:#10b981;--green-dim:rgba(16,185,129,0.12);
+  --red:#ef4444;--red-dim:rgba(239,68,68,0.12);--amber:#f59e0b;
+  --amber-dim:rgba(245,158,11,0.12);--purple:#8b5cf6;--cyan:#06b6d4;
+}
+html{font-size:15px}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden}
+.noise{position:fixed;top:0;left:0;width:100%;height:100%;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:9999}
+.glow-orb{position:fixed;width:600px;height:600px;border-radius:50%;pointer-events:none;z-index:0}
+.glow-orb.one{top:-200px;right:-100px;background:radial-gradient(circle,rgba(59,130,246,0.06) 0%,transparent 70%)}
+.glow-orb.two{bottom:-300px;left:-200px;background:radial-gradient(circle,rgba(139,92,246,0.04) 0%,transparent 70%)}
+
+header{padding:2rem 2.5rem 1.5rem;border-bottom:1px solid var(--border);position:relative;z-index:1;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:1rem}
+.logo-block h1{font-family:'Playfair Display',serif;font-weight:800;font-size:1.8rem;letter-spacing:-0.02em;background:linear-gradient(135deg,#e2e8f0 0%,#94a3b8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo-block .sub{font-size:0.8rem;color:var(--text-muted);letter-spacing:0.15em;text-transform:uppercase;margin-top:0.25rem}
+.header-right{display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap}
+.period-badge{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.5rem 1rem;font-family:'JetBrains Mono',monospace;font-size:0.85rem;color:var(--accent);display:flex;align-items:center;gap:0.5rem}
+.period-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite}
+.nav-link{color:var(--text-dim);font-size:0.78rem;letter-spacing:0.05em;text-decoration:none;padding:0.5rem 0.85rem;border:1px solid var(--border);border-radius:8px;background:var(--surface);transition:all 0.2s}
+.nav-link:hover{color:var(--accent);border-color:var(--accent)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+.dashboard{padding:1.5rem 2.5rem 3rem;position:relative;z-index:1;max-width:1600px;margin:0 auto}
+
+/* Month selector */
+.month-selector{display:flex;gap:0.4rem;margin-bottom:1.25rem;flex-wrap:wrap;padding:0.6rem;background:var(--surface);border:1px solid var(--border);border-radius:12px}
+.month-chip{padding:0.45rem 0.9rem;font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--text-dim);background:var(--surface2);border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:all 0.2s;letter-spacing:0.02em}
+.month-chip:hover{color:var(--text);border-color:var(--accent)}
+.month-chip.active{color:#fff;background:var(--accent);border-color:var(--accent)}
+
+/* Tabs */
+.tabs{display:flex;gap:0.25rem;margin-bottom:1.5rem;border-bottom:1px solid var(--border);padding-bottom:0;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:0.65rem 1.25rem;font-size:0.8rem;font-weight:500;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;letter-spacing:0.03em;white-space:nowrap}
+.tab:hover{color:var(--text-dim)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.15rem 1.35rem;position:relative;overflow:hidden;transition:border-color 0.3s,transform 0.2s}
+.kpi:hover{border-color:var(--accent);transform:translateY(-2px)}
+.kpi .label{font-size:0.65rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-muted);margin-bottom:0.4rem}
+.kpi .value{font-family:'JetBrains Mono',monospace;font-size:1.45rem;font-weight:600;letter-spacing:-0.02em}
+.kpi .detail{font-size:0.72rem;color:var(--text-dim);margin-top:0.3rem;display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap}
+.kpi .stripe{position:absolute;top:0;left:0;right:0;height:3px}
+.kpi.blue .stripe{background:linear-gradient(90deg,var(--accent),#60a5fa)}
+.kpi.green .stripe{background:linear-gradient(90deg,var(--green),#34d399)}
+.kpi.amber .stripe{background:linear-gradient(90deg,var(--amber),#fbbf24)}
+.kpi.purple .stripe{background:linear-gradient(90deg,var(--purple),#a78bfa)}
+.kpi.red .stripe{background:linear-gradient(90deg,var(--red),#f87171)}
+.kpi.cyan .stripe{background:linear-gradient(90deg,var(--cyan),#22d3ee)}
+
+.tag{display:inline-block;padding:0.12rem 0.45rem;border-radius:4px;font-size:0.68rem;font-weight:600;letter-spacing:0.04em}
+.tag.up{background:var(--green-dim);color:var(--green)}
+.tag.down{background:var(--red-dim);color:var(--red)}
+.tag.flat{background:var(--surface3);color:var(--text-dim)}
+.tag.ok{background:var(--green-dim);color:var(--green)}
+.tag.warn{background:var(--red-dim);color:var(--red)}
+
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5rem;margin-bottom:1.5rem}
+@media(max-width:1100px){.grid-2,.grid-3{grid-template-columns:1fr}}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem;position:relative}
+.card h2{font-size:0.72rem;text-transform:uppercase;letter-spacing:0.14em;color:var(--text-muted);margin-bottom:1.15rem;display:flex;align-items:center;gap:0.5rem}
+.card h2 .icon{font-size:0.9rem}
+
+.data-table{width:100%;border-collapse:collapse;font-size:0.8rem}
+.data-table th{text-align:left;padding:0.5rem 0.65rem;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);border-bottom:1px solid var(--border);font-weight:500;cursor:pointer;user-select:none}
+.data-table th:hover{color:var(--text-dim)}
+.data-table th.sort-asc::after{content:' \25B2';color:var(--accent)}
+.data-table th.sort-desc::after{content:' \25BC';color:var(--accent)}
+.data-table td{padding:0.5rem 0.65rem;border-bottom:1px solid rgba(42,53,80,0.4);white-space:nowrap}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:rgba(59,130,246,0.04)}
+.data-table tr.clickable{cursor:pointer}
+.data-table .mono{font-family:'JetBrains Mono',monospace;font-size:0.75rem}
+.data-table .right{text-align:right}
+.data-table .total-row td{font-weight:600;border-top:2px solid var(--border);color:var(--text);padding-top:0.65rem;background:var(--surface2)}
+.data-table .name-cell{max-width:240px;overflow:hidden;text-overflow:ellipsis}
+
+.chart-wrap{position:relative;height:260px;margin-top:0.5rem}
+.chart-wrap.short{height:200px}
+.chart-wrap.tall{height:320px}
+
+.bar-row{display:flex;align-items:center;gap:0.65rem;margin-bottom:0.65rem}
+.bar-label{width:130px;font-size:0.75rem;color:var(--text-dim);text-align:right;flex-shrink:0}
+.bar-track{flex:1;height:22px;background:var(--surface3);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width 1s cubic-bezier(0.22,1,0.36,1);position:relative}
+.bar-val{font-family:'JetBrains Mono',monospace;font-size:0.73rem;width:110px;text-align:right;flex-shrink:0;color:var(--text-dim)}
+
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem}
+.stat-box{background:var(--surface2);border-radius:8px;padding:0.85rem;border:1px solid var(--border)}
+.stat-box .sb-label{font-size:0.62rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted)}
+.stat-box .sb-val{font-family:'JetBrains Mono',monospace;font-size:1.05rem;font-weight:600;margin-top:0.25rem}
+.stat-box .sb-sub{font-size:0.68rem;color:var(--text-dim);margin-top:0.2rem}
+
+.compare-table{width:100%;border-collapse:collapse;font-size:0.8rem}
+.compare-table th{padding:0.6rem 0.75rem;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);border-bottom:2px solid var(--border);font-weight:500;text-align:right}
+.compare-table th:first-child{text-align:left}
+.compare-table td{padding:0.6rem 0.75rem;border-bottom:1px solid rgba(42,53,80,0.4);font-family:'JetBrains Mono',monospace;font-size:0.78rem;text-align:right}
+.compare-table td:first-child{font-family:'DM Sans',sans-serif;font-weight:500;color:var(--text);text-align:left}
+.compare-table tr:hover td{background:rgba(59,130,246,0.04)}
+.compare-table .section-row td{font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:0.66rem;letter-spacing:0.1em;background:var(--surface2);padding-top:0.8rem}
+.compare-table .total-row td{border-top:2px solid var(--border);font-weight:600;color:var(--text)}
+
+.search-box{width:100%;max-width:360px;padding:0.55rem 0.85rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.85rem;outline:none;margin-bottom:1rem}
+.search-box:focus{border-color:var(--accent)}
+
+.drawer-backdrop{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:9998;display:none;backdrop-filter:blur(4px)}
+.drawer-backdrop.show{display:block}
+.drawer{position:fixed;top:0;right:0;width:min(540px,92vw);height:100vh;background:var(--surface);border-left:1px solid var(--border);z-index:9999;padding:1.5rem;overflow-y:auto;transform:translateX(100%);transition:transform 0.3s cubic-bezier(0.22,1,0.36,1)}
+.drawer.show{transform:translateX(0)}
+.drawer h3{font-family:'Playfair Display',serif;font-size:1.35rem;margin-bottom:0.4rem}
+.drawer .close{position:absolute;top:1rem;right:1rem;width:32px;height:32px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center}
+.drawer .close:hover{color:var(--red)}
+
+.recon-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem}
+.recon-box{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1.15rem}
+.recon-box .r-label{font-size:0.65rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-muted);margin-bottom:0.5rem}
+.recon-box .r-val{font-family:'JetBrains Mono',monospace;font-size:1.3rem;font-weight:600}
+.recon-box.ok{border-color:var(--green-dim)}
+.recon-box.warn{border-color:var(--red)}
+
+.empty{color:var(--text-muted);font-size:0.8rem;padding:1rem;text-align:center;background:var(--surface2);border-radius:8px}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.kpi,.card{animation:fadeUp 0.6s ease both}
+
+footer{text-align:center;padding:2rem;font-size:0.7rem;color:var(--text-muted);letter-spacing:0.05em}
+</style>
+</head>
+<body>
+<!-- PASSWORD GATE -->
+<div id="lockScreen" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0e17;z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column">
+  <div style="text-align:center;max-width:360px;padding:2rem">
+    <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:1.6rem;background:linear-gradient(135deg,#e2e8f0,#94a3b8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:0.4rem">Armada Prime LLP</div>
+    <div style="font-size:0.72rem;color:#5a6a85;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:2.5rem">TPA Reports — Authorized Access Only</div>
+    <input id="pwInput" type="password" placeholder="Enter password" autofocus
+      style="width:100%;padding:0.85rem 1rem;background:#111827;border:1px solid #2a3550;border-radius:8px;color:#e2e8f0;font-family:'DM Sans',sans-serif;font-size:0.95rem;outline:none;margin-bottom:0.75rem;text-align:center;letter-spacing:0.1em"
+      onkeydown="if(event.key==='Enter')checkPw()">
+    <button onclick="checkPw()"
+      style="width:100%;padding:0.75rem;background:#3b82f6;border:none;border-radius:8px;color:#fff;font-family:'DM Sans',sans-serif;font-size:0.85rem;font-weight:600;cursor:pointer;letter-spacing:0.04em"
+      onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">Access Dashboard</button>
+    <div id="pwError" style="color:#ef4444;font-size:0.78rem;margin-top:0.75rem;display:none">Incorrect password</div>
+  </div>
+</div>
+<script>
+// Password: "armada-tpa-2026"
+const PW_HASH = 'a7f2e59597c9aeb76376385caf435d933963c4898fc281769398e87d033f1fa1';
+function checkPw(){
+  const input = document.getElementById('pwInput').value;
+  const hash = CryptoJS.SHA256(input).toString();
+  if(hash === PW_HASH){
+    document.getElementById('lockScreen').style.display='none';
+    sessionStorage.setItem('ap_tpa_auth','1');
+    if(window.bootDashboard) window.bootDashboard();
+  } else {
+    const err = document.getElementById('pwError');
+    err.style.display='block';
+    document.getElementById('pwInput').value='';
+    document.getElementById('pwInput').focus();
+    setTimeout(()=>err.style.display='none',2000);
+  }
+}
+if(sessionStorage.getItem('ap_tpa_auth')==='1'){
+  document.getElementById('lockScreen').style.display='none';
+}
+</script>
+
+<div class="noise"></div>
+<div class="glow-orb one"></div>
+<div class="glow-orb two"></div>
+
+<header>
+  <div class="logo-block">
+    <h1>Armada Prime LLP</h1>
+    <div class="sub">TPA Reporting Package Dashboard</div>
+  </div>
+  <div class="header-right">
+    <div class="period-badge" id="periodBadge">Loading…</div>
+    <a class="nav-link" href="index.html">← Returns Dashboard</a>
+  </div>
+</header>
+
+<div class="dashboard">
+
+  <div class="month-selector" id="monthSelector"></div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="overview">Overview</div>
+    <div class="tab" data-tab="balance">Balance Sheet</div>
+    <div class="tab" data-tab="income">Income Statement</div>
+    <div class="tab" data-tab="capital">Capital Activity</div>
+    <div class="tab" data-tab="investors">Investors</div>
+    <div class="tab" data-tab="positions">Positions &amp; Fees</div>
+    <div class="tab" data-tab="recon">Reconciliation</div>
+  </div>
+
+  <!-- ============ OVERVIEW TAB ============ -->
+  <div id="tab-overview" class="tab-content active">
+    <div class="kpi-row" id="overviewKpis"></div>
+    <div class="grid-2">
+      <div class="card">
+        <h2><span class="icon">📊</span> Month-over-Month</h2>
+        <div style="overflow-x:auto"><table class="compare-table" id="momTable"></table></div>
+      </div>
+      <div class="card">
+        <h2><span class="icon">📈</span> Total Assets Trend</h2>
+        <div class="chart-wrap"><canvas id="assetsTrend"></canvas></div>
+        <h2 style="margin-top:1.5rem"><span class="icon">💰</span> Net Income Trend</h2>
+        <div class="chart-wrap short"><canvas id="netIncomeTrend"></canvas></div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h2><span class="icon">📐</span> Capital vs Subscriptions in Advance</h2>
+        <div class="chart-wrap"><canvas id="capSubsChart"></canvas></div>
+      </div>
+      <div class="card">
+        <h2><span class="icon">🧭</span> NAV Per Share</h2>
+        <div class="chart-wrap"><canvas id="navChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ BALANCE SHEET TAB ============ -->
+  <div id="tab-balance" class="tab-content">
+    <div class="kpi-row" id="bsKpis"></div>
+    <div class="grid-2">
+      <div class="card">
+        <h2><span class="icon">🪙</span> Asset Mix</h2>
+        <div id="assetMix"></div>
+      </div>
+      <div class="card">
+        <h2><span class="icon">🏦</span> Liabilities</h2>
+        <div id="liabMix"></div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h2><span class="icon">💼</span> Capital Composition</h2>
+        <div id="capMix"></div>
+      </div>
+      <div class="card">
+        <h2><span class="icon">📉</span> Liabilities Trend</h2>
+        <div class="chart-wrap"><canvas id="liabTrend"></canvas></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2><span class="icon">🗂️</span> Month-over-Month Balance Sheet</h2>
+      <div style="overflow-x:auto"><table class="compare-table" id="bsMomTable"></table></div>
+    </div>
+  </div>
+
+  <!-- ============ INCOME STATEMENT TAB ============ -->
+  <div id="tab-income" class="tab-content">
+    <div class="kpi-row" id="isKpis"></div>
+    <div class="grid-2">
+      <div class="card">
+        <h2><span class="icon">💹</span> Income Breakdown</h2>
+        <div id="incomeBars"></div>
+      </div>
+      <div class="card">
+        <h2><span class="icon">💸</span> Expense Breakdown</h2>
+        <div id="expenseBars"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2><span class="icon">🗂️</span> Month-over-Month Income Statement</h2>
+      <div style="overflow-x:auto"><table class="compare-table" id="isMomTable"></table></div>
+    </div>
+  </div>
+
+  <!-- ============ CAPITAL ACTIVITY TAB ============ -->
+  <div id="tab-capital" class="tab-content">
+    <div class="kpi-row" id="capKpis"></div>
+    <div class="grid-2">
+      <div class="card">
+        <h2><span class="icon">➡️</span> Additions vs Withdrawals</h2>
+        <div class="chart-wrap"><canvas id="flowChart"></canvas></div>
+      </div>
+      <div class="card">
+        <h2><span class="icon">⏳</span> Subscription Pipeline</h2>
+        <div id="subsPipeline"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2><span class="icon">🗂️</span> Month-over-Month Fund Activity</h2>
+      <div style="overflow-x:auto"><table class="compare-table" id="capMomTable"></table></div>
+    </div>
+  </div>
+
+  <!-- ============ INVESTORS TAB ============ -->
+  <div id="tab-investors" class="tab-content">
+    <div class="card">
+      <h2><span class="icon">🔍</span> Investor Detail — <span id="invMonthLabel"></span></h2>
+      <input type="search" class="search-box" id="invSearch" placeholder="Search investor name…">
+      <div style="overflow-x:auto">
+        <table class="data-table" id="invTable">
+          <thead>
+            <tr>
+              <th data-sort="name">Name</th>
+              <th data-sort="end_ownership" class="right">Own %</th>
+              <th data-sort="additions" class="right">Additions</th>
+              <th data-sort="withdrawals" class="right">Withdrawals</th>
+              <th data-sort="ending_balance" class="right sort-desc">Ending Balance</th>
+              <th data-sort="shares_end" class="right">Shares</th>
+              <th data-sort="nav_per_share" class="right">NAV/Share</th>
+              <th data-sort="gross_profit" class="right">Gross Profit</th>
+              <th data-sort="perf_fee" class="right">Perf Fee</th>
+              <th data-sort="gross_mtd_ror" class="right">Gross MTD</th>
+              <th data-sort="net_mtd_ror" class="right">Net MTD</th>
+              <th data-sort="ytd_ror" class="right">YTD</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ POSITIONS & FEES TAB ============ -->
+  <div id="tab-positions" class="tab-content">
+    <div class="grid-2">
+      <div class="card">
+        <h2><span class="icon">📦</span> Positions</h2>
+        <div id="positionsTable"></div>
+      </div>
+      <div class="card">
+        <h2><span class="icon">🔄</span> Realized Trades</h2>
+        <div id="realizedTable"></div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h2><span class="icon">🧾</span> Operating Expenses</h2>
+        <div id="opExp"></div>
+      </div>
+      <div class="card">
+        <h2><span class="icon">⚖️</span> Fees Summary</h2>
+        <div id="feesSummary"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ RECONCILIATION TAB ============ -->
+  <div id="tab-recon" class="tab-content">
+    <div class="card">
+      <h2><span class="icon">✅</span> Reconciliation Status — <span id="reconMonthLabel"></span></h2>
+      <div class="recon-grid" id="reconGrid"></div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Armada Prime LLP · TPA Reporting Package · Generated from <code>data/tpa_history.json</code>
+</footer>
+
+<div class="drawer-backdrop" id="drawerBackdrop" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <button class="close" onclick="closeDrawer()">×</button>
+  <div id="drawerContent"></div>
+</div>
+
+<script>
+// ============ STATE ============
+let HISTORY = null;
+let CURRENT_MONTH_IDX = 0;
+let INV_SORT = {key:'ending_balance', dir:'desc'};
+let INV_FILTER = '';
+const CHARTS = {};
+
+// ============ FORMATTERS ============
+const fmtUSD = (n, opts={}) => {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  const abs = Math.abs(n);
+  if (opts.compact && abs >= 1e6) return (n<0?'-$':'$') + (abs/1e6).toFixed(2) + 'M';
+  if (opts.compact && abs >= 1e3) return (n<0?'-$':'$') + (abs/1e3).toFixed(1) + 'K';
+  const sign = n<0 ? '-$' : '$';
+  return sign + abs.toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:opts.dp??0});
+};
+const fmtPct = (n, dp=2) => (n===null||n===undefined||isNaN(n)) ? '—' : (n*100).toFixed(dp)+'%';
+const fmtNum = (n, dp=4) => (n===null||n===undefined||isNaN(n)) ? '—' : Number(n).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:dp});
+
+const delta = (cur, prev, opts={}) => {
+  if (prev === null || prev === undefined) return '';
+  if (!isFinite(cur) || !isFinite(prev)) return '';
+  const d = cur - prev;
+  if (Math.abs(d) < 1e-9) return `<span class="tag flat">=</span>`;
+  const cls = d > 0 ? 'up' : 'down';
+  const sign = d > 0 ? '+' : '';
+  if (opts.pct) return `<span class="tag ${cls}">${sign}${(d*100).toFixed(2)}pp</span>`;
+  if (opts.money) return `<span class="tag ${cls}">${sign}${fmtUSD(d,{compact:true})}</span>`;
+  return `<span class="tag ${cls}">${sign}${fmtNum(d,2)}</span>`;
+};
+
+// ============ LOAD ============
+async function loadHistory(){
+  try{
+    const res = await fetch('./data/tpa_history.json?cb=' + Date.now());
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    HISTORY = await res.json();
+  }catch(e){
+    document.querySelector('.dashboard').innerHTML = `<div class="card"><h2>Error loading data</h2><p style="color:var(--red)">Could not fetch data/tpa_history.json: ${e.message}</p><p style="color:var(--text-dim);margin-top:1rem">Make sure you're serving via a web server (e.g. <code>python -m http.server</code>) rather than opening the file directly.</p></div>`;
+    throw e;
+  }
+}
+
+// ============ TABS & MONTH SELECTOR ============
+function buildMonthSelector(){
+  const sel = document.getElementById('monthSelector');
+  sel.innerHTML = HISTORY.months.map((m,i) =>
+    `<div class="month-chip ${i===CURRENT_MONTH_IDX?'active':''}" data-idx="${i}">${m.period_label}</div>`
+  ).join('');
+  sel.querySelectorAll('.month-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      CURRENT_MONTH_IDX = Number(chip.dataset.idx);
+      sel.querySelectorAll('.month-chip').forEach(c => c.classList.toggle('active', c === chip));
+      renderAll();
+    });
+  });
+}
+function setupTabs(){
+  document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      document.getElementById('tab-'+t.dataset.tab).classList.add('active');
+    });
+  });
+}
+
+// ============ RENDER ============
+function currentMonth(){ return HISTORY.months[CURRENT_MONTH_IDX]; }
+function priorMonth(){ return CURRENT_MONTH_IDX > 0 ? HISTORY.months[CURRENT_MONTH_IDX-1] : null; }
+
+function renderAll(){
+  const m = currentMonth();
+  document.getElementById('periodBadge').textContent = m.period_label + ' · As of ' + m.as_of;
+  renderOverview();
+  renderBalance();
+  renderIncome();
+  renderCapital();
+  renderInvestors();
+  renderPositions();
+  renderRecon();
+}
+
+// ---------- Overview ----------
+function renderOverview(){
+  const m = currentMonth(), p = priorMonth();
+  const bs = m.balance_sheet, inc = m.income_statement, fl = m.fund_level;
+  const kpis = [
+    {cls:'blue', label:'Total Assets', value:fmtUSD(bs.total_assets,{compact:true}),
+      detail: p ? `Prev ${fmtUSD(p.balance_sheet.total_assets,{compact:true})} ${delta(bs.total_assets,p.balance_sheet.total_assets,{money:true})}` : 'First reported month'},
+    {cls:'green', label:'Total Capital', value:fmtUSD(bs.total_capital,{compact:true}),
+      detail: p ? `Prev ${fmtUSD(p.balance_sheet.total_capital,{compact:true})} ${delta(bs.total_capital,p.balance_sheet.total_capital,{money:true})}` : `${fl.investor_count} investors`},
+    {cls:'purple', label:'Net Income (MTD)', value:fmtUSD(inc.net_income),
+      detail: p ? `Prev ${fmtUSD(p.income_statement.net_income)} ${delta(inc.net_income,p.income_statement.net_income,{money:true})}` : 'Net of fees & expenses'},
+    {cls:'cyan', label:'Gross MTD ROR', value:fmtPct(fl.gross_mtd_ror),
+      detail: p ? `Prev ${fmtPct(p.fund_level.gross_mtd_ror)} ${delta(fl.gross_mtd_ror,p.fund_level.gross_mtd_ror,{pct:true})}` : 'Weighted by ending balance'},
+    {cls:'amber', label:'Net MTD ROR', value:fmtPct(fl.net_mtd_ror),
+      detail: p ? `Prev ${fmtPct(p.fund_level.net_mtd_ror)} ${delta(fl.net_mtd_ror,p.fund_level.net_mtd_ror,{pct:true})}` : 'After performance fee'},
+    {cls:'red', label:'Investors', value:String(fl.investor_count),
+      detail: p ? `Prev ${p.fund_level.investor_count} ${delta(fl.investor_count,p.fund_level.investor_count)}` : 'Active LPs'},
+  ];
+  document.getElementById('overviewKpis').innerHTML = kpis.map(k =>
+    `<div class="kpi ${k.cls}"><div class="stripe"></div><div class="label">${k.label}</div><div class="value">${k.value}</div><div class="detail">${k.detail}</div></div>`
+  ).join('');
+
+  // MoM table
+  const months = HISTORY.months;
+  const rows = [
+    ['Total Assets', months.map(x => fmtUSD(x.balance_sheet.total_assets,{compact:true}))],
+    ['Total Capital', months.map(x => fmtUSD(x.balance_sheet.total_capital,{compact:true}))],
+    ['Total Liabilities', months.map(x => fmtUSD(x.balance_sheet.total_liabilities,{compact:true}))],
+    ['Subs in Advance', months.map(x => fmtUSD(x.balance_sheet.liabilities.subscriptions_advance,{compact:true}))],
+    ['Net Income', months.map(x => fmtUSD(x.income_statement.net_income))],
+    ['Total Income', months.map(x => fmtUSD(x.income_statement.total_income))],
+    ['Gross MTD ROR', months.map(x => fmtPct(x.fund_level.gross_mtd_ror))],
+    ['Net MTD ROR', months.map(x => fmtPct(x.fund_level.net_mtd_ror))],
+    ['NAV/Share', months.map(x => fmtUSD(x.fund_level.nav_per_share,{dp:2}))],
+    ['Investors', months.map(x => String(x.fund_level.investor_count))],
+    ['Perf Fee Collected', months.map(x => fmtUSD(x.fund_level.total_perf_fee||0))],
+  ];
+  document.getElementById('momTable').innerHTML =
+    `<thead><tr><th>Metric</th>${months.map(m => `<th>${m.period_label}</th>`).join('')}</tr></thead>` +
+    `<tbody>${rows.map(r => `<tr><td>${r[0]}</td>${r[1].map(v => `<td>${v}</td>`).join('')}</tr>`).join('')}</tbody>`;
+
+  renderTrend('assetsTrend', months.map(x => x.period_label), months.map(x => x.balance_sheet.total_assets), 'Total Assets', '#3b82f6', {money:true});
+  renderTrend('netIncomeTrend', months.map(x => x.period_label), months.map(x => x.income_statement.net_income), 'Net Income', '#10b981', {money:true, type:'bar'});
+  renderStacked('capSubsChart', months.map(x => x.period_label),
+    [
+      {label:'Total Capital', data:months.map(x => x.balance_sheet.total_capital), color:'#3b82f6'},
+      {label:'Subs in Advance', data:months.map(x => x.balance_sheet.liabilities.subscriptions_advance), color:'#f59e0b'}
+    ]);
+  renderTrend('navChart', months.map(x => x.period_label), months.map(x => x.fund_level.nav_per_share), 'NAV per Share', '#8b5cf6', {money:false});
+}
+
+// ---------- Balance Sheet ----------
+function renderBalance(){
+  const m = currentMonth();
+  const bs = m.balance_sheet;
+  document.getElementById('bsKpis').innerHTML = [
+    {cls:'blue', label:'Total Assets', value:fmtUSD(bs.total_assets), detail:''},
+    {cls:'green', label:'Total Capital', value:fmtUSD(bs.total_capital), detail:''},
+    {cls:'amber', label:'Total Liabilities', value:fmtUSD(bs.total_liabilities), detail:''},
+    {cls:'cyan', label:'Balance Check', value:(Math.abs(bs.total_assets - bs.total_liabilities - bs.total_capital) < 1 ? '✓ Balanced' : '⚠ Off'),
+      detail:`Diff: ${fmtUSD(bs.total_assets - bs.total_liabilities - bs.total_capital)}`}
+  ].map(k =>
+    `<div class="kpi ${k.cls}"><div class="stripe"></div><div class="label">${k.label}</div><div class="value">${k.value}</div><div class="detail">${k.detail}</div></div>`).join('');
+
+  const makeBars = (items, total, palette) => items.map((it, i) => {
+    const pct = total ? (it.val/total)*100 : 0;
+    return `<div class="bar-row"><div class="bar-label">${it.name}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.max(pct,0.5)}%;background:${palette[i%palette.length]}"></div></div>
+      <div class="bar-val">${fmtUSD(it.val,{compact:true})} · ${pct.toFixed(1)}%</div></div>`;
+  }).join('');
+
+  document.getElementById('assetMix').innerHTML = makeBars([
+    {name:'Cascade Tech', val:bs.assets.cascade},
+    {name:'Cash', val:bs.assets.cash},
+    {name:'Crypto', val:bs.assets.crypto},
+  ], bs.total_assets, ['#3b82f6','#10b981','#8b5cf6']);
+
+  document.getElementById('liabMix').innerHTML = makeBars([
+    {name:'Subs in Advance', val:bs.liabilities.subscriptions_advance},
+    {name:'Perf Fees Payable', val:bs.liabilities.perf_fees_payable},
+    {name:'Payable to GP', val:bs.liabilities.payable_to_gp},
+  ], bs.total_liabilities, ['#f59e0b','#ef4444','#06b6d4']);
+
+  document.getElementById('capMix').innerHTML = makeBars([
+    {name:'Capital Additions', val:bs.capital.additions},
+    {name:'Retained Earnings', val:bs.capital.retained_earnings},
+  ], bs.total_capital, ['#3b82f6','#10b981']);
+
+  const months = HISTORY.months;
+  renderStacked('liabTrend', months.map(x => x.period_label), [
+    {label:'Subs in Advance', data:months.map(x => x.balance_sheet.liabilities.subscriptions_advance), color:'#f59e0b'},
+    {label:'Perf Fees Payable', data:months.map(x => x.balance_sheet.liabilities.perf_fees_payable), color:'#ef4444'},
+    {label:'Payable to GP', data:months.map(x => x.balance_sheet.liabilities.payable_to_gp), color:'#06b6d4'},
+  ]);
+
+  const lines = [
+    ['section','ASSETS'],
+    ['Cascade Tech', months.map(x => x.balance_sheet.assets.cascade)],
+    ['Cash', months.map(x => x.balance_sheet.assets.cash)],
+    ['Crypto', months.map(x => x.balance_sheet.assets.crypto)],
+    ['total','Total Assets', months.map(x => x.balance_sheet.total_assets)],
+    ['section','LIABILITIES'],
+    ['Subs in Advance', months.map(x => x.balance_sheet.liabilities.subscriptions_advance)],
+    ['Perf Fees Payable', months.map(x => x.balance_sheet.liabilities.perf_fees_payable)],
+    ['Payable to GP', months.map(x => x.balance_sheet.liabilities.payable_to_gp)],
+    ['total','Total Liabilities', months.map(x => x.balance_sheet.total_liabilities)],
+    ['section','CAPITAL'],
+    ['Capital Additions', months.map(x => x.balance_sheet.capital.additions)],
+    ['Retained Earnings', months.map(x => x.balance_sheet.capital.retained_earnings)],
+    ['total','Total Capital', months.map(x => x.balance_sheet.total_capital)],
+  ];
+  document.getElementById('bsMomTable').innerHTML = renderMomTableRows(months, lines);
+}
+
+function renderMomTableRows(months, lines){
+  const head = `<thead><tr><th>Line</th>${months.map(m => `<th>${m.period_label}</th>`).join('')}</tr></thead>`;
+  const body = `<tbody>${lines.map(line => {
+    if(line[0]==='section') return `<tr class="section-row"><td colspan="${months.length+1}">${line[1]}</td></tr>`;
+    if(line[0]==='total') return `<tr class="total-row"><td>${line[1]}</td>${line[2].map(v => `<td>${fmtUSD(v)}</td>`).join('')}</tr>`;
+    return `<tr><td>${line[0]}</td>${line[1].map(v => `<td>${fmtUSD(v)}</td>`).join('')}</tr>`;
+  }).join('')}</tbody>`;
+  return head + body;
+}
+
+// ---------- Income ----------
+function renderIncome(){
+  const m = currentMonth(), p = priorMonth();
+  const inc = m.income_statement;
+  document.getElementById('isKpis').innerHTML = [
+    {cls:'green', label:'Total Income', value:fmtUSD(inc.total_income),
+      detail: p ? `Prev ${fmtUSD(p.income_statement.total_income)} ${delta(inc.total_income,p.income_statement.total_income,{money:true})}` : ''},
+    {cls:'red', label:'Total Expense', value:fmtUSD(inc.total_expense),
+      detail: p ? `Prev ${fmtUSD(p.income_statement.total_expense)} ${delta(inc.total_expense,p.income_statement.total_expense,{money:true})}` : ''},
+    {cls:'purple', label:'Net Income', value:fmtUSD(inc.net_income),
+      detail: p ? `Prev ${fmtUSD(p.income_statement.net_income)} ${delta(inc.net_income,p.income_statement.net_income,{money:true})}` : ''},
+    {cls:'amber', label:'Net Margin', value:(inc.total_income ? ((inc.net_income/inc.total_income)*100).toFixed(1)+'%' : '—'),
+      detail:'Net Income / Total Income'},
+  ].map(k =>
+    `<div class="kpi ${k.cls}"><div class="stripe"></div><div class="label">${k.label}</div><div class="value">${k.value}</div><div class="detail">${k.detail}</div></div>`).join('');
+
+  const makeBars = (obj, total, palette) => Object.entries(obj).map(([k,v],i) => {
+    const pct = total ? (Math.abs(v)/Math.abs(total))*100 : 0;
+    return `<div class="bar-row"><div class="bar-label">${k.replace(/_/g,' ')}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.max(pct,0.5)}%;background:${palette[i%palette.length]}"></div></div>
+      <div class="bar-val">${fmtUSD(v)}</div></div>`;
+  }).join('');
+
+  document.getElementById('incomeBars').innerHTML = makeBars(inc.income, inc.total_income, ['#10b981','#3b82f6','#8b5cf6','#06b6d4']);
+  document.getElementById('expenseBars').innerHTML = makeBars(inc.expense, inc.total_expense, ['#ef4444','#f59e0b','#8b5cf6']);
+
+  const months = HISTORY.months;
+  const lines = [
+    ['section','INCOME'],
+    ['Misc Trading', months.map(x => x.income_statement.income.misc_trading)],
+    ['Realized G/L Crypto', months.map(x => x.income_statement.income.realized_gl_crypto)],
+    ['Reward', months.map(x => x.income_statement.income.reward)],
+    ['Interest', months.map(x => x.income_statement.income.interest)],
+    ['total','Total Income', months.map(x => x.income_statement.total_income)],
+    ['section','EXPENSE'],
+    ['Performance Fees', months.map(x => x.income_statement.expense.perf_fees)],
+    ['Bank Charges', months.map(x => x.income_statement.expense.bank_charges)],
+    ['total','Total Expense', months.map(x => x.income_statement.total_expense)],
+    ['section','NET'],
+    ['total','Net Income', months.map(x => x.income_statement.net_income)],
+  ];
+  document.getElementById('isMomTable').innerHTML = renderMomTableRows(months, lines);
+}
+
+// ---------- Capital Activity ----------
+function renderCapital(){
+  const m = currentMonth(), p = priorMonth();
+  const totalAdd = m.investors.reduce((s,i)=>s+(i.additions||0),0);
+  const totalWd = m.investors.reduce((s,i)=>s+(i.withdrawals||0),0);
+  const totalXfr = m.investors.reduce((s,i)=>s+(i.transfers||0),0);
+  const totalGP = m.investors.reduce((s,i)=>s+(i.gross_profit||0),0);
+  const totalPerf = m.investors.reduce((s,i)=>s+(i.perf_fee||0),0);
+
+  document.getElementById('capKpis').innerHTML = [
+    {cls:'green', label:'Additions', value:fmtUSD(totalAdd,{compact:true})},
+    {cls:'red', label:'Withdrawals', value:fmtUSD(totalWd,{compact:true})},
+    {cls:'amber', label:'Net Flow', value:fmtUSD(totalAdd-totalWd,{compact:true})},
+    {cls:'blue', label:'Gross Profit Allocated', value:fmtUSD(totalGP,{compact:true})},
+    {cls:'purple', label:'Perf Fee', value:fmtUSD(totalPerf,{compact:true})},
+    {cls:'cyan', label:'Subs Received in Advance', value:fmtUSD(m.balance_sheet.liabilities.subscriptions_advance,{compact:true}),
+      detail:'Pending capital next month'}
+  ].map(k =>
+    `<div class="kpi ${k.cls}"><div class="stripe"></div><div class="label">${k.label}</div><div class="value">${k.value}</div><div class="detail">${k.detail||''}</div></div>`).join('');
+
+  const months = HISTORY.months;
+  const adds = months.map(x => x.investors.reduce((s,i)=>s+(i.additions||0),0));
+  const wds = months.map(x => x.investors.reduce((s,i)=>s+(i.withdrawals||0),0));
+  renderStacked('flowChart', months.map(x => x.period_label), [
+    {label:'Additions', data:adds, color:'#10b981'},
+    {label:'Withdrawals', data:wds.map(v=>-v), color:'#ef4444'},
+  ], {stacked:false});
+
+  const subs = m.balance_sheet.liabilities.subscriptions_advance;
+  const nextAdds = (CURRENT_MONTH_IDX+1 < months.length) ? months[CURRENT_MONTH_IDX+1].investors.reduce((s,i)=>s+(i.additions||0),0) : null;
+  document.getElementById('subsPipeline').innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-box"><div class="sb-label">Subs in Advance (this month)</div><div class="sb-val">${fmtUSD(subs,{compact:true})}</div><div class="sb-sub">Flows into next month's capital</div></div>
+      <div class="stat-box"><div class="sb-label">Next Month Additions</div><div class="sb-val">${nextAdds!==null ? fmtUSD(nextAdds,{compact:true}) : '—'}</div><div class="sb-sub">${nextAdds===null?'Not yet reported':''}</div></div>
+    </div>`;
+
+  const lines = [
+    ['Additions', adds],
+    ['Withdrawals', wds],
+    ['Transfers', months.map(x => x.investors.reduce((s,i)=>s+(i.transfers||0),0))],
+    ['total','Net Flow', adds.map((a,i)=>a-wds[i])],
+    ['Gross Profit', months.map(x => x.investors.reduce((s,i)=>s+(i.gross_profit||0),0))],
+    ['Perf Fee', months.map(x => x.investors.reduce((s,i)=>s+(i.perf_fee||0),0))],
+    ['Subs in Advance', months.map(x => x.balance_sheet.liabilities.subscriptions_advance)],
+  ];
+  document.getElementById('capMomTable').innerHTML = renderMomTableRows(months, lines);
+}
+
+// ---------- Investors ----------
+function renderInvestors(){
+  const m = currentMonth();
+  document.getElementById('invMonthLabel').textContent = m.period_label;
+  const tbody = document.querySelector('#invTable tbody');
+  let list = m.investors.slice();
+  if(INV_FILTER) list = list.filter(i => (i.name||'').toLowerCase().includes(INV_FILTER.toLowerCase()));
+  list.sort((a,b) => {
+    const av = a[INV_SORT.key], bv = b[INV_SORT.key];
+    if(typeof av === 'string') return INV_SORT.dir==='asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+    return INV_SORT.dir==='asc' ? (av-bv) : (bv-av);
+  });
+  tbody.innerHTML = list.map(i => `
+    <tr class="clickable" data-investor="${i.investor_no}">
+      <td class="name-cell">${i.name}</td>
+      <td class="right mono">${fmtPct(i.end_ownership,3)}</td>
+      <td class="right mono">${fmtUSD(i.additions)}</td>
+      <td class="right mono">${fmtUSD(i.withdrawals)}</td>
+      <td class="right mono">${fmtUSD(i.ending_balance)}</td>
+      <td class="right mono">${fmtNum(i.shares_end,4)}</td>
+      <td class="right mono">${fmtUSD(i.nav_per_share,{dp:2})}</td>
+      <td class="right mono">${fmtUSD(i.gross_profit)}</td>
+      <td class="right mono">${fmtUSD(i.perf_fee)}</td>
+      <td class="right mono">${fmtPct(i.gross_mtd_ror)}</td>
+      <td class="right mono">${fmtPct(i.net_mtd_ror)}</td>
+      <td class="right mono">${fmtPct(i.ytd_ror)}</td>
+    </tr>`).join('');
+  tbody.querySelectorAll('tr.clickable').forEach(tr => {
+    tr.addEventListener('click', () => openInvestorDrawer(tr.dataset.investor));
+  });
+}
+
+function openInvestorDrawer(invNo){
+  const rows = HISTORY.months.map(mm => ({
+    period: mm.period_label,
+    rec: mm.investors.find(x => x.investor_no === invNo)
+  })).filter(r => r.rec);
+  if(!rows.length) return;
+  const name = rows[rows.length-1].rec.name;
+  const body = `
+    <h3>${name}</h3>
+    <div style="color:var(--text-muted);font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:1.25rem">${invNo}</div>
+    <div style="overflow-x:auto"><table class="data-table">
+      <thead><tr><th>Month</th><th class="right">Own %</th><th class="right">Additions</th><th class="right">Withdrawals</th><th class="right">Ending Balance</th><th class="right">Shares</th><th class="right">Gross MTD</th><th class="right">Net MTD</th><th class="right">YTD</th><th class="right">Perf Fee</th></tr></thead>
+      <tbody>${rows.map(r => `
+        <tr>
+          <td>${r.period}</td>
+          <td class="right mono">${fmtPct(r.rec.end_ownership,3)}</td>
+          <td class="right mono">${fmtUSD(r.rec.additions)}</td>
+          <td class="right mono">${fmtUSD(r.rec.withdrawals)}</td>
+          <td class="right mono">${fmtUSD(r.rec.ending_balance)}</td>
+          <td class="right mono">${fmtNum(r.rec.shares_end,4)}</td>
+          <td class="right mono">${fmtPct(r.rec.gross_mtd_ror)}</td>
+          <td class="right mono">${fmtPct(r.rec.net_mtd_ror)}</td>
+          <td class="right mono">${fmtPct(r.rec.ytd_ror)}</td>
+          <td class="right mono">${fmtUSD(r.rec.perf_fee)}</td>
+        </tr>`).join('')}</tbody>
+    </table></div>`;
+  document.getElementById('drawerContent').innerHTML = body;
+  document.getElementById('drawerBackdrop').classList.add('show');
+  document.getElementById('drawer').classList.add('show');
+}
+function closeDrawer(){
+  document.getElementById('drawerBackdrop').classList.remove('show');
+  document.getElementById('drawer').classList.remove('show');
+}
+
+// ---------- Positions & Fees ----------
+function renderPositions(){
+  const m = currentMonth();
+  const pos = m.positions || [];
+  document.getElementById('positionsTable').innerHTML = pos.length ? `
+    <table class="data-table">
+      <thead><tr><th>Asset</th><th>Symbol</th><th class="right">Qty</th><th class="right">Market Value</th><th class="right">Unrealized G/L</th></tr></thead>
+      <tbody>${pos.map(p => `<tr>
+        <td>${p.asset_class}</td><td class="mono">${p.symbol}</td>
+        <td class="right mono">${fmtNum(p.qty,6)}</td>
+        <td class="right mono">${fmtUSD(p.mv,{dp:2})}</td>
+        <td class="right mono" style="color:${p.unrealized_gl>=0?'var(--green)':'var(--red)'}">${fmtUSD(p.unrealized_gl,{dp:2})}</td>
+      </tr>`).join('')}</tbody>
+    </table>` : `<div class="empty">No positions reported</div>`;
+
+  const rt = m.realized_trades || [];
+  document.getElementById('realizedTable').innerHTML = rt.length ? `
+    <table class="data-table">
+      <thead><tr><th>Date</th><th>Symbol</th><th class="right">Qty</th><th class="right">Realized G/L</th></tr></thead>
+      <tbody>${rt.map(r => `<tr>
+        <td class="mono">${r.date}</td><td class="mono">${r.symbol}</td>
+        <td class="right mono">${fmtNum(r.qty,4)}</td>
+        <td class="right mono" style="color:${r.realized_gl>=0?'var(--green)':'var(--red)'}">${fmtUSD(r.realized_gl,{dp:2})}</td>
+      </tr>`).join('')}</tbody>
+    </table>` : `<div class="empty">No realized trades this month</div>`;
+
+  const op = m.operating_expenses || {};
+  document.getElementById('opExp').innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-box"><div class="sb-label">Administration Fees</div><div class="sb-val">${fmtUSD(op.admin_fees||0)}</div></div>
+      <div class="stat-box"><div class="sb-label">Bank Charges</div><div class="sb-val">${fmtUSD(op.bank_charges||0)}</div></div>
+    </div>`;
+
+  const totalPerf = m.investors.reduce((s,i)=>s+(i.perf_fee||0),0);
+  const totalMgmt = m.investors.reduce((s,i)=>s+(i.mgmt_fee||0),0);
+  document.getElementById('feesSummary').innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-box"><div class="sb-label">Perf Fee Rate</div><div class="sb-val">${fmtPct(m.fund_level.perf_fee_rate,1)}</div></div>
+      <div class="stat-box"><div class="sb-label">Perf Fee Collected</div><div class="sb-val">${fmtUSD(totalPerf)}</div></div>
+      <div class="stat-box"><div class="sb-label">Mgmt Fee Rate</div><div class="sb-val">${fmtPct(m.fund_level.mgmt_fee_rate,1)}</div></div>
+      <div class="stat-box"><div class="sb-label">Mgmt Fee Collected</div><div class="sb-val">${fmtUSD(totalMgmt)}</div></div>
+    </div>`;
+}
+
+// ---------- Reconciliation ----------
+function renderRecon(){
+  const m = currentMonth();
+  document.getElementById('reconMonthLabel').textContent = m.period_label;
+  const r = m.reconciliation || {};
+  const items = [
+    {name:'MV Break', val:r.mv_break||0},
+    {name:'Trade Break', val:r.trade_break||0},
+    {name:'Cash Transaction Break', val:r.cash_break||0},
+  ];
+  document.getElementById('reconGrid').innerHTML = items.map(it => {
+    const clean = Math.abs(it.val) < 0.01;
+    return `<div class="recon-box ${clean?'ok':'warn'}">
+      <div class="r-label">${it.name}</div>
+      <div class="r-val" style="color:${clean?'var(--green)':'var(--red)'}">${clean ? '✓ Zero' : fmtUSD(it.val,{dp:2})}</div>
+      <div style="margin-top:0.5rem"><span class="tag ${clean?'ok':'warn'}">${clean?'Reconciled':'Investigate'}</span></div>
+    </div>`;
+  }).join('');
+}
+
+// ============ CHARTS ============
+Chart.defaults.color = '#8494b0';
+Chart.defaults.borderColor = 'rgba(42,53,80,0.4)';
+Chart.defaults.font.family = "'DM Sans', sans-serif";
+
+function renderTrend(canvasId, labels, data, label, color, opts={}){
+  const ctx = document.getElementById(canvasId);
+  if(!ctx) return;
+  CHARTS[canvasId]?.destroy();
+  CHARTS[canvasId] = new Chart(ctx, {
+    type: opts.type || 'line',
+    data: {labels, datasets:[{
+      label, data, borderColor:color, backgroundColor:color+'33',
+      borderWidth:2, tension:0.35, fill:opts.type!=='bar', pointRadius:4, pointBackgroundColor:color
+    }]},
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:(c)=>opts.money?fmtUSD(c.parsed.y):fmtNum(c.parsed.y,2)}}},
+      scales:{
+        y:{ticks:{callback:(v)=>opts.money?fmtUSD(v,{compact:true}):fmtNum(v,2)}, grid:{color:'rgba(42,53,80,0.3)'}},
+        x:{grid:{display:false}}
+      }
+    }
+  });
+}
+
+function renderStacked(canvasId, labels, datasets, opts={}){
+  const ctx = document.getElementById(canvasId);
+  if(!ctx) return;
+  CHARTS[canvasId]?.destroy();
+  CHARTS[canvasId] = new Chart(ctx, {
+    type: 'bar',
+    data:{labels, datasets:datasets.map(d=>({
+      label:d.label, data:d.data, backgroundColor:d.color+'cc', borderColor:d.color, borderWidth:1,
+      stack: opts.stacked===false ? undefined : 'main'
+    }))},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{position:'top', labels:{boxWidth:10, font:{size:10}}}, tooltip:{callbacks:{label:(c)=>c.dataset.label+': '+fmtUSD(c.parsed.y)}}},
+      scales:{
+        x:{stacked:opts.stacked!==false, grid:{display:false}},
+        y:{stacked:opts.stacked!==false, ticks:{callback:(v)=>fmtUSD(v,{compact:true})}, grid:{color:'rgba(42,53,80,0.3)'}}
+      }
+    }
+  });
+}
+
+// ============ EVENT WIRING ============
+function wireEvents(){
+  document.getElementById('invSearch').addEventListener('input', e => {
+    INV_FILTER = e.target.value;
+    renderInvestors();
+  });
+  document.querySelectorAll('#invTable thead th').forEach(th => {
+    th.addEventListener('click', () => {
+      const k = th.dataset.sort;
+      if(!k) return;
+      if(INV_SORT.key === k){
+        INV_SORT.dir = INV_SORT.dir==='asc' ? 'desc' : 'asc';
+      } else {
+        INV_SORT.key = k;
+        INV_SORT.dir = 'desc';
+      }
+      document.querySelectorAll('#invTable thead th').forEach(x => x.classList.remove('sort-asc','sort-desc'));
+      th.classList.add(INV_SORT.dir==='asc' ? 'sort-asc' : 'sort-desc');
+      renderInvestors();
+    });
+  });
+}
+
+// ============ BOOT ============
+window.bootDashboard = async function(){
+  if (HISTORY) return;
+  await loadHistory();
+  CURRENT_MONTH_IDX = Math.max(0, HISTORY.months.length - 1);
+  setupTabs();
+  buildMonthSelector();
+  wireEvents();
+  renderAll();
+};
+
+// Boot immediately if already authenticated
+if(sessionStorage.getItem('ap_tpa_auth')==='1'){
+  window.bootDashboard();
+} else {
+  // Boot after login happens via checkPw()
+}
+</script>
+</body>
+</html>

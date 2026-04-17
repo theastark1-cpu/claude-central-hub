@@ -172,7 +172,10 @@ if(sessionStorage.getItem('ap_auth')==='1'){
     <h1>Armada Prime LLP</h1>
     <div class="sub">Fund Analytics Dashboard — 2026</div>
   </div>
-  <div class="period-badge">Q1 2026 Complete</div>
+  <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
+    <div class="period-badge">Q1 2026 Complete</div>
+    <a href="tpa-dashboard.html" style="color:var(--text-dim);font-size:0.78rem;letter-spacing:0.05em;text-decoration:none;padding:0.5rem 0.85rem;border:1px solid var(--border);border-radius:8px;background:var(--surface);transition:all 0.2s" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)'" onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)'">TPA Reports →</a>
+  </div>
 </header>
 
 <div class="dashboard">
