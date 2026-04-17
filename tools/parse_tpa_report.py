@@ -48,29 +48,52 @@ def _round(v: float | None, nd: int = 2) -> float:
 
 
 def _parse_period(ws_rows: list[list[Any]]) -> tuple[str, str, str]:
-    """Return (period 'YYYY-MM', label 'Aug 2025', as_of 'YYYY-MM-DD')."""
-    for row in ws_rows[:6]:
+    """Return (period 'YYYY-MM', label 'Aug 2025', as_of 'YYYY-MM-DD').
+
+    Handles three TPA formats:
+      v1 "As of : Aug-31-2025"
+      v1 "Period : Aug-01-2025 - Aug-31-2025"
+      v2 "November 30, 2025"           (header row)
+      v2 "For the period from November 1, 2025 to November 30, 2025"
+    """
+    for row in ws_rows[:8]:
         for cell in row:
             if not isinstance(cell, str):
                 continue
+            # v1: "As of : Aug-31-2025"
             m = re.search(r"As of\s*:\s*([A-Za-z]{3,})-?(\d{1,2})-?(\d{4})", cell)
             if m:
                 month_name, day, year = m.group(1).lower(), int(m.group(2)), int(m.group(3))
                 month = MONTHS[month_name[:3]]
                 return f"{year}-{month:02d}", f"{month_name.capitalize()[:3]} {year}", f"{year}-{month:02d}-{day:02d}"
-            m = re.search(r"Period\s*:\s*(\d{1,2})-?([A-Za-z]{3,})?-?(\d{4})?", cell)
+            # v1: "Period : Aug-01-2025 - Aug-31-2025"
+            m = re.search(r"([A-Za-z]{3,})-(\d{1,2})-(\d{4})\s*-\s*([A-Za-z]{3,})-(\d{1,2})-(\d{4})", cell)
             if m:
-                # format like "Period : Aug-01-2025 - Aug-31-2025"
-                m2 = re.search(r"([A-Za-z]{3,})-(\d{1,2})-(\d{4})\s*-\s*([A-Za-z]{3,})-(\d{1,2})-(\d{4})", cell)
-                if m2:
-                    end_month = MONTHS[m2.group(4).lower()[:3]]
-                    end_day = int(m2.group(5))
-                    end_year = int(m2.group(6))
-                    return (
-                        f"{end_year}-{end_month:02d}",
-                        f"{m2.group(4)[:3].capitalize()} {end_year}",
-                        f"{end_year}-{end_month:02d}-{end_day:02d}",
-                    )
+                end_month = MONTHS[m.group(4).lower()[:3]]
+                end_day = int(m.group(5))
+                end_year = int(m.group(6))
+                return (
+                    f"{end_year}-{end_month:02d}",
+                    f"{m.group(4)[:3].capitalize()} {end_year}",
+                    f"{end_year}-{end_month:02d}-{end_day:02d}",
+                )
+            # v2: "November 30, 2025" or "For the period from X to November 30, 2025"
+            m = re.search(r"([A-Za-z]{3,})\s+(\d{1,2}),\s*(\d{4})", cell)
+            if m:
+                month_name = m.group(1).lower()[:3]
+                if month_name not in MONTHS:
+                    continue
+                day, year = int(m.group(2)), int(m.group(3))
+                month = MONTHS[month_name]
+                # If cell contains "from X to Y", prefer the second (end) match
+                matches = re.findall(r"([A-Za-z]{3,})\s+(\d{1,2}),\s*(\d{4})", cell)
+                if len(matches) >= 2:
+                    mn, d, y = matches[-1]
+                    if mn.lower()[:3] in MONTHS:
+                        month_name = mn.lower()[:3]
+                        day, year = int(d), int(y)
+                        month = MONTHS[month_name]
+                return f"{year}-{month:02d}", f"{month_name.capitalize()} {year}", f"{year}-{month:02d}-{day:02d}"
     raise ValueError("Could not parse reporting period from workbook")
 
 
@@ -92,6 +115,16 @@ def _find_contains(rows: list[list[Any]], substr: str) -> list[Any] | None:
     return None
 
 
+def _find_starts_with(rows: list[list[Any]], prefix: str) -> list[Any] | None:
+    """Match a row where a cell starts with `prefix` (case-insensitive)."""
+    prefix = prefix.lower()
+    for row in rows:
+        for cell in row:
+            if isinstance(cell, str) and cell.strip().lower().startswith(prefix):
+                return row
+    return None
+
+
 def _last_numeric(row: list[Any]) -> float:
     for v in reversed(row):
         if isinstance(v, (int, float)):
@@ -101,9 +134,14 @@ def _last_numeric(row: list[Any]) -> float:
 
 def parse_balance_sheet(rows: list[list[Any]]) -> dict:
     cascade = _last_numeric(_find_contains(rows, "investment in cascade") or [0])
+    # "Investment in Cryptocurrencies, (At Cost)" — always cost basis
     crypto = _last_numeric(_find_contains(rows, "investment in cryptocurrencies") or [0])
     cash_row = _find_row(rows, "Cash") or []
     cash = _last_numeric(cash_row)
+    # v2 new asset lines
+    loan_acg = _last_numeric(_find_contains(rows, "loan to armada capital") or [0])
+    subs_recv = _last_numeric(_find_contains(rows, "subscription receivable") or [0])
+    unrealized_gl = _last_numeric(_find_contains(rows, "unrealized gain (loss) on investment in cryptocurrencies") or [0])
     total_assets = _last_numeric(_find_row(rows, "Total Assets") or [])
 
     payable_gp = _last_numeric(_find_contains(rows, "payable to gp") or [0])
@@ -112,6 +150,7 @@ def parse_balance_sheet(rows: list[list[Any]]) -> dict:
     total_liab = _last_numeric(_find_row(rows, "Total Liabilities") or [])
 
     capital_add = _last_numeric(_find_contains(rows, "capital addition") or [0])
+    capital_redempt = _last_numeric(_find_contains(rows, "capital redemption") or [0])
     retained = _last_numeric(_find_contains(rows, "income and retained earnings") or [0])
     total_capital = _last_numeric(_find_row(rows, "Total Capital") or [])
 
@@ -121,6 +160,9 @@ def parse_balance_sheet(rows: list[list[Any]]) -> dict:
             "cascade": _round(cascade),
             "crypto": _round(crypto),
             "cash": _round(cash),
+            "loan_to_acg": _round(loan_acg),
+            "subscription_receivable": _round(subs_recv),
+            "unrealized_gl_crypto": _round(unrealized_gl),
         },
         "total_liabilities": _round(total_liab),
         "liabilities": {
@@ -131,6 +173,7 @@ def parse_balance_sheet(rows: list[list[Any]]) -> dict:
         "total_capital": _round(total_capital),
         "capital": {
             "additions": _round(capital_add),
+            "redemptions": _round(capital_redempt),
             "retained_earnings": _round(retained),
         },
     }
@@ -139,15 +182,34 @@ def parse_balance_sheet(rows: list[list[Any]]) -> dict:
 def parse_income_statement(rows: list[list[Any]]) -> dict:
     interest = _last_numeric(_find_contains(rows, "interest income") or [0])
     misc = _last_numeric(_find_contains(rows, "misc. trading income") or [0])
-    realized = _last_numeric(_find_contains(rows, "realized gain (loss) on investment in cryptocurrencies") or [0])
+    # Prefix-match to avoid collision with "Change in Unrealized Gain (Loss) on Investment..."
+    realized = _last_numeric(_find_starts_with(rows, "realized gain") or [0])
     reward = _last_numeric(_find_contains(rows, "reward income") or [0])
+    change_unrealized = _last_numeric(_find_starts_with(rows, "change in unrealized") or [0])
+    cascade_income = _last_numeric(_find_starts_with(rows, "income from cascade") or [0])
     total_income = _last_numeric(_find_row(rows, "Total Income") or [])
 
     bank = _last_numeric(_find_contains(rows, "bank charges") or [0])
+    # "Performance Fees" — prefix-match so it doesn't match "Performance Fees Payable" on Balance Sheet
+    # (safe here since we're parsing the Income Statement sheet)
     perf = _last_numeric(_find_contains(rows, "performance fees") or [0])
+    commission = _last_numeric(_find_starts_with(rows, "commission expense") or [0])
+    # v2 adds "Operating Expense" as its own line; distinct from "Total Expense"
+    op_expense = 0.0
+    for row in rows:
+        for cell in row:
+            if isinstance(cell, str) and cell.strip().lower() == "operating expense":
+                op_expense = _last_numeric(row)
+                break
+
     total_expense = _last_numeric(_find_row(rows, "Total Expense") or [])
 
-    net = _last_numeric(_find_row(rows, "NET INCOME") or _find_row(rows, "Net Income") or [])
+    # Net income row: "NET INCOME", "Net Income", or "Net Income (Loss)"
+    net_row = (_find_row(rows, "NET INCOME")
+               or _find_row(rows, "Net Income")
+               or _find_row(rows, "Net Income (Loss)")
+               or _find_contains(rows, "net income"))
+    net = _last_numeric(net_row or [])
     return {
         "total_income": _round(total_income),
         "income": {
@@ -155,11 +217,15 @@ def parse_income_statement(rows: list[list[Any]]) -> dict:
             "misc_trading": _round(misc),
             "realized_gl_crypto": _round(realized),
             "reward": _round(reward),
+            "change_in_unrealized_gl": _round(change_unrealized),
+            "cascade_income": _round(cascade_income),
         },
         "total_expense": _round(total_expense),
         "expense": {
             "bank_charges": _round(bank),
             "perf_fees": _round(perf),
+            "operating_expense": _round(op_expense),
+            "commission_expense": _round(commission),
         },
         "net_income": _round(net),
     }
@@ -195,6 +261,31 @@ def _header_index(rows: list[list[Any]]) -> tuple[int, dict[str, int]]:
     raise ValueError("Could not locate header row")
 
 
+def _first_data_row(rows: list[list[Any]]) -> int:
+    """For headerless v2 sheets: find first row that looks like investor data.
+
+    Criteria: has >=3 non-empty cells including at least one 14-Class-style ID
+    or a mix of strings + numerics.
+    """
+    for i, row in enumerate(rows):
+        non_empty = [c for c in row if c not in (None, "")]
+        if len(non_empty) < 3:
+            continue
+        has_class_id = any(isinstance(c, str) and re.match(r"^\d+-Class", c) for c in non_empty)
+        has_money = any(isinstance(c, (int, float)) and c > 100 for c in non_empty)
+        if has_class_id and has_money:
+            return i
+    return -1
+
+
+def _sheet(wb, *names: str):
+    """Find a worksheet by any of the candidate names."""
+    for n in names:
+        if n in wb.sheetnames:
+            return wb[n]
+    return None
+
+
 def _col(headers: dict[str, int], *names: str) -> int | None:
     for n in names:
         for k, v in headers.items():
@@ -208,85 +299,135 @@ def _col(headers: dict[str, int], *names: str) -> int | None:
 
 
 def parse_capital_schedule(rows: list[list[Any]]) -> list[dict]:
-    header_idx, headers = _header_index(rows)
-    c_name = _col(headers, "Investor Name")
-    c_no = _col(headers, "Investor No.", "Investor Number")
-    c_beg_own = _col(headers, "Beginning Ownership")
-    c_end_own = _col(headers, "Ending Ownership")
-    c_beg_eq = _col(headers, "Beginning Equity")
-    c_gp = _col(headers, "Gross Profits")
-    c_alloc_fee = _col(headers, "Allocated Fees")
-    c_add = _col(headers, "Additions")
-    c_wd = _col(headers, "Withdrawals")
-    c_xfr = _col(headers, "Transfers In/(Out)")
-    c_end_eq = _col(headers, "Ending Equity")
-
+    """Per-investor capital schedule. v1 has column headers; v2 is headerless
+    positional. v2 schedule column layout:
+        [No., Name, BegOwn, EndOwn, BegEquity, GrossProfit, ExpensedFee,
+         AllocatedFee, Additions, Withdrawals, Transfers, EndingEquity]
+    v1 swaps Name and No. in cols 0-1; remainder is identical.
+    """
     out = []
-    for row in rows[header_idx + 1:]:
-        name = row[c_name] if c_name is not None else None
+    try:
+        header_idx, headers = _header_index(rows)
+        c_name = _col(headers, "Investor Name")
+        c_no = _col(headers, "Investor No.", "Investor Number")
+        c_beg_own = _col(headers, "Beginning Ownership")
+        c_end_own = _col(headers, "Ending Ownership")
+        c_beg_eq = _col(headers, "Beginning Equity")
+        c_gp = _col(headers, "Gross Profits")
+        c_alloc_fee = _col(headers, "Allocated Fees")
+        c_add = _col(headers, "Additions")
+        c_wd = _col(headers, "Withdrawals")
+        c_xfr = _col(headers, "Transfers In/(Out)")
+        c_end_eq = _col(headers, "Ending Equity")
+        data_start = header_idx + 1
+    except ValueError:
+        # v2 headerless — positional
+        data_start = _first_data_row(rows)
+        if data_start < 0:
+            return []
+        # Detect column order: v2 has investor_no at col 0, v1 has name at col 0
+        first_cell = rows[data_start][0] if rows[data_start] else None
+        v2 = isinstance(first_cell, str) and bool(re.match(r"^\d+-Class", first_cell))
+        if v2:
+            c_no, c_name = 0, 1
+        else:
+            c_name, c_no = 0, 1
+        c_beg_own, c_end_own, c_beg_eq, c_gp = 2, 3, 4, 5
+        c_alloc_fee = 7  # col 6 is Expensed Fees (unused)
+        c_add, c_wd, c_xfr, c_end_eq = 8, 9, 10, 11
+
+    for row in rows[data_start:]:
+        name = row[c_name] if c_name is not None and c_name < len(row) else None
         if not isinstance(name, str) or not name.strip() or name.strip().lower() == "total":
             continue
         out.append({
-            "investor_no": row[c_no] if c_no is not None else "",
+            "investor_no": row[c_no] if c_no is not None and c_no < len(row) else "",
             "name": name.strip(),
-            "begin_ownership": _round(row[c_beg_own] if c_beg_own is not None else 0, 6),
-            "end_ownership": _round(row[c_end_own] if c_end_own is not None else 0, 6),
-            "begin_equity": _round(row[c_beg_eq] if c_beg_eq is not None else 0),
-            "gross_profit": _round(row[c_gp] if c_gp is not None else 0),
-            "allocated_fee": _round(row[c_alloc_fee] if c_alloc_fee is not None else 0),
-            "additions": _round(row[c_add] if c_add is not None else 0),
-            "withdrawals": _round(row[c_wd] if c_wd is not None else 0),
-            "transfers": _round(row[c_xfr] if c_xfr is not None else 0),
-            "ending_balance": _round(row[c_end_eq] if c_end_eq is not None else 0),
+            "begin_ownership": _round(row[c_beg_own] if c_beg_own is not None and c_beg_own < len(row) else 0, 6),
+            "end_ownership": _round(row[c_end_own] if c_end_own is not None and c_end_own < len(row) else 0, 6),
+            "begin_equity": _round(row[c_beg_eq] if c_beg_eq is not None and c_beg_eq < len(row) else 0),
+            "gross_profit": _round(row[c_gp] if c_gp is not None and c_gp < len(row) else 0),
+            "allocated_fee": _round(row[c_alloc_fee] if c_alloc_fee is not None and c_alloc_fee < len(row) else 0),
+            "additions": _round(row[c_add] if c_add is not None and c_add < len(row) else 0),
+            "withdrawals": _round(row[c_wd] if c_wd is not None and c_wd < len(row) else 0),
+            "transfers": _round(row[c_xfr] if c_xfr is not None and c_xfr < len(row) else 0),
+            "ending_balance": _round(row[c_end_eq] if c_end_eq is not None and c_end_eq < len(row) else 0),
         })
     return out
 
 
 def parse_investor_capital_summary(rows: list[list[Any]]) -> tuple[list[dict], dict]:
-    header_idx, headers = _header_index(rows)
-    c_name = _col(headers, "Investor Name")
-    c_no = _col(headers, "Investor Number", "Investor No.")
-    c_begin = _col(headers, "Begin Balance")
-    c_end = _col(headers, "Ending Balance")
-    c_shares_end = _col(headers, "Shares Ending")
-    c_shares_begin = _col(headers, "Shares Begin")
-    c_nav = _col(headers, "NAV Per Share")
-    c_gross_mtd = _col(headers, "Gross MTD ROR")
-    c_net_mtd = _col(headers, "Net MTD ROR")
-    c_ytd = _col(headers, "YTD ROR")
-    c_mgmt = _col(headers, "Mgmt Fee")
-    c_perf = _col(headers, "Perf Fee")
+    """Per-investor capital summary. v1 has column headers; v2 is headerless
+    but uses the same 29-column layout as v1.
+
+    Canonical column order (0-indexed):
+      0 Period | 1 Fund Name | 2 Investor Name | 3 Investor Number |
+      4 Share Class | 5 Series | 6 Begin Balance | 7 Shares Begin |
+      8 Additions Begin | 9 Additions Shares Begin | ...
+      14 Total P&L | 15 Mgmt Fee | 16 Perf Fee | 17 Additions End | ...
+      23 Ending Balance | 24 Shares Ending | 25 NAV Per Share |
+      26 Gross MTD ROR | 27 Net MTD ROR | 28 YTD ROR
+    """
+    try:
+        header_idx, headers = _header_index(rows)
+        c_name = _col(headers, "Investor Name")
+        c_no = _col(headers, "Investor Number", "Investor No.")
+        c_begin = _col(headers, "Begin Balance")
+        c_end = _col(headers, "Ending Balance")
+        c_shares_end = _col(headers, "Shares Ending")
+        c_shares_begin = _col(headers, "Shares Begin")
+        c_nav = _col(headers, "NAV Per Share")
+        c_gross_mtd = _col(headers, "Gross MTD ROR")
+        c_net_mtd = _col(headers, "Net MTD ROR")
+        c_ytd = _col(headers, "YTD ROR")
+        c_mgmt = _col(headers, "Mgmt Fee")
+        c_perf = _col(headers, "Perf Fee")
+        c_add_end = _col(headers, "Additions End")
+        c_add_begin = _col(headers, "Additions Begin")
+        data_start = header_idx + 1
+    except ValueError:
+        # v2 positional
+        data_start = _first_data_row(rows)
+        if data_start < 0:
+            return [], {}
+        c_name, c_no = 2, 3
+        c_begin, c_shares_begin = 6, 7
+        c_add_begin = 8
+        c_mgmt, c_perf = 15, 16
+        c_add_end = 17
+        c_end, c_shares_end = 23, 24
+        c_nav = 25
+        c_gross_mtd, c_net_mtd, c_ytd = 26, 27, 28
 
     rows_out = []
-    for row in rows[header_idx + 1:]:
-        name = row[c_name] if c_name is not None else None
+    for row in rows[data_start:]:
+        name = row[c_name] if c_name is not None and c_name < len(row) else None
         if not isinstance(name, str) or not name.strip() or "total" in name.strip().lower():
             continue
         rows_out.append({
-            "investor_no": row[c_no] if c_no is not None else "",
+            "investor_no": row[c_no] if c_no is not None and c_no < len(row) else "",
             "name": name.strip(),
-            "begin_balance": _round(row[c_begin] if c_begin is not None else 0),
-            "ending_balance": _round(row[c_end] if c_end is not None else 0),
-            "shares_begin": _round(row[c_shares_begin] if c_shares_begin is not None else 0, 6),
-            "shares_end": _round(row[c_shares_end] if c_shares_end is not None else 0, 6),
-            "nav_per_share": _round(row[c_nav] if c_nav is not None else 0, 4),
-            "gross_mtd_ror": _round(row[c_gross_mtd] if c_gross_mtd is not None else 0, 6),
-            "net_mtd_ror": _round(row[c_net_mtd] if c_net_mtd is not None else 0, 6),
-            "ytd_ror": _round(row[c_ytd] if c_ytd is not None else 0, 6),
-            "mgmt_fee": _round(row[c_mgmt] if c_mgmt is not None else 0),
-            "perf_fee": _round(row[c_perf] if c_perf is not None else 0),
+            "begin_balance": _round(row[c_begin] if c_begin is not None and c_begin < len(row) else 0),
+            "ending_balance": _round(row[c_end] if c_end is not None and c_end < len(row) else 0),
+            "shares_begin": _round(row[c_shares_begin] if c_shares_begin is not None and c_shares_begin < len(row) else 0, 6),
+            "shares_end": _round(row[c_shares_end] if c_shares_end is not None and c_shares_end < len(row) else 0, 6),
+            "nav_per_share": _round(row[c_nav] if c_nav is not None and c_nav < len(row) else 0, 4),
+            "gross_mtd_ror": _round(row[c_gross_mtd] if c_gross_mtd is not None and c_gross_mtd < len(row) else 0, 6),
+            "net_mtd_ror": _round(row[c_net_mtd] if c_net_mtd is not None and c_net_mtd < len(row) else 0, 6),
+            "ytd_ror": _round(row[c_ytd] if c_ytd is not None and c_ytd < len(row) else 0, 6),
+            "mgmt_fee": _round(row[c_mgmt] if c_mgmt is not None and c_mgmt < len(row) else 0),
+            "perf_fee": _round(row[c_perf] if c_perf is not None and c_perf < len(row) else 0),
         })
 
-    # find total row for fund-level aggregate
     fund_level = {}
-    for row in rows[header_idx + 1:]:
+    for row in rows[data_start:]:
         first_non_empty = next((c for c in row if c not in (None, "")), "")
         if isinstance(first_non_empty, str) and "total" in first_non_empty.lower():
             fund_level = {
-                "total_additions_end": _round(row[_col(headers, "Additions End")] if _col(headers, "Additions End") is not None else 0),
-                "total_additions_begin": _round(row[_col(headers, "Additions Begin")] if _col(headers, "Additions Begin") is not None else 0),
-                "total_ending_balance": _round(row[c_end] if c_end is not None else 0),
-                "total_shares": _round(row[c_shares_end] if c_shares_end is not None else 0, 6),
+                "total_additions_end": _round(row[c_add_end] if c_add_end is not None and c_add_end < len(row) else 0),
+                "total_additions_begin": _round(row[c_add_begin] if c_add_begin is not None and c_add_begin < len(row) else 0),
+                "total_ending_balance": _round(row[c_end] if c_end is not None and c_end < len(row) else 0),
+                "total_shares": _round(row[c_shares_end] if c_shares_end is not None and c_shares_end < len(row) else 0, 6),
             }
             break
     return rows_out, fund_level
@@ -415,18 +556,35 @@ def parse_reconciliation(rows: list[list[Any]]) -> dict:
 def parse_workbook(path: Path) -> dict:
     wb = openpyxl.load_workbook(path, data_only=True)
 
-    bs = parse_balance_sheet(_rows(wb["Balance Sheet"]))
-    period, label, as_of = _parse_period(_rows(wb["Balance Sheet"]))
-    inc = parse_income_statement(_rows(wb["Income Statement"]))
-    cap_sched = parse_capital_schedule(_rows(wb["Capital Schedule"]))
-    inv_summary, fund_totals = parse_investor_capital_summary(_rows(wb["Investor Capital Summary"]))
-    positions = parse_positions(_rows(wb["Position Report"])) if "Position Report" in wb.sheetnames else []
-    realized = parse_realized(_rows(wb["Realized Gain Loss"])) if "Realized Gain Loss" in wb.sheetnames else []
-    op_exp = parse_operating_expenses(_rows(wb["Operating Expenses Detailed"])) if "Operating Expenses Detailed" in wb.sheetnames else {}
+    bs_sheet = _sheet(wb, "Balance Sheet")
+    if bs_sheet is None:
+        raise ValueError("Balance Sheet not found")
+    bs = parse_balance_sheet(_rows(bs_sheet))
+    period, label, as_of = _parse_period(_rows(bs_sheet))
+
+    inc_sheet = _sheet(wb, "Income Statement", "Statement of Operations")
+    inc = parse_income_statement(_rows(inc_sheet)) if inc_sheet else {}
+
+    cap_sched_sheet = _sheet(wb, "Capital Schedule", "Investors Capital Schedule")
+    cap_sched = parse_capital_schedule(_rows(cap_sched_sheet)) if cap_sched_sheet else []
+
+    inv_sum_sheet = _sheet(wb, "Investor Capital Summary", "Investors Capital Summary")
+    inv_summary, fund_totals = parse_investor_capital_summary(_rows(inv_sum_sheet)) if inv_sum_sheet else ([], {})
+
+    pos_sheet = _sheet(wb, "Position Report", "Portfolio Valuation")
+    positions = parse_positions(_rows(pos_sheet)) if pos_sheet else []
+
+    real_sheet = _sheet(wb, "Realized Gain Loss", "Realized Gain (Loss)")
+    realized = parse_realized(_rows(real_sheet)) if real_sheet else []
+
+    op_sheet = _sheet(wb, "Operating Expenses Detailed")
+    op_exp = parse_operating_expenses(_rows(op_sheet)) if op_sheet else {}
     # Bank charges are booked on the Income Statement each period; mirror that value here so the
     # dashboard shows cash-cost-of-month even when the OpEx roll-forward splits it into paid/unpaid.
-    op_exp["bank_charges"] = abs(inc["expense"].get("bank_charges", 0))
-    recon = parse_reconciliation(_rows(wb["Reconciliation Summary"])) if "Reconciliation Summary" in wb.sheetnames else {}
+    op_exp["bank_charges"] = abs(inc.get("expense", {}).get("bank_charges", 0))
+
+    recon_sheet = _sheet(wb, "Reconciliation Summary")
+    recon = parse_reconciliation(_rows(recon_sheet)) if recon_sheet else {}
 
     # Merge per-investor records on investor_no
     merged = {}

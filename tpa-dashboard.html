@@ -535,22 +535,28 @@ function renderBalance(){
       <div class="bar-val">${fmtUSD(it.val,{compact:true})} · ${pct.toFixed(1)}%</div></div>`;
   }).join('');
 
-  document.getElementById('assetMix').innerHTML = makeBars([
-    {name:'Cascade Tech', val:bs.assets.cascade},
-    {name:'Cash', val:bs.assets.cash},
-    {name:'Crypto', val:bs.assets.crypto},
-  ], bs.total_assets, ['#3b82f6','#10b981','#8b5cf6']);
+  const assetRows = [
+    {name:'Cascade Tech', val:bs.assets.cascade, color:'#3b82f6'},
+    {name:'Crypto', val:bs.assets.crypto, color:'#8b5cf6'},
+    {name:'Cash', val:bs.assets.cash, color:'#10b981'},
+    {name:'Loan to ACG', val:bs.assets.loan_to_acg ?? 0, color:'#06b6d4'},
+    {name:'Subs Receivable', val:bs.assets.subscription_receivable ?? 0, color:'#f59e0b'},
+    {name:'Unrealized G/L', val:bs.assets.unrealized_gl_crypto ?? 0, color:'#ef4444'},
+  ].filter(r => Math.abs(r.val) > 0.01);
+  document.getElementById('assetMix').innerHTML = makeBars(assetRows, bs.total_assets, assetRows.map(r=>r.color));
 
   document.getElementById('liabMix').innerHTML = makeBars([
-    {name:'Subs in Advance', val:bs.liabilities.subscriptions_advance},
-    {name:'Perf Fees Payable', val:bs.liabilities.perf_fees_payable},
-    {name:'Payable to GP', val:bs.liabilities.payable_to_gp},
-  ], bs.total_liabilities, ['#f59e0b','#ef4444','#06b6d4']);
+    {name:'Subs in Advance', val:bs.liabilities.subscriptions_advance, color:'#f59e0b'},
+    {name:'Perf Fees Payable', val:bs.liabilities.perf_fees_payable, color:'#ef4444'},
+    {name:'Payable to GP', val:bs.liabilities.payable_to_gp, color:'#06b6d4'},
+  ].filter(r => Math.abs(r.val) > 0.01), bs.total_liabilities, ['#f59e0b','#ef4444','#06b6d4']);
 
-  document.getElementById('capMix').innerHTML = makeBars([
-    {name:'Capital Additions', val:bs.capital.additions},
-    {name:'Retained Earnings', val:bs.capital.retained_earnings},
-  ], bs.total_capital, ['#3b82f6','#10b981']);
+  const capRows = [
+    {name:'Capital Additions', val:bs.capital.additions, color:'#3b82f6'},
+    {name:'Redemptions', val:bs.capital.redemptions ?? 0, color:'#ef4444'},
+    {name:'Retained Earnings', val:bs.capital.retained_earnings, color:'#10b981'},
+  ].filter(r => Math.abs(r.val) > 0.01);
+  document.getElementById('capMix').innerHTML = makeBars(capRows, bs.total_capital, capRows.map(r=>r.color));
 
   const months = HISTORY.months;
   renderStacked('liabTrend', months.map(x => x.period_label), [
@@ -562,8 +568,11 @@ function renderBalance(){
   const lines = [
     ['section','ASSETS'],
     ['Cascade Tech', months.map(x => x.balance_sheet.assets.cascade)],
-    ['Cash', months.map(x => x.balance_sheet.assets.cash)],
     ['Crypto', months.map(x => x.balance_sheet.assets.crypto)],
+    ['Cash', months.map(x => x.balance_sheet.assets.cash)],
+    ['Loan to ACG', months.map(x => x.balance_sheet.assets.loan_to_acg ?? 0)],
+    ['Subscription Receivable', months.map(x => x.balance_sheet.assets.subscription_receivable ?? 0)],
+    ['Unrealized G/L Crypto', months.map(x => x.balance_sheet.assets.unrealized_gl_crypto ?? 0)],
     ['total','Total Assets', months.map(x => x.balance_sheet.total_assets)],
     ['section','LIABILITIES'],
     ['Subs in Advance', months.map(x => x.balance_sheet.liabilities.subscriptions_advance)],
@@ -572,6 +581,7 @@ function renderBalance(){
     ['total','Total Liabilities', months.map(x => x.balance_sheet.total_liabilities)],
     ['section','CAPITAL'],
     ['Capital Additions', months.map(x => x.balance_sheet.capital.additions)],
+    ['Capital Redemptions', months.map(x => x.balance_sheet.capital.redemptions ?? 0)],
     ['Retained Earnings', months.map(x => x.balance_sheet.capital.retained_earnings)],
     ['total','Total Capital', months.map(x => x.balance_sheet.total_capital)],
   ];
@@ -604,27 +614,33 @@ function renderIncome(){
   ].map(k =>
     `<div class="kpi ${k.cls}"><div class="stripe"></div><div class="label">${k.label}</div><div class="value">${k.value}</div><div class="detail">${k.detail}</div></div>`).join('');
 
-  const makeBars = (obj, total, palette) => Object.entries(obj).map(([k,v],i) => {
-    const pct = total ? (Math.abs(v)/Math.abs(total))*100 : 0;
-    return `<div class="bar-row"><div class="bar-label">${k.replace(/_/g,' ')}</div>
-      <div class="bar-track"><div class="bar-fill" style="width:${Math.max(pct,0.5)}%;background:${palette[i%palette.length]}"></div></div>
-      <div class="bar-val">${fmtUSD(v)}</div></div>`;
-  }).join('');
+  const makeBars = (obj, total, palette) => Object.entries(obj)
+    .filter(([,v]) => Math.abs(v) > 0.01)
+    .map(([k,v],i) => {
+      const pct = total ? (Math.abs(v)/Math.abs(total))*100 : 0;
+      return `<div class="bar-row"><div class="bar-label">${k.replace(/_/g,' ')}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.max(pct,0.5)}%;background:${palette[i%palette.length]}"></div></div>
+        <div class="bar-val">${fmtUSD(v)}</div></div>`;
+    }).join('');
 
-  document.getElementById('incomeBars').innerHTML = makeBars(inc.income, inc.total_income, ['#10b981','#3b82f6','#8b5cf6','#06b6d4']);
+  document.getElementById('incomeBars').innerHTML = makeBars(inc.income, inc.total_income, ['#10b981','#3b82f6','#8b5cf6','#06b6d4','#f59e0b']);
   document.getElementById('expenseBars').innerHTML = makeBars(inc.expense, inc.total_expense, ['#ef4444','#f59e0b','#8b5cf6']);
 
   const months = HISTORY.months;
   const lines = [
     ['section','INCOME'],
+    ['Income from Cascade', months.map(x => x.income_statement.income.cascade_income ?? 0)],
     ['Misc Trading', months.map(x => x.income_statement.income.misc_trading)],
     ['Realized G/L Crypto', months.map(x => x.income_statement.income.realized_gl_crypto)],
+    ['Change in Unrealized G/L', months.map(x => x.income_statement.income.change_in_unrealized_gl ?? 0)],
     ['Reward', months.map(x => x.income_statement.income.reward)],
     ['Interest', months.map(x => x.income_statement.income.interest)],
     ['total','Total Income', months.map(x => x.income_statement.total_income)],
     ['section','EXPENSE'],
     ['Performance Fees', months.map(x => x.income_statement.expense.perf_fees)],
     ['Bank Charges', months.map(x => x.income_statement.expense.bank_charges)],
+    ['Commission Expense', months.map(x => x.income_statement.expense.commission_expense ?? 0)],
+    ['Operating Expense', months.map(x => x.income_statement.expense.operating_expense ?? 0)],
     ['total','Total Expense', months.map(x => x.income_statement.total_expense)],
     ['section','NET'],
     ['total','Net Income', months.map(x => x.income_statement.net_income)],
