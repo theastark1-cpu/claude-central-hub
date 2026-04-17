@@ -309,12 +309,13 @@ if(sessionStorage.getItem('ap_tpa_auth')==='1'){
   <!-- ============ INVESTORS TAB ============ -->
   <div id="tab-investors" class="tab-content">
     <div class="card">
-      <h2><span class="icon">🔍</span> Investor Detail — <span id="invMonthLabel"></span></h2>
+      <h2><span class="icon">🔍</span> Investor Detail — <span id="invMonthLabel"></span> <span id="invCount" style="color:var(--text-dim);font-weight:400;text-transform:none;letter-spacing:0.02em;font-family:'JetBrains Mono',monospace;margin-left:0.4rem"></span></h2>
       <input type="search" class="search-box" id="invSearch" placeholder="Search investor name…">
       <div style="overflow-x:auto">
         <table class="data-table" id="invTable">
           <thead>
             <tr>
+              <th style="width:40px;text-align:right;color:var(--text-muted)">#</th>
               <th data-sort="name">Name</th>
               <th data-sort="end_ownership" class="right">Own %</th>
               <th data-sort="additions" class="right">Additions</th>
@@ -702,14 +703,18 @@ function renderInvestors(){
   document.getElementById('invMonthLabel').textContent = m.period_label;
   const tbody = document.querySelector('#invTable tbody');
   let list = m.investors.slice();
+  const total = list.length;
   if(INV_FILTER) list = list.filter(i => (i.name||'').toLowerCase().includes(INV_FILTER.toLowerCase()));
+  const countEl = document.getElementById('invCount');
+  if (countEl) countEl.textContent = INV_FILTER ? `· ${list.length} of ${total} investors` : `· ${total} investors`;
   list.sort((a,b) => {
     const av = a[INV_SORT.key], bv = b[INV_SORT.key];
     if(typeof av === 'string') return INV_SORT.dir==='asc' ? av.localeCompare(bv) : bv.localeCompare(av);
     return INV_SORT.dir==='asc' ? (av-bv) : (bv-av);
   });
-  tbody.innerHTML = list.map(i => `
+  tbody.innerHTML = list.map((i, idx) => `
     <tr class="clickable" data-investor="${i.investor_no}">
+      <td class="right mono" style="color:var(--text-muted)">${idx + 1}</td>
       <td class="name-cell">${i.name}</td>
       <td class="right mono">${fmtPct(i.end_ownership,3)}</td>
       <td class="right mono">${fmtUSD(i.additions)}</td>
