@@ -10,7 +10,7 @@
         "consultant": 0.39,
         "raj": 0.005,
         "nairne": 0.005,
-        "phil": 0.005
+        "alec": 0.005
       },
       "fund_totals": {
         "tpa_gross_income": 404850.79,
@@ -20,12 +20,13 @@
         "consultants_pool": 47347.65,
         "raj_pool": 607.02,
         "nairne_pool": 607.02,
-        "phil_pool": 607.02,
+        "alec_gp_pool": 607.02,
         "investor_count": 51,
         "unmapped_count": 0,
         "ending_aum": 12051131.75,
         "gross_mtd_ror": 0.034389,
-        "net_mtd_ror": 0.024072
+        "net_mtd_ror": 0.024072,
+        "total_costs": 51234.17
       },
       "consultants": [
         {
@@ -494,7 +495,7 @@
           "consultant_cut": 6107.13,
           "raj_cut": 78.3,
           "nairne_cut": 78.3,
-          "phil_cut": 78.3
+          "alec_gp_cut": 78.3
         },
         {
           "tpa_id": "14-Class B-1012-1",
@@ -507,7 +508,7 @@
           "consultant_cut": 5912.09,
           "raj_cut": 75.8,
           "nairne_cut": 75.8,
-          "phil_cut": 75.8
+          "alec_gp_cut": 75.8
         },
         {
           "tpa_id": "14-Class B-1027-1",
@@ -520,7 +521,7 @@
           "consultant_cut": 3496.35,
           "raj_cut": 44.83,
           "nairne_cut": 44.83,
-          "phil_cut": 44.83
+          "alec_gp_cut": 44.83
         },
         {
           "tpa_id": "14-Class B-1028-1",
@@ -533,7 +534,7 @@
           "consultant_cut": 3072.71,
           "raj_cut": 39.39,
           "nairne_cut": 39.39,
-          "phil_cut": 39.39
+          "alec_gp_cut": 39.39
         },
         {
           "tpa_id": "14-Class B-1013-1",
@@ -546,7 +547,7 @@
           "consultant_cut": 2896.04,
           "raj_cut": 37.13,
           "nairne_cut": 37.13,
-          "phil_cut": 37.13
+          "alec_gp_cut": 37.13
         },
         {
           "tpa_id": "14-Class B-1057-1",
@@ -559,7 +560,7 @@
           "consultant_cut": 2092.86,
           "raj_cut": 26.83,
           "nairne_cut": 26.83,
-          "phil_cut": 26.83
+          "alec_gp_cut": 26.83
         },
         {
           "tpa_id": "14-Class B-1000-1",
@@ -572,7 +573,7 @@
           "consultant_cut": 1728.69,
           "raj_cut": 22.16,
           "nairne_cut": 22.16,
-          "phil_cut": 22.16
+          "alec_gp_cut": 22.16
         },
         {
           "tpa_id": "14-Class B-1038-1",
@@ -585,7 +586,7 @@
           "consultant_cut": 1456.15,
           "raj_cut": 18.67,
           "nairne_cut": 18.67,
-          "phil_cut": 18.67
+          "alec_gp_cut": 18.67
         },
         {
           "tpa_id": "14-Class B-1006-1",
@@ -598,7 +599,7 @@
           "consultant_cut": 1003.88,
           "raj_cut": 12.87,
           "nairne_cut": 12.87,
-          "phil_cut": 12.87
+          "alec_gp_cut": 12.87
         },
         {
           "tpa_id": "14-Class B-1008-1",
@@ -611,7 +612,7 @@
           "consultant_cut": 993.21,
           "raj_cut": 12.73,
           "nairne_cut": 12.73,
-          "phil_cut": 12.73
+          "alec_gp_cut": 12.73
         },
         {
           "tpa_id": "14-Class B-1009-1",
@@ -624,7 +625,7 @@
           "consultant_cut": 813.14,
           "raj_cut": 10.42,
           "nairne_cut": 10.42,
-          "phil_cut": 10.42
+          "alec_gp_cut": 10.42
         },
         {
           "tpa_id": "14-Class B-1065-1",
@@ -637,7 +638,7 @@
           "consultant_cut": 812.72,
           "raj_cut": 10.42,
           "nairne_cut": 10.42,
-          "phil_cut": 10.42
+          "alec_gp_cut": 10.42
         },
         {
           "tpa_id": "14-Class B-1021-1",
@@ -650,7 +651,7 @@
           "consultant_cut": 806.14,
           "raj_cut": 10.34,
           "nairne_cut": 10.34,
-          "phil_cut": 10.34
+          "alec_gp_cut": 10.34
         },
         {
           "tpa_id": "14-Class B-1076-1",
@@ -663,7 +664,7 @@
           "consultant_cut": 739.24,
           "raj_cut": 9.48,
           "nairne_cut": 9.48,
-          "phil_cut": 9.48
+          "alec_gp_cut": 9.48
         },
         {
           "tpa_id": "14-Class B-1003-1",
@@ -676,7 +677,7 @@
           "consultant_cut": 713.08,
           "raj_cut": 9.14,
           "nairne_cut": 9.14,
-          "phil_cut": 9.14
+          "alec_gp_cut": 9.14
         },
         {
           "tpa_id": "14-Class B-1007-1",
@@ -689,7 +690,7 @@
           "consultant_cut": 657.58,
           "raj_cut": 8.43,
           "nairne_cut": 8.43,
-          "phil_cut": 8.43
+          "alec_gp_cut": 8.43
         },
         {
           "tpa_id": "14-Class B-1026-1",
@@ -702,7 +703,7 @@
           "consultant_cut": 611.38,
           "raj_cut": 7.84,
           "nairne_cut": 7.84,
-          "phil_cut": 7.84
+          "alec_gp_cut": 7.84
         },
         {
           "tpa_id": "14-Class B-1073-1",
@@ -715,7 +716,7 @@
           "consultant_cut": 603.51,
           "raj_cut": 7.74,
           "nairne_cut": 7.74,
-          "phil_cut": 7.74
+          "alec_gp_cut": 7.74
         },
         {
           "tpa_id": "14-Class B-1023-1",
@@ -728,7 +729,7 @@
           "consultant_cut": 585.44,
           "raj_cut": 7.51,
           "nairne_cut": 7.51,
-          "phil_cut": 7.51
+          "alec_gp_cut": 7.51
         },
         {
           "tpa_id": "14-Class B-1030-1",
@@ -741,7 +742,7 @@
           "consultant_cut": 516.45,
           "raj_cut": 6.62,
           "nairne_cut": 6.62,
-          "phil_cut": 6.62
+          "alec_gp_cut": 6.62
         },
         {
           "tpa_id": "14-Class B-1067-1",
@@ -754,7 +755,7 @@
           "consultant_cut": 487.47,
           "raj_cut": 6.25,
           "nairne_cut": 6.25,
-          "phil_cut": 6.25
+          "alec_gp_cut": 6.25
         },
         {
           "tpa_id": "14-Class B-1019-1",
@@ -767,7 +768,7 @@
           "consultant_cut": 474.05,
           "raj_cut": 6.08,
           "nairne_cut": 6.08,
-          "phil_cut": 6.08
+          "alec_gp_cut": 6.08
         },
         {
           "tpa_id": "14-Class B-1018-1",
@@ -780,7 +781,7 @@
           "consultant_cut": 460.78,
           "raj_cut": 5.91,
           "nairne_cut": 5.91,
-          "phil_cut": 5.91
+          "alec_gp_cut": 5.91
         },
         {
           "tpa_id": "14-Class B-1011-1",
@@ -793,7 +794,7 @@
           "consultant_cut": 459.79,
           "raj_cut": 5.89,
           "nairne_cut": 5.89,
-          "phil_cut": 5.89
+          "alec_gp_cut": 5.89
         },
         {
           "tpa_id": "14-Class B-1005-1",
@@ -806,7 +807,7 @@
           "consultant_cut": 454.24,
           "raj_cut": 5.82,
           "nairne_cut": 5.82,
-          "phil_cut": 5.82
+          "alec_gp_cut": 5.82
         },
         {
           "tpa_id": "14-Class B-1014-1",
@@ -819,7 +820,7 @@
           "consultant_cut": 451.16,
           "raj_cut": 5.78,
           "nairne_cut": 5.78,
-          "phil_cut": 5.78
+          "alec_gp_cut": 5.78
         },
         {
           "tpa_id": "14-Class B-1022-1",
@@ -832,7 +833,7 @@
           "consultant_cut": 447.65,
           "raj_cut": 5.74,
           "nairne_cut": 5.74,
-          "phil_cut": 5.74
+          "alec_gp_cut": 5.74
         },
         {
           "tpa_id": "14-Class B-1031-1",
@@ -845,7 +846,7 @@
           "consultant_cut": 445.24,
           "raj_cut": 5.71,
           "nairne_cut": 5.71,
-          "phil_cut": 5.71
+          "alec_gp_cut": 5.71
         },
         {
           "tpa_id": "14-Class B-1032-1",
@@ -858,7 +859,7 @@
           "consultant_cut": 445.24,
           "raj_cut": 5.71,
           "nairne_cut": 5.71,
-          "phil_cut": 5.71
+          "alec_gp_cut": 5.71
         },
         {
           "tpa_id": "14-Class B-1036-1",
@@ -871,7 +872,7 @@
           "consultant_cut": 441.46,
           "raj_cut": 5.66,
           "nairne_cut": 5.66,
-          "phil_cut": 5.66
+          "alec_gp_cut": 5.66
         },
         {
           "tpa_id": "14-Class B-1035-1",
@@ -884,7 +885,7 @@
           "consultant_cut": 441.46,
           "raj_cut": 5.66,
           "nairne_cut": 5.66,
-          "phil_cut": 5.66
+          "alec_gp_cut": 5.66
         },
         {
           "tpa_id": "14-Class B-1053-1",
@@ -897,7 +898,7 @@
           "consultant_cut": 437.78,
           "raj_cut": 5.61,
           "nairne_cut": 5.61,
-          "phil_cut": 5.61
+          "alec_gp_cut": 5.61
         },
         {
           "tpa_id": "14-Class B-1055-1",
@@ -910,7 +911,7 @@
           "consultant_cut": 437.78,
           "raj_cut": 5.61,
           "nairne_cut": 5.61,
-          "phil_cut": 5.61
+          "alec_gp_cut": 5.61
         },
         {
           "tpa_id": "14-Class B-1058-1",
@@ -923,7 +924,7 @@
           "consultant_cut": 430.8,
           "raj_cut": 5.52,
           "nairne_cut": 5.52,
-          "phil_cut": 5.52
+          "alec_gp_cut": 5.52
         },
         {
           "tpa_id": "14-Class B-1061-1",
@@ -936,7 +937,7 @@
           "consultant_cut": 428.92,
           "raj_cut": 5.5,
           "nairne_cut": 5.5,
-          "phil_cut": 5.5
+          "alec_gp_cut": 5.5
         },
         {
           "tpa_id": "14-Class B-1060-1",
@@ -949,7 +950,7 @@
           "consultant_cut": 428.73,
           "raj_cut": 5.5,
           "nairne_cut": 5.5,
-          "phil_cut": 5.5
+          "alec_gp_cut": 5.5
         },
         {
           "tpa_id": "14-Class B-1059-1",
@@ -962,7 +963,7 @@
           "consultant_cut": 428.73,
           "raj_cut": 5.5,
           "nairne_cut": 5.5,
-          "phil_cut": 5.5
+          "alec_gp_cut": 5.5
         },
         {
           "tpa_id": "14-Class B-1064-1",
@@ -975,7 +976,7 @@
           "consultant_cut": 426.53,
           "raj_cut": 5.47,
           "nairne_cut": 5.47,
-          "phil_cut": 5.47
+          "alec_gp_cut": 5.47
         },
         {
           "tpa_id": "14-Class B-1037-1",
@@ -988,7 +989,7 @@
           "consultant_cut": 410.64,
           "raj_cut": 5.26,
           "nairne_cut": 5.26,
-          "phil_cut": 5.26
+          "alec_gp_cut": 5.26
         },
         {
           "tpa_id": "14-Class B-1063-1",
@@ -1001,7 +1002,7 @@
           "consultant_cut": 406.56,
           "raj_cut": 5.21,
           "nairne_cut": 5.21,
-          "phil_cut": 5.21
+          "alec_gp_cut": 5.21
         },
         {
           "tpa_id": "14-Class B-1062-1",
@@ -1014,7 +1015,7 @@
           "consultant_cut": 406.36,
           "raj_cut": 5.21,
           "nairne_cut": 5.21,
-          "phil_cut": 5.21
+          "alec_gp_cut": 5.21
         },
         {
           "tpa_id": "14-Class B-1066-1",
@@ -1027,7 +1028,7 @@
           "consultant_cut": 406.29,
           "raj_cut": 5.21,
           "nairne_cut": 5.21,
-          "phil_cut": 5.21
+          "alec_gp_cut": 5.21
         },
         {
           "tpa_id": "14-Class B-1072-1",
@@ -1040,7 +1041,7 @@
           "consultant_cut": 402.34,
           "raj_cut": 5.16,
           "nairne_cut": 5.16,
-          "phil_cut": 5.16
+          "alec_gp_cut": 5.16
         },
         {
           "tpa_id": "14-Class B-1068-1",
@@ -1053,7 +1054,7 @@
           "consultant_cut": 402.34,
           "raj_cut": 5.16,
           "nairne_cut": 5.16,
-          "phil_cut": 5.16
+          "alec_gp_cut": 5.16
         },
         {
           "tpa_id": "14-Class B-1002-1",
@@ -1066,7 +1067,7 @@
           "consultant_cut": 317.02,
           "raj_cut": 4.06,
           "nairne_cut": 4.06,
-          "phil_cut": 4.06
+          "alec_gp_cut": 4.06
         },
         {
           "tpa_id": "14-Class B-1056-1",
@@ -1079,7 +1080,7 @@
           "consultant_cut": 307.71,
           "raj_cut": 3.95,
           "nairne_cut": 3.95,
-          "phil_cut": 3.95
+          "alec_gp_cut": 3.95
         },
         {
           "tpa_id": "14-Class B-1004-1",
@@ -1092,7 +1093,7 @@
           "consultant_cut": 252.65,
           "raj_cut": 3.24,
           "nairne_cut": 3.24,
-          "phil_cut": 3.24
+          "alec_gp_cut": 3.24
         },
         {
           "tpa_id": "14-Class B-1015-1",
@@ -1105,7 +1106,7 @@
           "consultant_cut": 224.2,
           "raj_cut": 2.87,
           "nairne_cut": 2.87,
-          "phil_cut": 2.87
+          "alec_gp_cut": 2.87
         },
         {
           "tpa_id": "14-Class B-1025-1",
@@ -1118,7 +1119,7 @@
           "consultant_cut": 161.62,
           "raj_cut": 2.07,
           "nairne_cut": 2.07,
-          "phil_cut": 2.07
+          "alec_gp_cut": 2.07
         },
         {
           "tpa_id": "14-Class B-1010-1",
@@ -1131,7 +1132,7 @@
           "consultant_cut": 4.33,
           "raj_cut": 0.06,
           "nairne_cut": 0.06,
-          "phil_cut": 0.06
+          "alec_gp_cut": 0.06
         },
         {
           "tpa_id": "14-Class B-1024-1",
@@ -1144,9 +1145,93 @@
           "consultant_cut": 0.0,
           "raj_cut": 0.0,
           "nairne_cut": 0.0,
-          "phil_cut": 0.0
+          "alec_gp_cut": 0.0
         }
-      ]
+      ],
+      "costs": {
+        "total": 51234.17,
+        "line_items": [
+          {
+            "name": "Chris",
+            "amount": 8000.0
+          },
+          {
+            "name": "TPA",
+            "amount": 1200.0
+          },
+          {
+            "name": "Chris (Hotel+Ticket)",
+            "amount": 3226.17
+          },
+          {
+            "name": "Charalece",
+            "amount": 4000.0
+          },
+          {
+            "name": "Alec (Ticket)",
+            "amount": 886.0
+          },
+          {
+            "name": "Alec (Hotel)",
+            "amount": 1172.0
+          },
+          {
+            "name": "Taxes",
+            "amount": 6750.0
+          },
+          {
+            "name": "Legal",
+            "amount": 26000.0
+          }
+        ],
+        "allocation_by_party": [
+          {
+            "party": "Alec Atkinson",
+            "pct_of_gp_pool": 0.258973,
+            "allocated_expense": 13268.27
+          },
+          {
+            "party": "Jake Gordon",
+            "pct_of_gp_pool": 0.068057,
+            "allocated_expense": 3486.84
+          },
+          {
+            "party": "Fund Hub SPV (Pending Split)",
+            "pct_of_gp_pool": 0.028799,
+            "allocated_expense": 1475.49
+          },
+          {
+            "party": "AJ Affleck",
+            "pct_of_gp_pool": 0.027126,
+            "allocated_expense": 1389.78
+          },
+          {
+            "party": "Luke",
+            "pct_of_gp_pool": 0.007045,
+            "allocated_expense": 360.94
+          },
+          {
+            "party": "Fund Mgmt",
+            "pct_of_gp_pool": 0.595,
+            "allocated_expense": 30484.33
+          },
+          {
+            "party": "Raj (GP fixed)",
+            "pct_of_gp_pool": 0.005,
+            "allocated_expense": 256.17
+          },
+          {
+            "party": "Nairne (GP fixed)",
+            "pct_of_gp_pool": 0.005,
+            "allocated_expense": 256.17
+          },
+          {
+            "party": "Alec (GP fixed)",
+            "pct_of_gp_pool": 0.005,
+            "allocated_expense": 256.17
+          }
+        ]
+      }
     }
   ]
 }

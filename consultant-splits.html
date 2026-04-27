@@ -39,6 +39,14 @@ header{padding:2rem 2.5rem 1.5rem;border-bottom:1px solid var(--border);position
 .month-chip:hover{color:var(--text);border-color:var(--accent)}
 .month-chip.active{color:#fff;background:var(--purple);border-color:var(--purple)}
 
+.tabs{display:flex;gap:0.25rem;margin-bottom:1.5rem;border-bottom:1px solid var(--border);padding-bottom:0;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:0.65rem 1.25rem;font-size:0.8rem;font-weight:500;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;letter-spacing:0.03em;white-space:nowrap}
+.tab:hover{color:var(--text-dim)}
+.tab.active{color:var(--purple);border-bottom-color:var(--purple)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
 .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem}
 .kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.15rem 1.35rem;position:relative;overflow:hidden;transition:border-color 0.3s,transform 0.2s}
 .kpi:hover{border-color:var(--accent);transform:translateY(-2px)}
@@ -173,68 +181,123 @@ if(sessionStorage.getItem('ap_splits_auth')==='1'){
   <div class="month-selector" id="monthSelector"></div>
 
   <div class="note">
-    <strong>How this is calculated:</strong> The TPA performance fee per investor is the GP pool. We attribute each investor's perf fee to the consultant who raised them (per IDS), then split the GP pool: <strong>Fund Mgmt 59.5%</strong>, <strong>Consultant 39%</strong>, <strong>Raj/Nairne/Phil 0.5% each</strong>. TruQuant's 18% is taken upstream and is not on Armada Prime's books. Numbers below use TPA crystallized fees, not the internal makeshift model.
+    <strong>How this is calculated:</strong> The TPA performance fee per investor is the GP pool. We attribute each investor's perf fee to the consultant who raised them (per IDS), then split the GP pool: <strong>Fund Mgmt 59.5%</strong>, <strong>Consultant 39%</strong>, <strong>Raj/Nairne/Alec(GP) 0.5% each</strong>. TruQuant's 18% is taken upstream and is not on Armada Prime's books. <strong>Costs</strong> are weighted by each party's share of the GP pool — if you earn 30% of GP this month, you pay 30% of the costs.
   </div>
 
   <div class="kpi-row" id="topKpis"></div>
 
-  <div class="card">
-    <h2><span class="icon">🪜</span> GP Pool Cascade</h2>
-    <div id="cascadeViz"></div>
+  <div class="tabs">
+    <div class="tab active" data-tab="overview">Overview</div>
+    <div class="tab" data-tab="investors">Per-Investor</div>
+    <div class="tab" data-tab="costs">Costs</div>
+    <div class="tab" data-tab="recon">Reconciliation</div>
   </div>
 
-  <div class="grid-2">
-    <div class="card" style="margin-bottom:0">
-      <h2><span class="icon">👥</span> Consultant Payouts</h2>
+  <!-- ============ OVERVIEW TAB ============ -->
+  <div id="tab-overview" class="tab-content active">
+    <div class="card">
+      <h2><span class="icon">🪜</span> GP Pool Cascade</h2>
+      <div id="cascadeViz"></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card" style="margin-bottom:0">
+        <h2><span class="icon">👥</span> Consultant Payouts (Net of Allocated Costs)</h2>
+        <div style="overflow-x:auto">
+          <table class="data-table" id="consultantTable">
+            <thead>
+              <tr>
+                <th data-sort="consultant">Consultant</th>
+                <th data-sort="investor_count" class="right"># Inv</th>
+                <th data-sort="capital_raised" class="right">Capital Raised</th>
+                <th data-sort="gp_earned_consultant_cut" class="right sort-desc">GP Earned</th>
+                <th data-sort="pct_of_gp_pool" class="right">% Pool</th>
+                <th data-sort="allocated_expense" class="right">− Costs</th>
+                <th data-sort="net_payout" class="right">Net Payout</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:0">
+        <h2><span class="icon">📊</span> Pool Distribution</h2>
+        <div class="chart-wrap"><canvas id="poolChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ PER-INVESTOR TAB ============ -->
+  <div id="tab-investors" class="tab-content">
+    <div class="card">
+      <h2><span class="icon">🔍</span> Per-Investor Breakdown — <span id="invMonthLabel"></span> <span id="invCount" style="color:var(--text-dim);font-weight:400;text-transform:none;letter-spacing:0.02em;font-family:'JetBrains Mono',monospace;margin-left:0.4rem"></span></h2>
+      <input type="search" class="search-box" id="invSearch" placeholder="Search investor or consultant…">
       <div style="overflow-x:auto">
-        <table class="data-table" id="consultantTable">
+        <table class="data-table" id="invTable">
           <thead>
             <tr>
+              <th style="width:40px;text-align:right;color:var(--text-muted)">#</th>
+              <th data-sort="name">Investor</th>
               <th data-sort="consultant">Consultant</th>
-              <th data-sort="investor_count" class="right"># Inv</th>
-              <th data-sort="capital_raised" class="right">Capital Raised</th>
-              <th data-sort="gp_earned_consultant_cut" class="right sort-desc">GP Earned</th>
-              <th data-sort="pct_of_gp_pool" class="right">% Pool</th>
+              <th data-sort="ending_balance" class="right">Ending Balance</th>
+              <th data-sort="gross_profit" class="right">Gross P&amp;L</th>
+              <th data-sort="perf_fee" class="right sort-desc">Perf Fee (Pool)</th>
+              <th data-sort="fund_mgmt_cut" class="right">Fund Mgmt</th>
+              <th data-sort="consultant_cut" class="right">Consultant 39%</th>
+              <th data-sort="raj_cut" class="right">Raj</th>
+              <th data-sort="nairne_cut" class="right">Nairne</th>
+              <th data-sort="alec_gp_cut" class="right">Alec (GP)</th>
             </tr>
           </thead>
           <tbody></tbody>
         </table>
       </div>
     </div>
-    <div class="card" style="margin-bottom:0">
-      <h2><span class="icon">📊</span> Pool Distribution</h2>
-      <div class="chart-wrap"><canvas id="poolChart"></canvas></div>
+  </div>
+
+  <!-- ============ COSTS TAB ============ -->
+  <div id="tab-costs" class="tab-content">
+    <div class="grid-2">
+      <div class="card" style="margin-bottom:0">
+        <h2><span class="icon">🧾</span> Cost Line Items</h2>
+        <div style="overflow-x:auto">
+          <table class="data-table" id="costsTable">
+            <thead>
+              <tr>
+                <th data-sort="name">Category</th>
+                <th data-sort="amount" class="right sort-desc">Amount</th>
+                <th data-sort="pct" class="right">% of Pool</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:0">
+        <h2><span class="icon">⚖️</span> Allocation by GP %</h2>
+        <p style="font-size:0.78rem;color:var(--text-dim);margin-bottom:0.8rem;line-height:1.5">Each party pays the same % of costs as their share of the GP pool. Alec Atkinson appears once as a consultant (his 39%-of-GP investors) and once as Alec (GP) for the new fixed 0.5% — <strong>he carries both expense burdens</strong>.</p>
+        <div style="overflow-x:auto">
+          <table class="data-table" id="costAllocTable">
+            <thead>
+              <tr>
+                <th data-sort="party">Party</th>
+                <th data-sort="pct_of_gp_pool" class="right">% Pool</th>
+                <th data-sort="allocated_expense" class="right sort-desc">Allocated $</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="card">
-    <h2><span class="icon">🔍</span> Per-Investor Breakdown — <span id="invMonthLabel"></span> <span id="invCount" style="color:var(--text-dim);font-weight:400;text-transform:none;letter-spacing:0.02em;font-family:'JetBrains Mono',monospace;margin-left:0.4rem"></span></h2>
-    <input type="search" class="search-box" id="invSearch" placeholder="Search investor or consultant…">
-    <div style="overflow-x:auto">
-      <table class="data-table" id="invTable">
-        <thead>
-          <tr>
-            <th style="width:40px;text-align:right;color:var(--text-muted)">#</th>
-            <th data-sort="name">Investor</th>
-            <th data-sort="consultant">Consultant</th>
-            <th data-sort="ending_balance" class="right">Ending Balance</th>
-            <th data-sort="gross_profit" class="right">Gross P&amp;L</th>
-            <th data-sort="perf_fee" class="right sort-desc">Perf Fee (Pool)</th>
-            <th data-sort="fund_mgmt_cut" class="right">Fund Mgmt</th>
-            <th data-sort="consultant_cut" class="right">Consultant 39%</th>
-            <th data-sort="raj_cut" class="right">Raj</th>
-            <th data-sort="nairne_cut" class="right">Nairne</th>
-            <th data-sort="phil_cut" class="right">Phil</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+  <!-- ============ RECONCILIATION TAB ============ -->
+  <div id="tab-recon" class="tab-content">
+    <div class="card">
+      <h2><span class="icon">✅</span> Reconciliation</h2>
+      <div class="recon-grid" id="reconGrid"></div>
     </div>
-  </div>
-
-  <div class="card">
-    <h2><span class="icon">✅</span> Reconciliation</h2>
-    <div class="recon-grid" id="reconGrid"></div>
   </div>
 
 </div>
@@ -301,19 +364,21 @@ function renderAll(){
   renderConsultants();
   renderPoolChart();
   renderInvestors();
+  renderCosts();
   renderRecon();
 }
 
 function renderTopKpis(){
   const m = currentMonth();
   const ft = m.fund_totals;
+  const costs = ft.total_costs ?? 0;
   const kpis = [
     {cls:'blue', label:'TPA Gross Income', value:fmtUSD(ft.tpa_gross_income,{compact:true}), detail:'Fund cut (post-TruQuant) on the books'},
     {cls:'purple', label:'GP Pool (crystallized)', value:fmtUSD(ft.tpa_perf_fees_crystallized,{compact:true}), detail:'30% of fund cut · drives consultant pay'},
     {cls:'green', label:'Net to Investors', value:fmtUSD(ft.tpa_net_income,{compact:true}), detail:'70% of fund cut · after fees + bank chgs'},
     {cls:'amber', label:'Consultants Pool', value:fmtUSD(ft.consultants_pool,{compact:true}), detail:`39% of GP · ${m.consultants.length} consultants paid`},
+    {cls:'red', label:'Total Costs', value:fmtUSD(costs,{compact:true}), detail:`Allocated pro-rata by GP %`},
     {cls:'cyan', label:'Ending AUM', value:fmtUSD(ft.ending_aum,{compact:true}), detail:`${ft.investor_count} investors · Net MTD ${fmtPct(ft.net_mtd_ror)}`},
-    {cls: ft.unmapped_count===0 ? 'green' : 'red', label:'Unmapped Investors', value:String(ft.unmapped_count), detail: ft.unmapped_count===0 ? 'All investors attributed to a consultant' : 'Fix in IDS Mapping sheet'},
   ];
   document.getElementById('topKpis').innerHTML = kpis.map(k =>
     `<div class="kpi ${k.cls}"><div class="stripe"></div><div class="label">${k.label}</div><div class="value">${k.value}</div><div class="detail">${k.detail}</div></div>`
@@ -329,7 +394,7 @@ function renderCascade(){
     {label:'Consultants 39%', val:ft.consultants_pool, color:'#8b5cf6'},
     {label:'Raj 0.5%', val:ft.raj_pool, color:'#06b6d4'},
     {label:'Nairne 0.5%', val:ft.nairne_pool, color:'#10b981'},
-    {label:'Phil 0.5%', val:ft.phil_pool, color:'#f59e0b'},
+    {label:'Alec (GP) 0.5%', val:ft.alec_gp_pool, color:'#f59e0b'},
   ];
   const segs = items.map(it => {
     const pct = pool ? (it.val/pool)*100 : 0;
@@ -350,7 +415,16 @@ function renderCascade(){
 
 function renderConsultants(){
   const m = currentMonth();
-  const rows = [...m.consultants];
+  const totalCosts = m.fund_totals.total_costs ?? 0;
+  // Enrich consultants with allocated_expense + net_payout
+  const rows = m.consultants.map(c => {
+    const allocated_expense = c.pct_of_gp_pool * totalCosts;
+    return {
+      ...c,
+      allocated_expense,
+      net_payout: c.gp_earned_consultant_cut - allocated_expense,
+    };
+  });
   rows.sort((a,b) => {
     const av = a[CONS_SORT.key], bv = b[CONS_SORT.key];
     if (typeof av === 'string') return CONS_SORT.dir==='asc' ? av.localeCompare(bv) : bv.localeCompare(av);
@@ -361,8 +435,10 @@ function renderConsultants(){
     acc.investor_count += r.investor_count;
     acc.capital_raised += r.capital_raised;
     acc.gp_earned_consultant_cut += r.gp_earned_consultant_cut;
+    acc.allocated_expense += r.allocated_expense;
+    acc.net_payout += r.net_payout;
     return acc;
-  }, {investor_count:0, capital_raised:0, gp_earned_consultant_cut:0});
+  }, {investor_count:0, capital_raised:0, gp_earned_consultant_cut:0, allocated_expense:0, net_payout:0});
 
   const tbody = rows.map(r => {
     const pending = r.consultant.includes('Pending') || r.consultant === 'Unmapped';
@@ -372,6 +448,8 @@ function renderConsultants(){
       <td class="right mono">${fmtUSD(r.capital_raised,{compact:true})}</td>
       <td class="right mono" style="color:var(--purple);font-weight:600">${fmtUSD(r.gp_earned_consultant_cut)}</td>
       <td class="right mono">${fmtPct(r.pct_of_gp_pool)}</td>
+      <td class="right mono" style="color:var(--red)">−${fmtUSD(r.allocated_expense)}</td>
+      <td class="right mono" style="color:var(--green);font-weight:600">${fmtUSD(r.net_payout)}</td>
     </tr>`;
   }).join('');
   const totalPct = totalPool ? totals.gp_earned_consultant_cut / totalPool : 0;
@@ -381,6 +459,8 @@ function renderConsultants(){
     <td class="right mono">${fmtUSD(totals.capital_raised,{compact:true})}</td>
     <td class="right mono">${fmtUSD(totals.gp_earned_consultant_cut)}</td>
     <td class="right mono">${fmtPct(totalPct)}</td>
+    <td class="right mono">−${fmtUSD(totals.allocated_expense)}</td>
+    <td class="right mono">${fmtUSD(totals.net_payout)}</td>
   </tr>`;
   document.querySelector('#consultantTable tbody').innerHTML = tbody + totalRow;
 
@@ -401,9 +481,9 @@ function renderPoolChart(){
   const data = [
     {label:'Fund Mgmt', val:m.fund_totals.fund_mgmt_pool, color:'#3b82f6'},
     ...m.consultants.map((c,i) => ({label:c.consultant, val:c.gp_earned_consultant_cut, color:['#8b5cf6','#06b6d4','#10b981','#f59e0b','#ef4444','#a78bfa','#22d3ee'][i%7]})),
-    {label:'Raj', val:m.fund_totals.raj_pool, color:'#94a3b8'},
-    {label:'Nairne', val:m.fund_totals.nairne_pool, color:'#94a3b8'},
-    {label:'Phil', val:m.fund_totals.phil_pool, color:'#94a3b8'},
+    {label:'Raj (GP)', val:m.fund_totals.raj_pool, color:'#94a3b8'},
+    {label:'Nairne (GP)', val:m.fund_totals.nairne_pool, color:'#94a3b8'},
+    {label:'Alec (GP)', val:m.fund_totals.alec_gp_pool, color:'#94a3b8'},
   ];
   if (CHARTS.pool) CHARTS.pool.destroy();
   const ctx = document.getElementById('poolChart').getContext('2d');
@@ -449,7 +529,7 @@ function renderInvestors(){
       <td class="right mono" style="color:var(--green)">${fmtUSD(r.consultant_cut)}</td>
       <td class="right mono">${fmtUSD(r.raj_cut)}</td>
       <td class="right mono">${fmtUSD(r.nairne_cut)}</td>
-      <td class="right mono">${fmtUSD(r.phil_cut)}</td>
+      <td class="right mono">${fmtUSD(r.alec_gp_cut)}</td>
     </tr>`;
   }).join('');
 
@@ -461,9 +541,9 @@ function renderInvestors(){
     acc.consultant_cut += r.consultant_cut;
     acc.raj_cut += r.raj_cut;
     acc.nairne_cut += r.nairne_cut;
-    acc.phil_cut += r.phil_cut;
+    acc.alec_gp_cut += r.alec_gp_cut;
     return acc;
-  }, {ending_balance:0,gross_profit:0,perf_fee:0,fund_mgmt_cut:0,consultant_cut:0,raj_cut:0,nairne_cut:0,phil_cut:0});
+  }, {ending_balance:0,gross_profit:0,perf_fee:0,fund_mgmt_cut:0,consultant_cut:0,raj_cut:0,nairne_cut:0,alec_gp_cut:0});
 
   const totalRow = `<tr class="total-row">
     <td></td><td>TOTAL</td><td>${rows.length} of ${m.investors.length}</td>
@@ -474,7 +554,7 @@ function renderInvestors(){
     <td class="right mono">${fmtUSD(totals.consultant_cut)}</td>
     <td class="right mono">${fmtUSD(totals.raj_cut)}</td>
     <td class="right mono">${fmtUSD(totals.nairne_cut)}</td>
-    <td class="right mono">${fmtUSD(totals.phil_cut)}</td>
+    <td class="right mono">${fmtUSD(totals.alec_gp_cut)}</td>
   </tr>`;
 
   document.querySelector('#invTable tbody').innerHTML = tbody + totalRow;
@@ -502,7 +582,7 @@ function renderInvestors(){
 function renderRecon(){
   const m = currentMonth();
   const ft = m.fund_totals;
-  const splitSum = ft.fund_mgmt_pool + ft.consultants_pool + ft.raj_pool + ft.nairne_pool + ft.phil_pool;
+  const splitSum = ft.fund_mgmt_pool + ft.consultants_pool + ft.raj_pool + ft.nairne_pool + ft.alec_gp_pool;
   const splitDiff = Math.abs(splitSum - ft.tpa_perf_fees_crystallized);
   const splitOk = splitDiff < 1;
   const investorSum = m.investors.reduce((s, r) => s + r.perf_fee, 0);
@@ -510,22 +590,118 @@ function renderRecon(){
   const investorOk = investorDiff < 1;
   const unmappedOk = ft.unmapped_count === 0;
   const pendingCount = m.investors.filter(r => r.consultant.includes('Pending')).length;
+  const costsTotal = ft.total_costs ?? 0;
+  const allocSum = (m.costs?.allocation_by_party ?? []).reduce((s,a) => s + a.allocated_expense, 0);
+  const allocDiff = Math.abs(allocSum - costsTotal);
+  const allocOk = allocDiff < 1;
 
   const boxes = [
     {cls: investorOk ? 'ok' : 'err', label:'Sum of per-investor perf fees',
      val: fmtUSD(investorSum), sub: investorOk ? `Matches TPA total (Δ ${fmtUSD(investorDiff,{dp:2})})` : `OFF by ${fmtUSD(investorDiff)}`},
     {cls: splitOk ? 'ok' : 'err', label:'Sum of all split columns',
      val: fmtUSD(splitSum), sub: splitOk ? `Equals GP pool (Δ ${fmtUSD(splitDiff,{dp:2})})` : `OFF by ${fmtUSD(splitDiff)}`},
+    {cls: allocOk ? 'ok' : 'err', label:'Sum of cost allocations',
+     val: fmtUSD(allocSum), sub: allocOk ? `Equals total costs (Δ ${fmtUSD(allocDiff,{dp:2})})` : `OFF by ${fmtUSD(allocDiff)}`},
     {cls: unmappedOk ? 'ok' : 'err', label:'Unmapped investors',
      val: String(ft.unmapped_count), sub: unmappedOk ? 'All attributed to a consultant' : 'Fix in IDS Mapping sheet'},
     {cls: pendingCount === 0 ? 'ok' : 'warn', label:'Pending split (Fund Hub SPV)',
      val: String(pendingCount), sub: pendingCount === 0 ? 'No pending allocations' : `${pendingCount} investor${pendingCount>1?'s':''} awaiting AJ/Alec split`},
     {cls: 'ok', label:'Split percentages',
-     val: '100.00%', sub: `Mgmt 59.5% · Cons 39% · 3×0.5% (fixed)`},
+     val: '100.00%', sub: `Mgmt 59.5% · Cons 39% · 3×0.5% (Raj/Nairne/Alec GP)`},
   ];
   document.getElementById('reconGrid').innerHTML = boxes.map(b =>
     `<div class="recon-box ${b.cls}"><div class="r-label">${b.label}</div><div class="r-val">${b.val}</div><div class="r-sub">${b.sub}</div></div>`
   ).join('');
+}
+
+// ============ COSTS ============
+let COST_SORT = {key:'amount', dir:'desc'};
+let ALLOC_SORT = {key:'allocated_expense', dir:'desc'};
+
+function renderCosts(){
+  const m = currentMonth();
+  const items = (m.costs?.line_items ?? []).map(c => ({
+    ...c,
+    pct: m.costs.total ? c.amount / m.costs.total : 0,
+  }));
+  items.sort((a,b) => {
+    const av = a[COST_SORT.key], bv = b[COST_SORT.key];
+    if (typeof av === 'string') return COST_SORT.dir==='asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+    return COST_SORT.dir==='asc' ? av - bv : bv - av;
+  });
+  const tbody = items.map(c => `
+    <tr>
+      <td>${c.name}</td>
+      <td class="right mono">${fmtUSD(c.amount)}</td>
+      <td class="right mono">${fmtPct(c.pct)}</td>
+    </tr>
+  `).join('');
+  const totalRow = `<tr class="total-row">
+    <td>TOTAL</td>
+    <td class="right mono" style="color:var(--red);font-weight:700">${fmtUSD(m.costs?.total ?? 0)}</td>
+    <td class="right mono">100.00%</td>
+  </tr>`;
+  document.querySelector('#costsTable tbody').innerHTML = tbody + totalRow;
+  document.querySelectorAll('#costsTable th[data-sort]').forEach(th => {
+    th.classList.remove('sort-asc','sort-desc');
+    if (th.dataset.sort === COST_SORT.key) th.classList.add('sort-'+COST_SORT.dir);
+    th.onclick = () => {
+      const k = th.dataset.sort;
+      if (COST_SORT.key === k) COST_SORT.dir = COST_SORT.dir==='asc' ? 'desc' : 'asc';
+      else { COST_SORT.key = k; COST_SORT.dir = (k==='name') ? 'asc' : 'desc'; }
+      renderCosts();
+    };
+  });
+
+  // Allocation by party
+  const alloc = [...(m.costs?.allocation_by_party ?? [])];
+  alloc.sort((a,b) => {
+    const av = a[ALLOC_SORT.key], bv = b[ALLOC_SORT.key];
+    if (typeof av === 'string') return ALLOC_SORT.dir==='asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+    return ALLOC_SORT.dir==='asc' ? av - bv : bv - av;
+  });
+  const allocTbody = alloc.map(a => {
+    const isFundMgmt = a.party === 'Fund Mgmt';
+    const isFixed = a.party.includes('GP fixed');
+    const pending = a.party.includes('Pending');
+    const cls = pending ? 'pending' : '';
+    const partyStyle = isFundMgmt ? 'color:#93c5fd;font-weight:600' : (isFixed ? 'color:#d8b4fe;font-style:italic' : '');
+    return `<tr class="${cls}">
+      <td style="${partyStyle}">${a.party}${pending ? ' <span class="tag warn">PENDING</span>' : ''}</td>
+      <td class="right mono">${fmtPct(a.pct_of_gp_pool)}</td>
+      <td class="right mono" style="color:var(--red)">${fmtUSD(a.allocated_expense)}</td>
+    </tr>`;
+  }).join('');
+  const allocTotal = alloc.reduce((s,a) => s + a.allocated_expense, 0);
+  const allocPct = alloc.reduce((s,a) => s + a.pct_of_gp_pool, 0);
+  const allocTotalRow = `<tr class="total-row">
+    <td>TOTAL</td>
+    <td class="right mono">${fmtPct(allocPct)}</td>
+    <td class="right mono" style="color:var(--red);font-weight:700">${fmtUSD(allocTotal)}</td>
+  </tr>`;
+  document.querySelector('#costAllocTable tbody').innerHTML = allocTbody + allocTotalRow;
+  document.querySelectorAll('#costAllocTable th[data-sort]').forEach(th => {
+    th.classList.remove('sort-asc','sort-desc');
+    if (th.dataset.sort === ALLOC_SORT.key) th.classList.add('sort-'+ALLOC_SORT.dir);
+    th.onclick = () => {
+      const k = th.dataset.sort;
+      if (ALLOC_SORT.key === k) ALLOC_SORT.dir = ALLOC_SORT.dir==='asc' ? 'desc' : 'asc';
+      else { ALLOC_SORT.key = k; ALLOC_SORT.dir = (k==='party') ? 'asc' : 'desc'; }
+      renderCosts();
+    };
+  });
+}
+
+// ============ TABS ============
+function setupTabs(){
+  document.querySelectorAll('.tabs .tab').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.tabs .tab').forEach(x => x.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      document.getElementById('tab-'+t.dataset.tab).classList.add('active');
+    });
+  });
 }
 
 // ============ BOOT ============
@@ -533,6 +709,7 @@ window.bootDashboard = async function(){
   if (HISTORY) { renderAll(); return; }
   await loadHistory();
   buildMonthSelector();
+  setupTabs();
   renderAll();
 };
 

@@ -59,7 +59,7 @@ SPLIT_PCTS = {
     "consultant": 0.39,
     "raj": 0.005,
     "nairne": 0.005,
-    "phil": 0.005,
+    "alec": 0.005,  # Alec is the new GP (was Phil before 2026-04-27)
 }
 
 # Confirmed by user 2026-04-27. Augments / overrides the internal IDS sheet.
@@ -102,6 +102,34 @@ def load_ids(internal_xlsx: Path) -> dict[str, dict]:
             out[tpa_id]["consultant"] = cons
         else:
             out[tpa_id] = {"name": None, "consultant": cons, "position_id": None}
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Costs loader
+# ---------------------------------------------------------------------------
+
+def load_costs(internal_xlsx: Path) -> list[dict]:
+    """Read the Costs sheet from the internal Monthly Return file.
+
+    Returns a list of {name, amount} dicts (excludes the TOTAL row).
+    """
+    wb = openpyxl.load_workbook(internal_xlsx, data_only=True)
+    ws = wb["Costs"]
+    out = []
+    for row in ws.iter_rows(min_row=2, values_only=True):
+        if not row or not row[0]:
+            continue
+        name = row[0]
+        amount = row[1] if len(row) > 1 else None
+        if not isinstance(name, str):
+            continue
+        name = name.strip()
+        if not name or name.lower() == "total":
+            break
+        if not isinstance(amount, (int, float)):
+            continue
+        out.append({"name": name, "amount": float(amount)})
     return out
 
 
@@ -160,7 +188,8 @@ def _autosize(ws, min_w: int = 10, max_w: int = 48):
         ws.column_dimensions[col].width = max(min_w, min(max_w, widest + 2))
 
 
-def build_workbook(records: list[dict], period_label: str, output_path: Path) -> dict:
+def build_workbook(records: list[dict], period_label: str, output_path: Path,
+                   costs: list[dict]) -> dict:
     """Write the dynamic Excel. Returns summary dict."""
     wb = openpyxl.Workbook()
     wb.remove(wb.active)
@@ -181,7 +210,7 @@ def build_workbook(records: list[dict], period_label: str, output_path: Path) ->
         ("Consultant", "GP_Consultant_Pct", SPLIT_PCTS["consultant"]),
         ("Raj", "GP_Raj_Pct", SPLIT_PCTS["raj"]),
         ("Nairne", "GP_Nairne_Pct", SPLIT_PCTS["nairne"]),
-        ("Phil", "GP_Phil_Pct", SPLIT_PCTS["phil"]),
+        ("Alec (GP)", "GP_Alec_Pct", SPLIT_PCTS["alec"]),
     ]
     for i, (label, name, val) in enumerate(pct_rows, start=5):
         ws_in.cell(row=i, column=1, value=label)
@@ -197,10 +226,10 @@ def build_workbook(records: list[dict], period_label: str, output_path: Path) ->
 
     ws_in["A13"] = "Expense Pool"
     ws_in["A13"].font = Font(bold=True, color="e2e8f0")
-    ws_in["A14"] = "Operating expenses (consultant pro-rata)"
-    ws_in["B14"] = 0.0
-    ws_in["B14"].fill = INPUT_FILL
+    ws_in["A14"] = "Operating expenses (live-linked to Costs sheet)"
+    ws_in["B14"] = "=Costs_Total"  # named range defined when Costs sheet is built
     ws_in["B14"].number_format = '"$"#,##0.00'
+    ws_in["B14"].font = Font(bold=True, color="10b981")
     wb.defined_names["Expense_Pool"] = DefinedName(name="Expense_Pool", attr_text="Inputs!$B$14")
 
     ws_in["A16"] = "Notes"
@@ -255,7 +284,7 @@ def build_workbook(records: list[dict], period_label: str, output_path: Path) ->
     p_headers = [
         "TPA ID", "Investor", "Consultant",
         "Begin Balance", "Ending Balance", "Gross P&L", "Perf Fee (GP Pool)",
-        "Fund Mgmt", "Consultant Cut", "Raj", "Nairne", "Phil",
+        "Fund Mgmt", "Consultant Cut", "Raj", "Nairne", "Alec (GP)",
         "Sum Check",
     ]
     for i, h in enumerate(p_headers, start=1):
@@ -279,7 +308,7 @@ def build_workbook(records: list[dict], period_label: str, output_path: Path) ->
         ws_p.cell(row=i, column=9, value=f"=G{i}*GP_Consultant_Pct").number_format = '"$"#,##0.00'
         ws_p.cell(row=i, column=10, value=f"=G{i}*GP_Raj_Pct").number_format = '"$"#,##0.00'
         ws_p.cell(row=i, column=11, value=f"=G{i}*GP_Nairne_Pct").number_format = '"$"#,##0.00'
-        ws_p.cell(row=i, column=12, value=f"=G{i}*GP_Phil_Pct").number_format = '"$"#,##0.00'
+        ws_p.cell(row=i, column=12, value=f"=G{i}*GP_Alec_Pct").number_format = '"$"#,##0.00'
         ws_p.cell(row=i, column=13,
                   value=f"=ROUND(SUM(H{i}:L{i})-G{i}, 2)").number_format = '"$"#,##0.00'
 
@@ -349,11 +378,11 @@ def build_workbook(records: list[dict], period_label: str, output_path: Path) ->
     ws_c.cell(row=fm_row, column=3, value=f'=SUM(PI_Capital)').number_format = '"$"#,##0.00'
     ws_c.cell(row=fm_row, column=4, value=f'=SUM(PI_FundMgmt)').number_format = '"$"#,##0.00'
 
-    # Fixed partners (Raj/Nairne/Phil)
+    # Fixed partners (Raj/Nairne/Alec — Alec replaced Phil 2026-04-27 as new GP)
     fixed_specs = [
         ("Raj (fixed 0.5%)", "GP_Raj_Pct"),
         ("Nairne (fixed 0.5%)", "GP_Nairne_Pct"),
-        ("Phil (fixed 0.5%)", "GP_Phil_Pct"),
+        ("Alec (GP fixed 0.5%)", "GP_Alec_Pct"),
     ]
     for j, (label, pct_name) in enumerate(fixed_specs, start=1):
         r = fm_row + j
@@ -388,7 +417,77 @@ def build_workbook(records: list[dict], period_label: str, output_path: Path) ->
 
     _autosize(ws_c)
 
-    # --------- 5. Reconciliation ---------
+    # --------- 5. Costs ---------
+    # The Costs sheet feeds Expense_Pool (named cell) and is then allocated
+    # pro-rata by GP % via the existing Allocated Expenses formula in
+    # Consultant Summary. Edit a cost line item and everything downstream
+    # recalculates.
+    ws_costs = wb.create_sheet("Costs")
+    ws_costs["A1"] = "Operating Costs"
+    ws_costs["A1"].font = TITLE_FONT
+    ws_costs.merge_cells("A1:D1")
+    ws_costs["A2"] = f"Period: {period_label}"
+    ws_costs["A2"].font = Font(italic=True, color="94a3b8")
+
+    cost_headers = ["Category", "Amount", "Notes", "% of Pool"]
+    for i, h in enumerate(cost_headers, start=1):
+        c = ws_costs.cell(row=4, column=i, value=h)
+        _style_header(c)
+
+    cost_data_start = 5
+    for i, item in enumerate(costs, start=cost_data_start):
+        ws_costs.cell(row=i, column=1, value=item["name"])
+        cell = ws_costs.cell(row=i, column=2, value=item["amount"])
+        cell.number_format = '"$"#,##0.00'
+        cell.fill = INPUT_FILL
+        ws_costs.cell(row=i, column=4,
+                      value=f"=B{i}/Costs_Total").number_format = "0.00%"
+
+    last_cost_row = cost_data_start + len(costs) - 1
+    total_row_costs = last_cost_row + 1
+    ws_costs.cell(row=total_row_costs, column=1, value="TOTAL").font = Font(bold=True)
+    total_cell = ws_costs.cell(row=total_row_costs, column=2,
+                               value=f"=SUM(B{cost_data_start}:B{last_cost_row})")
+    total_cell.number_format = '"$"#,##0.00'
+    total_cell.font = Font(bold=True)
+    total_cell.fill = TOTAL_FILL
+    ws_costs.cell(row=total_row_costs, column=4, value="=SUM(D5:D" + str(last_cost_row) + ")").number_format = "0.00%"
+
+    wb.defined_names["Costs_Total"] = DefinedName(
+        name="Costs_Total",
+        attr_text=f"Costs!$B${total_row_costs}",
+    )
+
+    # Allocation by party section (mirrors Consultant Summary's Allocated Expenses)
+    ws_costs.cell(row=total_row_costs + 2, column=1, value="Allocation by GP %").font = Font(bold=True, color="e2e8f0")
+    alloc_hdr_row = total_row_costs + 3
+    for i, h in enumerate(["Party", "% of GP Pool", "Allocated Expense"], start=1):
+        c = ws_costs.cell(row=alloc_hdr_row, column=i, value=h)
+        _style_header(c)
+    # Reference Consultant Summary directly so it always agrees
+    parties = consultant_names + ["Fund Mgmt"] + [s[0] for s in fixed_specs]
+    for i, party in enumerate(parties, start=alloc_hdr_row + 1):
+        ws_costs.cell(row=i, column=1, value=party)
+        ws_costs.cell(row=i, column=2,
+                      value=f'=IFERROR(VLOOKUP(A{i},\'Consultant Summary\'!$A$2:$E${last_summary_row},5,FALSE),0)').number_format = "0.00%"
+        ws_costs.cell(row=i, column=3, value=f"=B{i}*Costs_Total").number_format = '"$"#,##0.00'
+    alloc_total_row = alloc_hdr_row + 1 + len(parties)
+    ws_costs.cell(row=alloc_total_row, column=1, value="TOTAL").font = Font(bold=True)
+    for col_letter, formula in [("B", f"=SUM(B{alloc_hdr_row+1}:B{alloc_total_row-1})"),
+                                  ("C", f"=SUM(C{alloc_hdr_row+1}:C{alloc_total_row-1})")]:
+        cell = ws_costs[f"{col_letter}{alloc_total_row}"]
+        cell.value = formula
+        cell.font = Font(bold=True)
+        cell.fill = TOTAL_FILL
+    ws_costs[f"B{alloc_total_row}"].number_format = "0.00%"
+    ws_costs[f"C{alloc_total_row}"].number_format = '"$"#,##0.00'
+
+    ws_costs.column_dimensions["A"].width = 32
+    ws_costs.column_dimensions["B"].width = 16
+    ws_costs.column_dimensions["C"].width = 36
+    ws_costs.column_dimensions["D"].width = 12
+
+    # --------- 6. Reconciliation ---------
     ws_r = wb.create_sheet("Reconciliation")
     ws_r["A1"] = "Reconciliation Checks"
     ws_r["A1"].font = TITLE_FONT
@@ -442,9 +541,11 @@ def build_json_snapshot(
     records: list[dict],
     tpa_record: dict,
     period_label: str,
+    costs: list[dict],
 ) -> dict:
     """Compute static snapshot used by the dashboard."""
     total_perf = sum(r["perf_fee"] for r in records)
+    total_costs = sum(c["amount"] for c in costs)
 
     # Per-consultant aggregation (computed values, not formulas)
     by_cons: dict[str, dict] = {}
@@ -481,8 +582,26 @@ def build_json_snapshot(
     fixed = {
         "raj": total_perf * SPLIT_PCTS["raj"],
         "nairne": total_perf * SPLIT_PCTS["nairne"],
-        "phil": total_perf * SPLIT_PCTS["phil"],
+        "alec_gp": total_perf * SPLIT_PCTS["alec"],
     }
+
+    # Compute each party's % of GP pool, used to weight expense allocation.
+    # Each consultant: their consultant_cut / total_perf
+    # Fund Mgmt: 59.5%; Raj/Nairne fixed: 0.5% each; Alec (GP) fixed: 0.5%
+    # NB: Alec Atkinson the consultant gets BOTH his consultant 39% and the
+    # new GP-fixed 0.5% — these are separate buckets.
+    pool_share = {}
+    for c in consultants:
+        pool_share[c["consultant"]] = c["pct_of_gp_pool"]
+    pool_share["Fund Mgmt"] = SPLIT_PCTS["fund_mgmt"]
+    pool_share["Raj (GP fixed)"] = SPLIT_PCTS["raj"]
+    pool_share["Nairne (GP fixed)"] = SPLIT_PCTS["nairne"]
+    pool_share["Alec (GP fixed)"] = SPLIT_PCTS["alec"]
+
+    cost_allocation = [
+        {"party": party, "pct_of_gp_pool": share, "allocated_expense": round(share * total_costs, 2)}
+        for party, share in pool_share.items()
+    ]
 
     bs = tpa_record.get("balance_sheet", {})
     inc = tpa_record.get("income_statement", {})
@@ -501,12 +620,13 @@ def build_json_snapshot(
             "consultants_pool": round(total_perf * SPLIT_PCTS["consultant"], 2),
             "raj_pool": round(fixed["raj"], 2),
             "nairne_pool": round(fixed["nairne"], 2),
-            "phil_pool": round(fixed["phil"], 2),
+            "alec_gp_pool": round(fixed["alec_gp"], 2),
             "investor_count": len(records),
             "unmapped_count": sum(1 for r in records if r["consultant"] == "Unmapped"),
             "ending_aum": round(bs.get("total_capital", 0), 2),
             "gross_mtd_ror": fl.get("gross_mtd_ror", 0),
             "net_mtd_ror": fl.get("net_mtd_ror", 0),
+            "total_costs": round(total_costs, 2),
         },
         "consultants": consultants,
         "investors": [
@@ -521,10 +641,18 @@ def build_json_snapshot(
                 "consultant_cut": round(r["perf_fee"] * SPLIT_PCTS["consultant"], 2),
                 "raj_cut": round(r["perf_fee"] * SPLIT_PCTS["raj"], 2),
                 "nairne_cut": round(r["perf_fee"] * SPLIT_PCTS["nairne"], 2),
-                "phil_cut": round(r["perf_fee"] * SPLIT_PCTS["phil"], 2),
+                "alec_gp_cut": round(r["perf_fee"] * SPLIT_PCTS["alec"], 2),
             }
             for r in sorted(records, key=lambda x: -x["perf_fee"])
         ],
+        "costs": {
+            "total": round(total_costs, 2),
+            "line_items": [
+                {"name": c["name"], "amount": round(c["amount"], 2)}
+                for c in costs
+            ],
+            "allocation_by_party": cost_allocation,
+        },
     }
 
 
@@ -578,18 +706,22 @@ def main() -> int:
     for u in unmapped:
         print(f"  UNMAPPED: {u['tpa_id']:22}  {u['name']}")
 
+    costs = load_costs(args.internal)
+    print(f"Costs: {len(costs)} line items, total ${sum(c['amount'] for c in costs):,.2f}")
+
     label = args.label or tpa["period_label"]
-    summary = build_workbook(records, label, args.output_xlsx)
+    summary = build_workbook(records, label, args.output_xlsx, costs)
     print(f"Wrote Excel: {args.output_xlsx}")
 
-    snapshot = build_json_snapshot(records, tpa, label)
+    snapshot = build_json_snapshot(records, tpa, label, costs)
     upsert_json(snapshot)
     print(f"Wrote JSON: {JSON_PATH}")
 
     print(f"\nGP pool ${snapshot['fund_totals']['tpa_perf_fees_crystallized']:,.2f}  →  "
           f"Fund Mgmt ${snapshot['fund_totals']['fund_mgmt_pool']:,.2f}  +  "
           f"Consultants ${snapshot['fund_totals']['consultants_pool']:,.2f}  +  "
-          f"Raj/Nairne/Phil ${snapshot['fund_totals']['raj_pool']*3:,.2f}")
+          f"Raj/Nairne/Alec(GP) ${snapshot['fund_totals']['raj_pool']*3:,.2f}")
+    print(f"Total costs: ${snapshot['fund_totals']['total_costs']:,.2f} (allocated pro-rata by GP %)")
     return 0
 
 
