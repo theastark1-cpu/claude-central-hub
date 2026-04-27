@@ -839,32 +839,43 @@ def build_workbook(records: list[dict], period_label: str, output_path: Path,
                  value="Per-Party Settlement").font = Font(bold=True, color="e2e8f0")
     settlement_header_row = settlement_label_row + 1
     settlement_headers = [
-        "Party", "Expected Net", "Cash Paid Out", "Outstanding",
+        "Party", "Expected Gross", "Weighted Expense", "Expected Net",
+        "Cash Paid Out", "Outstanding",
         "Suggested Recipient / Wire Info", "Status",
     ]
     for i, h in enumerate(settlement_headers, start=1):
         c = ws_dist.cell(row=settlement_header_row, column=i, value=h)
         _style_header(c)
 
-    # Each Armada party: pull Expected Net from Consultant Summary's column G,
-    # sum payouts to that party from the distributions log, outstanding = expected - paid.
+    # Each Armada party: pull Expected Gross + Net from Consultant Summary,
+    # sum payouts from the distributions log, outstanding = net - paid.
     armada_parties = consultant_names + ["Fund Mgmt"] + [s[0] for s in fixed_specs]
     for i, party in enumerate(armada_parties, start=settlement_header_row + 1):
         ws_dist.cell(row=i, column=1, value=party)
+        # Expected Gross = Consultant Summary col D (Gross GP)
         ws_dist.cell(row=i, column=2,
-                     value=f"=IFERROR(VLOOKUP(A{i}, 'Consultant Summary'!$A$2:$G${last_summary_row}, 7, FALSE), 0)").number_format = '"$"#,##0.00'
+                     value=f"=IFERROR(VLOOKUP(A{i}, 'Consultant Summary'!$A$2:$G${last_summary_row}, 4, FALSE), 0)").number_format = '"$"#,##0.00'
+        # Weighted Expense = Consultant Summary col F
         ws_dist.cell(row=i, column=3,
-                     value=f'=SUMIFS(Dist_Amount, Dist_Party, A{i}, Dist_Type, "Payout")').number_format = '"$"#,##0.00'
+                     value=f"=IFERROR(VLOOKUP(A{i}, 'Consultant Summary'!$A$2:$G${last_summary_row}, 6, FALSE), 0)").number_format = '"$"#,##0.00'
+        # Expected Net = Gross - Weighted Expense (matches Consultant Summary col G)
         ws_dist.cell(row=i, column=4, value=f"=B{i}-C{i}").number_format = '"$"#,##0.00'
-        ws_dist.cell(row=i, column=6,
-                     value=f'=IF(ROUND(D{i},2)=0,"Settled",IF(ROUND(D{i},2)<0,"Overpaid","Outstanding"))')
-        c = ws_dist.cell(row=i, column=5, value="")
+        # Cash Paid Out — SUMIFS on Payout-type rows in dist log
+        ws_dist.cell(row=i, column=5,
+                     value=f'=SUMIFS(Dist_Amount, Dist_Party, A{i}, Dist_Type, "Payout")').number_format = '"$"#,##0.00'
+        # Outstanding = Expected Net - Cash Paid Out
+        ws_dist.cell(row=i, column=6, value=f"=D{i}-E{i}").number_format = '"$"#,##0.00'
+        # Recipient — green input cell
+        c = ws_dist.cell(row=i, column=7, value="")
         c.fill = INPUT_FILL
+        # Status formula
+        ws_dist.cell(row=i, column=8,
+                     value=f'=IF(ROUND(F{i},2)=0,"Settled",IF(ROUND(F{i},2)<0,"Overpaid","Outstanding"))')
 
     settle_total_row = settlement_header_row + 1 + len(armada_parties)
     ws_dist.cell(row=settle_total_row, column=1, value="TOTAL (Armada GP Pool)").font = Font(bold=True)
-    for col_letter in ("B", "C", "D"):
-        col_idx = {"B": 2, "C": 3, "D": 4}[col_letter]
+    for col_letter in ("B", "C", "D", "E", "F"):
+        col_idx = {"B": 2, "C": 3, "D": 4, "E": 5, "F": 6}[col_letter]
         c = ws_dist.cell(row=settle_total_row, column=col_idx,
                          value=f'=SUM({col_letter}{settlement_header_row + 1}:{col_letter}{settle_total_row - 1})')
         c.number_format = '"$"#,##0.00'
@@ -876,13 +887,18 @@ def build_workbook(records: list[dict], period_label: str, output_path: Path,
     ws_dist.cell(row=tq_settle_row - 1, column=1,
                  value="External (does not draw from this pool)").font = Font(italic=True, color="94a3b8")
     ws_dist.cell(row=tq_settle_row, column=1, value="TruQuant").font = Font(italic=True, color="fbbf24")
-    ws_dist.cell(row=tq_settle_row, column=2,
-                 value=f"=TQ_Income-IFERROR(INDEX(Costs_PartyTotals, MATCH(A{tq_settle_row}, Costs_PartyHeaders, 0)),0)").number_format = '"$"#,##0.00'
-    ws_dist.cell(row=tq_settle_row, column=3, value="—").alignment = Alignment(horizontal="right")
-    ws_dist.cell(row=tq_settle_row, column=4, value="—").alignment = Alignment(horizontal="right")
-    ws_dist.cell(row=tq_settle_row, column=5,
+    # Expected Gross = TQ Income (upstream)
+    ws_dist.cell(row=tq_settle_row, column=2, value="=TQ_Income").number_format = '"$"#,##0.00'
+    # Weighted Expense = TQ's share of TQ/Armada costs
+    ws_dist.cell(row=tq_settle_row, column=3,
+                 value=f"=IFERROR(INDEX(Costs_PartyTotals, MATCH(A{tq_settle_row}, Costs_PartyHeaders, 0)),0)").number_format = '"$"#,##0.00'
+    # Net = Gross - Expense
+    ws_dist.cell(row=tq_settle_row, column=4, value=f"=B{tq_settle_row}-C{tq_settle_row}").number_format = '"$"#,##0.00'
+    ws_dist.cell(row=tq_settle_row, column=5, value="—").alignment = Alignment(horizontal="right")
+    ws_dist.cell(row=tq_settle_row, column=6, value="—").alignment = Alignment(horizontal="right")
+    ws_dist.cell(row=tq_settle_row, column=7,
                  value="External — TruQuant's 18% comes upstream of this pool. Their share of TQ/Armada costs is also paid externally.")
-    ws_dist.cell(row=tq_settle_row, column=6, value="External")
+    ws_dist.cell(row=tq_settle_row, column=8, value="External")
 
     # Note row
     note_row = tq_settle_row + 2
@@ -895,16 +911,17 @@ def build_workbook(records: list[dict], period_label: str, output_path: Path,
     ws_dist.merge_cells(f"A{note_row}:I{note_row}")
     ws_dist.cell(row=note_row, column=1).alignment = Alignment(wrap_text=True)
 
-    # Column widths
-    ws_dist.column_dimensions["A"].width = 32
-    ws_dist.column_dimensions["B"].width = 18
-    ws_dist.column_dimensions["C"].width = 14
-    ws_dist.column_dimensions["D"].width = 18
-    ws_dist.column_dimensions["E"].width = 50
-    ws_dist.column_dimensions["F"].width = 18
-    ws_dist.column_dimensions["G"].width = 12
-    ws_dist.column_dimensions["H"].width = 12
-    ws_dist.column_dimensions["I"].width = 38
+    # Column widths — shared between Distributions Log (cols A-I) and the
+    # Settlement table below it (cols A-H, now 8 cols incl. Expected Gross).
+    ws_dist.column_dimensions["A"].width = 30
+    ws_dist.column_dimensions["B"].width = 15
+    ws_dist.column_dimensions["C"].width = 17
+    ws_dist.column_dimensions["D"].width = 28
+    ws_dist.column_dimensions["E"].width = 42
+    ws_dist.column_dimensions["F"].width = 17
+    ws_dist.column_dimensions["G"].width = 30
+    ws_dist.column_dimensions["H"].width = 14
+    ws_dist.column_dimensions["I"].width = 36
 
     # --------- 7. Reconciliation ---------
     ws_r = wb.create_sheet("Reconciliation")
