@@ -252,7 +252,7 @@ ACCENT = "1f6feb"
 HEADER_FILL = PatternFill("solid", fgColor="1a2236")
 HEADER_FONT = Font(bold=True, color="e2e8f0", size=10)
 TITLE_FONT = Font(bold=True, color="ffffff", size=12)
-INPUT_FILL = PatternFill("solid", fgColor="2a3550")
+INPUT_FILL = PatternFill("solid", fgColor="d9ead3")
 TOTAL_FILL = PatternFill("solid", fgColor="334155")
 OK_FILL = PatternFill("solid", fgColor="14532d")
 WARN_FILL = PatternFill("solid", fgColor="7f1d1d")
