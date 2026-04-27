@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Armada Prime LLP — Consultant Splits</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0e17;--surface:#111827;--surface2:#1a2236;--surface3:#222d45;
+  --border:#2a3550;--text:#e2e8f0;--text-dim:#8494b0;--text-muted:#5a6a85;
+  --accent:#3b82f6;--green:#10b981;--green-dim:rgba(16,185,129,0.12);
+  --red:#ef4444;--red-dim:rgba(239,68,68,0.12);--amber:#f59e0b;
+  --amber-dim:rgba(245,158,11,0.12);--purple:#8b5cf6;--cyan:#06b6d4;
+}
+html{font-size:15px}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden}
+.noise{position:fixed;top:0;left:0;width:100%;height:100%;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:9999}
+.glow-orb{position:fixed;width:600px;height:600px;border-radius:50%;pointer-events:none;z-index:0}
+.glow-orb.one{top:-200px;right:-100px;background:radial-gradient(circle,rgba(139,92,246,0.06) 0%,transparent 70%)}
+.glow-orb.two{bottom:-300px;left:-200px;background:radial-gradient(circle,rgba(59,130,246,0.04) 0%,transparent 70%)}
+
+header{padding:2rem 2.5rem 1.5rem;border-bottom:1px solid var(--border);position:relative;z-index:1;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:1rem}
+.logo-block h1{font-family:'Playfair Display',serif;font-weight:800;font-size:1.8rem;letter-spacing:-0.02em;background:linear-gradient(135deg,#e2e8f0 0%,#94a3b8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo-block .sub{font-size:0.8rem;color:var(--text-muted);letter-spacing:0.15em;text-transform:uppercase;margin-top:0.25rem}
+.header-right{display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap}
+.period-badge{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.5rem 1rem;font-family:'JetBrains Mono',monospace;font-size:0.85rem;color:var(--purple);display:flex;align-items:center;gap:0.5rem}
+.period-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--purple);animation:pulse 2s infinite}
+.nav-link{color:var(--text-dim);font-size:0.78rem;letter-spacing:0.05em;text-decoration:none;padding:0.5rem 0.85rem;border:1px solid var(--border);border-radius:8px;background:var(--surface);transition:all 0.2s}
+.nav-link:hover{color:var(--accent);border-color:var(--accent)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+.dashboard{padding:1.5rem 2.5rem 3rem;position:relative;z-index:1;max-width:1600px;margin:0 auto}
+.month-selector{display:flex;gap:0.4rem;margin-bottom:1.25rem;flex-wrap:wrap;padding:0.6rem;background:var(--surface);border:1px solid var(--border);border-radius:12px}
+.month-chip{padding:0.45rem 0.9rem;font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--text-dim);background:var(--surface2);border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:all 0.2s;letter-spacing:0.02em}
+.month-chip:hover{color:var(--text);border-color:var(--accent)}
+.month-chip.active{color:#fff;background:var(--purple);border-color:var(--purple)}
+
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.15rem 1.35rem;position:relative;overflow:hidden;transition:border-color 0.3s,transform 0.2s}
+.kpi:hover{border-color:var(--accent);transform:translateY(-2px)}
+.kpi .label{font-size:0.65rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-muted);margin-bottom:0.4rem}
+.kpi .value{font-family:'JetBrains Mono',monospace;font-size:1.45rem;font-weight:600;letter-spacing:-0.02em}
+.kpi .detail{font-size:0.72rem;color:var(--text-dim);margin-top:0.3rem;display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap}
+.kpi .stripe{position:absolute;top:0;left:0;right:0;height:3px}
+.kpi.blue .stripe{background:linear-gradient(90deg,var(--accent),#60a5fa)}
+.kpi.green .stripe{background:linear-gradient(90deg,var(--green),#34d399)}
+.kpi.amber .stripe{background:linear-gradient(90deg,var(--amber),#fbbf24)}
+.kpi.purple .stripe{background:linear-gradient(90deg,var(--purple),#a78bfa)}
+.kpi.red .stripe{background:linear-gradient(90deg,var(--red),#f87171)}
+.kpi.cyan .stripe{background:linear-gradient(90deg,var(--cyan),#22d3ee)}
+
+.tag{display:inline-block;padding:0.12rem 0.45rem;border-radius:4px;font-size:0.68rem;font-weight:600;letter-spacing:0.04em}
+.tag.up{background:var(--green-dim);color:var(--green)}
+.tag.down{background:var(--red-dim);color:var(--red)}
+.tag.flat{background:var(--surface3);color:var(--text-dim)}
+.tag.warn{background:var(--amber-dim);color:var(--amber)}
+.tag.ok{background:var(--green-dim);color:var(--green)}
+.tag.err{background:var(--red-dim);color:var(--red)}
+
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem}
+@media(max-width:1100px){.grid-2{grid-template-columns:1fr}}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem;position:relative;margin-bottom:1.5rem}
+.card h2{font-size:0.72rem;text-transform:uppercase;letter-spacing:0.14em;color:var(--text-muted);margin-bottom:1.15rem;display:flex;align-items:center;gap:0.5rem}
+.card h2 .icon{font-size:0.9rem}
+
+.data-table{width:100%;border-collapse:collapse;font-size:0.8rem}
+.data-table th{text-align:left;padding:0.5rem 0.65rem;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);border-bottom:1px solid var(--border);font-weight:500;cursor:pointer;user-select:none}
+.data-table th:hover{color:var(--text-dim)}
+.data-table th.sort-asc::after{content:' \25B2';color:var(--accent)}
+.data-table th.sort-desc::after{content:' \25BC';color:var(--accent)}
+.data-table td{padding:0.5rem 0.65rem;border-bottom:1px solid rgba(42,53,80,0.4);white-space:nowrap}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:rgba(139,92,246,0.05)}
+.data-table .mono{font-family:'JetBrains Mono',monospace;font-size:0.75rem}
+.data-table .right{text-align:right}
+.data-table .total-row td{font-weight:600;border-top:2px solid var(--border);color:var(--text);padding-top:0.65rem;background:var(--surface2)}
+.data-table .name-cell{max-width:240px;overflow:hidden;text-overflow:ellipsis}
+.data-table .pending td{background:rgba(245,158,11,0.06)}
+.data-table .pending td:first-child::after{content:' ·';color:var(--amber);font-weight:700}
+
+.recon-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem}
+.recon-box{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1.15rem}
+.recon-box .r-label{font-size:0.65rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-muted);margin-bottom:0.5rem}
+.recon-box .r-val{font-family:'JetBrains Mono',monospace;font-size:1.3rem;font-weight:600}
+.recon-box .r-sub{font-size:0.7rem;color:var(--text-dim);margin-top:0.4rem}
+.recon-box.ok{border-color:var(--green-dim)}
+.recon-box.warn{border-color:var(--amber)}
+.recon-box.err{border-color:var(--red)}
+
+.search-box{width:100%;max-width:360px;padding:0.55rem 0.85rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.85rem;outline:none;margin-bottom:1rem}
+.search-box:focus{border-color:var(--accent)}
+
+.chart-wrap{position:relative;height:280px;margin-top:0.5rem}
+
+.split-bar{display:flex;height:30px;border-radius:6px;overflow:hidden;margin-bottom:0.6rem;border:1px solid var(--border)}
+.split-bar > div{display:flex;align-items:center;justify-content:center;font-size:0.68rem;font-weight:600;color:#fff;font-family:'JetBrains Mono',monospace;letter-spacing:0.04em}
+
+.legend{display:flex;flex-wrap:wrap;gap:0.85rem;font-size:0.72rem;color:var(--text-dim);margin-top:0.6rem}
+.legend .dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:0.35rem;vertical-align:middle}
+
+.note{font-size:0.78rem;color:var(--text-dim);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.85rem 1rem;margin-bottom:1rem;line-height:1.5}
+.note strong{color:var(--text)}
+.note.warn{border-color:var(--amber);background:rgba(245,158,11,0.05)}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.kpi,.card{animation:fadeUp 0.6s ease both}
+
+footer{text-align:center;padding:2rem;font-size:0.7rem;color:var(--text-muted);letter-spacing:0.05em}
+</style>
+</head>
+<body>
+<!-- PASSWORD GATE -->
+<div id="lockScreen" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0e17;z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column">
+  <div style="text-align:center;max-width:360px;padding:2rem">
+    <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:1.6rem;background:linear-gradient(135deg,#e2e8f0,#94a3b8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:0.4rem">Armada Prime LLP</div>
+    <div style="font-size:0.72rem;color:#5a6a85;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:2.5rem">Consultant Splits — Authorized Access Only</div>
+    <input id="pwInput" type="password" placeholder="Enter password" autofocus
+      style="width:100%;padding:0.85rem 1rem;background:#111827;border:1px solid #2a3550;border-radius:8px;color:#e2e8f0;font-family:'DM Sans',sans-serif;font-size:0.95rem;outline:none;margin-bottom:0.75rem;text-align:center;letter-spacing:0.1em"
+      onkeydown="if(event.key==='Enter')checkPw()">
+    <button onclick="checkPw()"
+      style="width:100%;padding:0.75rem;background:#8b5cf6;border:none;border-radius:8px;color:#fff;font-family:'DM Sans',sans-serif;font-size:0.85rem;font-weight:600;cursor:pointer;letter-spacing:0.04em"
+      onmouseover="this.style.background='#7c3aed'" onmouseout="this.style.background='#8b5cf6'">Access Dashboard</button>
+    <div id="pwError" style="color:#ef4444;font-size:0.78rem;margin-top:0.75rem;display:none">Incorrect password</div>
+  </div>
+</div>
+<script>
+// Password: "armada2026" — same as the main returns dashboard
+const PW_HASH = '6f42902100607af28c57fc29cdc293a11376a055adda3006bb65882a11b1780c';
+function checkPw(){
+  const input = document.getElementById('pwInput').value;
+  const hash = CryptoJS.SHA256(input).toString();
+  if(hash === PW_HASH){
+    document.getElementById('lockScreen').style.display='none';
+    sessionStorage.setItem('ap_splits_auth','1');
+    if(window.bootDashboard) window.bootDashboard();
+  } else {
+    const err = document.getElementById('pwError');
+    err.style.display='block';
+    document.getElementById('pwInput').value='';
+    document.getElementById('pwInput').focus();
+    setTimeout(()=>err.style.display='none',2000);
+  }
+}
+if(sessionStorage.getItem('ap_splits_auth')==='1'){
+  document.getElementById('lockScreen').style.display='none';
+}
+</script>
+
+<div class="noise"></div>
+<div class="glow-orb one"></div>
+<div class="glow-orb two"></div>
+
+<header>
+  <div class="logo-block">
+    <h1>Armada Prime LLP</h1>
+    <div class="sub">Consultant Splits — TPA-Sourced</div>
+  </div>
+  <div class="header-right">
+    <div class="period-badge" id="periodBadge">Loading…</div>
+    <a class="nav-link" href="index.html">← Returns</a>
+    <a class="nav-link" href="tpa-dashboard.html">TPA Reports</a>
+    <a class="nav-link" href="./Armada_Consultant_Splits.xlsx" download style="color:#a78bfa;border-color:#8b5cf6">⬇ Download Excel</a>
+  </div>
+</header>
+
+<div class="dashboard">
+
+  <div class="month-selector" id="monthSelector"></div>
+
+  <div class="note">
+    <strong>How this is calculated:</strong> The TPA performance fee per investor is the GP pool. We attribute each investor's perf fee to the consultant who raised them (per IDS), then split the GP pool: <strong>Fund Mgmt 59.5%</strong>, <strong>Consultant 39%</strong>, <strong>Raj/Nairne/Phil 0.5% each</strong>. TruQuant's 18% is taken upstream and is not on Armada Prime's books. Numbers below use TPA crystallized fees, not the internal makeshift model.
+  </div>
+
+  <div class="kpi-row" id="topKpis"></div>
+
+  <div class="card">
+    <h2><span class="icon">🪜</span> GP Pool Cascade</h2>
+    <div id="cascadeViz"></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card" style="margin-bottom:0">
+      <h2><span class="icon">👥</span> Consultant Payouts</h2>
+      <div style="overflow-x:auto">
+        <table class="data-table" id="consultantTable">
+          <thead>
+            <tr>
+              <th data-sort="consultant">Consultant</th>
+              <th data-sort="investor_count" class="right"># Inv</th>
+              <th data-sort="capital_raised" class="right">Capital Raised</th>
+              <th data-sort="gp_earned_consultant_cut" class="right sort-desc">GP Earned</th>
+              <th data-sort="pct_of_gp_pool" class="right">% Pool</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:0">
+      <h2><span class="icon">📊</span> Pool Distribution</h2>
+      <div class="chart-wrap"><canvas id="poolChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="icon">🔍</span> Per-Investor Breakdown — <span id="invMonthLabel"></span> <span id="invCount" style="color:var(--text-dim);font-weight:400;text-transform:none;letter-spacing:0.02em;font-family:'JetBrains Mono',monospace;margin-left:0.4rem"></span></h2>
+    <input type="search" class="search-box" id="invSearch" placeholder="Search investor or consultant…">
+    <div style="overflow-x:auto">
+      <table class="data-table" id="invTable">
+        <thead>
+          <tr>
+            <th style="width:40px;text-align:right;color:var(--text-muted)">#</th>
+            <th data-sort="name">Investor</th>
+            <th data-sort="consultant">Consultant</th>
+            <th data-sort="ending_balance" class="right">Ending Balance</th>
+            <th data-sort="gross_profit" class="right">Gross P&amp;L</th>
+            <th data-sort="perf_fee" class="right sort-desc">Perf Fee (Pool)</th>
+            <th data-sort="fund_mgmt_cut" class="right">Fund Mgmt</th>
+            <th data-sort="consultant_cut" class="right">Consultant 39%</th>
+            <th data-sort="raj_cut" class="right">Raj</th>
+            <th data-sort="nairne_cut" class="right">Nairne</th>
+            <th data-sort="phil_cut" class="right">Phil</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="icon">✅</span> Reconciliation</h2>
+    <div class="recon-grid" id="reconGrid"></div>
+  </div>
+
+</div>
+
+<footer>
+  Armada Prime LLP · Consultant Splits · Generated from <code>data/consultant_splits.json</code>
+</footer>
+
+<script>
+// ============ STATE ============
+let HISTORY = null;
+let CURRENT_MONTH_IDX = 0;
+let CONS_SORT = {key:'gp_earned_consultant_cut', dir:'desc'};
+let INV_SORT = {key:'perf_fee', dir:'desc'};
+let INV_FILTER = '';
+const CHARTS = {};
+
+// ============ FORMATTERS ============
+const fmtUSD = (n, opts={}) => {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  const abs = Math.abs(n);
+  if (opts.compact && abs >= 1e6) return (n<0?'-$':'$') + (abs/1e6).toFixed(2) + 'M';
+  if (opts.compact && abs >= 1e3) return (n<0?'-$':'$') + (abs/1e3).toFixed(1) + 'K';
+  const sign = n<0 ? '-$' : '$';
+  return sign + abs.toLocaleString(undefined,{minimumFractionDigits:opts.dp??0,maximumFractionDigits:opts.dp??2});
+};
+const fmtPct = (n, dp=2) => (n===null||n===undefined||isNaN(n)) ? '—' : (n*100).toFixed(dp)+'%';
+const fmtInt = n => (n===null||n===undefined||isNaN(n)) ? '—' : Math.round(n).toLocaleString();
+
+// ============ LOAD ============
+async function loadHistory(){
+  try{
+    const res = await fetch('./data/consultant_splits.json?cb=' + Date.now());
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    HISTORY = await res.json();
+  }catch(e){
+    document.querySelector('.dashboard').innerHTML = `<div class="card"><h2>Error loading data</h2><p style="color:var(--red)">Could not fetch data/consultant_splits.json: ${e.message}</p><p style="color:var(--text-dim);margin-top:1rem">Make sure you're serving via a web server (e.g. <code>python -m http.server</code>) rather than opening the file directly.</p></div>`;
+    throw e;
+  }
+}
+
+function buildMonthSelector(){
+  const sel = document.getElementById('monthSelector');
+  CURRENT_MONTH_IDX = HISTORY.months.length - 1;  // default to latest
+  sel.innerHTML = HISTORY.months.map((m,i) =>
+    `<div class="month-chip ${i===CURRENT_MONTH_IDX?'active':''}" data-idx="${i}">${m.period_label}</div>`
+  ).join('');
+  sel.querySelectorAll('.month-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      CURRENT_MONTH_IDX = Number(chip.dataset.idx);
+      sel.querySelectorAll('.month-chip').forEach(c => c.classList.toggle('active', c === chip));
+      renderAll();
+    });
+  });
+}
+
+function currentMonth(){ return HISTORY.months[CURRENT_MONTH_IDX]; }
+
+function renderAll(){
+  const m = currentMonth();
+  document.getElementById('periodBadge').textContent = m.period_label + ' · As of ' + m.as_of;
+  renderTopKpis();
+  renderCascade();
+  renderConsultants();
+  renderPoolChart();
+  renderInvestors();
+  renderRecon();
+}
+
+function renderTopKpis(){
+  const m = currentMonth();
+  const ft = m.fund_totals;
+  const kpis = [
+    {cls:'blue', label:'TPA Gross Income', value:fmtUSD(ft.tpa_gross_income,{compact:true}), detail:'Fund cut (post-TruQuant) on the books'},
+    {cls:'purple', label:'GP Pool (crystallized)', value:fmtUSD(ft.tpa_perf_fees_crystallized,{compact:true}), detail:'30% of fund cut · drives consultant pay'},
+    {cls:'green', label:'Net to Investors', value:fmtUSD(ft.tpa_net_income,{compact:true}), detail:'70% of fund cut · after fees + bank chgs'},
+    {cls:'amber', label:'Consultants Pool', value:fmtUSD(ft.consultants_pool,{compact:true}), detail:`39% of GP · ${m.consultants.length} consultants paid`},
+    {cls:'cyan', label:'Ending AUM', value:fmtUSD(ft.ending_aum,{compact:true}), detail:`${ft.investor_count} investors · Net MTD ${fmtPct(ft.net_mtd_ror)}`},
+    {cls: ft.unmapped_count===0 ? 'green' : 'red', label:'Unmapped Investors', value:String(ft.unmapped_count), detail: ft.unmapped_count===0 ? 'All investors attributed to a consultant' : 'Fix in IDS Mapping sheet'},
+  ];
+  document.getElementById('topKpis').innerHTML = kpis.map(k =>
+    `<div class="kpi ${k.cls}"><div class="stripe"></div><div class="label">${k.label}</div><div class="value">${k.value}</div><div class="detail">${k.detail}</div></div>`
+  ).join('');
+}
+
+function renderCascade(){
+  const m = currentMonth();
+  const ft = m.fund_totals;
+  const pool = ft.tpa_perf_fees_crystallized;
+  const items = [
+    {label:'Fund Mgmt 59.5%', val:ft.fund_mgmt_pool, color:'#3b82f6'},
+    {label:'Consultants 39%', val:ft.consultants_pool, color:'#8b5cf6'},
+    {label:'Raj 0.5%', val:ft.raj_pool, color:'#06b6d4'},
+    {label:'Nairne 0.5%', val:ft.nairne_pool, color:'#10b981'},
+    {label:'Phil 0.5%', val:ft.phil_pool, color:'#f59e0b'},
+  ];
+  const segs = items.map(it => {
+    const pct = pool ? (it.val/pool)*100 : 0;
+    return `<div style="flex:${pct};background:${it.color}" title="${it.label} = ${fmtUSD(it.val)}">${pct >= 6 ? fmtUSD(it.val,{compact:true}) : ''}</div>`;
+  }).join('');
+  const legend = items.map(it =>
+    `<span><span class="dot" style="background:${it.color}"></span>${it.label} · <strong style="color:var(--text)">${fmtUSD(it.val,{compact:true})}</strong></span>`
+  ).join('');
+  document.getElementById('cascadeViz').innerHTML = `
+    <div style="display:flex;justify-content:space-between;font-size:0.78rem;color:var(--text-dim);margin-bottom:0.5rem">
+      <span>GP Pool: <strong style="color:var(--purple);font-family:'JetBrains Mono',monospace">${fmtUSD(pool)}</strong></span>
+      <span>Sum check: <strong style="color:var(--green);font-family:'JetBrains Mono',monospace">${fmtUSD(items.reduce((s,x)=>s+x.val,0))}</strong></span>
+    </div>
+    <div class="split-bar">${segs}</div>
+    <div class="legend">${legend}</div>
+  `;
+}
+
+function renderConsultants(){
+  const m = currentMonth();
+  const rows = [...m.consultants];
+  rows.sort((a,b) => {
+    const av = a[CONS_SORT.key], bv = b[CONS_SORT.key];
+    if (typeof av === 'string') return CONS_SORT.dir==='asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+    return CONS_SORT.dir==='asc' ? av - bv : bv - av;
+  });
+  const totalPool = m.fund_totals.tpa_perf_fees_crystallized;
+  const totals = rows.reduce((acc, r) => {
+    acc.investor_count += r.investor_count;
+    acc.capital_raised += r.capital_raised;
+    acc.gp_earned_consultant_cut += r.gp_earned_consultant_cut;
+    return acc;
+  }, {investor_count:0, capital_raised:0, gp_earned_consultant_cut:0});
+
+  const tbody = rows.map(r => {
+    const pending = r.consultant.includes('Pending') || r.consultant === 'Unmapped';
+    return `<tr class="${pending ? 'pending' : ''}">
+      <td>${r.consultant}${pending ? ' <span class="tag warn">PENDING</span>' : ''}</td>
+      <td class="right mono">${r.investor_count}</td>
+      <td class="right mono">${fmtUSD(r.capital_raised,{compact:true})}</td>
+      <td class="right mono" style="color:var(--purple);font-weight:600">${fmtUSD(r.gp_earned_consultant_cut)}</td>
+      <td class="right mono">${fmtPct(r.pct_of_gp_pool)}</td>
+    </tr>`;
+  }).join('');
+  const totalPct = totalPool ? totals.gp_earned_consultant_cut / totalPool : 0;
+  const totalRow = `<tr class="total-row">
+    <td>TOTAL · Consultants 39%</td>
+    <td class="right mono">${totals.investor_count}</td>
+    <td class="right mono">${fmtUSD(totals.capital_raised,{compact:true})}</td>
+    <td class="right mono">${fmtUSD(totals.gp_earned_consultant_cut)}</td>
+    <td class="right mono">${fmtPct(totalPct)}</td>
+  </tr>`;
+  document.querySelector('#consultantTable tbody').innerHTML = tbody + totalRow;
+
+  document.querySelectorAll('#consultantTable th[data-sort]').forEach(th => {
+    th.classList.remove('sort-asc','sort-desc');
+    if (th.dataset.sort === CONS_SORT.key) th.classList.add('sort-'+CONS_SORT.dir);
+    th.onclick = () => {
+      const k = th.dataset.sort;
+      if (CONS_SORT.key === k) CONS_SORT.dir = CONS_SORT.dir==='asc' ? 'desc' : 'asc';
+      else { CONS_SORT.key = k; CONS_SORT.dir = (k==='consultant') ? 'asc' : 'desc'; }
+      renderConsultants();
+    };
+  });
+}
+
+function renderPoolChart(){
+  const m = currentMonth();
+  const data = [
+    {label:'Fund Mgmt', val:m.fund_totals.fund_mgmt_pool, color:'#3b82f6'},
+    ...m.consultants.map((c,i) => ({label:c.consultant, val:c.gp_earned_consultant_cut, color:['#8b5cf6','#06b6d4','#10b981','#f59e0b','#ef4444','#a78bfa','#22d3ee'][i%7]})),
+    {label:'Raj', val:m.fund_totals.raj_pool, color:'#94a3b8'},
+    {label:'Nairne', val:m.fund_totals.nairne_pool, color:'#94a3b8'},
+    {label:'Phil', val:m.fund_totals.phil_pool, color:'#94a3b8'},
+  ];
+  if (CHARTS.pool) CHARTS.pool.destroy();
+  const ctx = document.getElementById('poolChart').getContext('2d');
+  CHARTS.pool = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: data.map(d => d.label),
+      datasets: [{data: data.map(d => d.val), backgroundColor: data.map(d => d.color), borderColor: '#0a0e17', borderWidth: 2}]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false, cutout:'58%',
+      plugins:{
+        legend:{position:'right', labels:{color:'#8494b0', font:{family:"'DM Sans'", size:11}, boxWidth:10, padding:8}},
+        tooltip:{callbacks:{label: ctx => ` ${ctx.label}: ${fmtUSD(ctx.parsed)}`}}
+      }
+    }
+  });
+}
+
+function renderInvestors(){
+  const m = currentMonth();
+  let rows = m.investors;
+  if (INV_FILTER) {
+    const q = INV_FILTER.toLowerCase();
+    rows = rows.filter(r => r.name.toLowerCase().includes(q) || r.consultant.toLowerCase().includes(q));
+  }
+  rows = [...rows].sort((a,b) => {
+    const av = a[INV_SORT.key], bv = b[INV_SORT.key];
+    if (typeof av === 'string') return INV_SORT.dir==='asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+    return INV_SORT.dir==='asc' ? av - bv : bv - av;
+  });
+
+  const tbody = rows.map((r, idx) => {
+    const pending = r.consultant.includes('Pending') || r.consultant === 'Unmapped';
+    return `<tr class="${pending ? 'pending' : ''}">
+      <td class="right" style="color:var(--text-muted)">${idx+1}</td>
+      <td class="name-cell">${r.name}</td>
+      <td>${r.consultant}${pending ? ' <span class="tag warn">PENDING</span>' : ''}</td>
+      <td class="right mono">${fmtUSD(r.ending_balance,{compact:true})}</td>
+      <td class="right mono">${fmtUSD(r.gross_profit)}</td>
+      <td class="right mono" style="color:var(--purple);font-weight:600">${fmtUSD(r.perf_fee)}</td>
+      <td class="right mono">${fmtUSD(r.fund_mgmt_cut)}</td>
+      <td class="right mono" style="color:var(--green)">${fmtUSD(r.consultant_cut)}</td>
+      <td class="right mono">${fmtUSD(r.raj_cut)}</td>
+      <td class="right mono">${fmtUSD(r.nairne_cut)}</td>
+      <td class="right mono">${fmtUSD(r.phil_cut)}</td>
+    </tr>`;
+  }).join('');
+
+  const totals = rows.reduce((acc, r) => {
+    acc.ending_balance += r.ending_balance;
+    acc.gross_profit += r.gross_profit;
+    acc.perf_fee += r.perf_fee;
+    acc.fund_mgmt_cut += r.fund_mgmt_cut;
+    acc.consultant_cut += r.consultant_cut;
+    acc.raj_cut += r.raj_cut;
+    acc.nairne_cut += r.nairne_cut;
+    acc.phil_cut += r.phil_cut;
+    return acc;
+  }, {ending_balance:0,gross_profit:0,perf_fee:0,fund_mgmt_cut:0,consultant_cut:0,raj_cut:0,nairne_cut:0,phil_cut:0});
+
+  const totalRow = `<tr class="total-row">
+    <td></td><td>TOTAL</td><td>${rows.length} of ${m.investors.length}</td>
+    <td class="right mono">${fmtUSD(totals.ending_balance,{compact:true})}</td>
+    <td class="right mono">${fmtUSD(totals.gross_profit)}</td>
+    <td class="right mono">${fmtUSD(totals.perf_fee)}</td>
+    <td class="right mono">${fmtUSD(totals.fund_mgmt_cut)}</td>
+    <td class="right mono">${fmtUSD(totals.consultant_cut)}</td>
+    <td class="right mono">${fmtUSD(totals.raj_cut)}</td>
+    <td class="right mono">${fmtUSD(totals.nairne_cut)}</td>
+    <td class="right mono">${fmtUSD(totals.phil_cut)}</td>
+  </tr>`;
+
+  document.querySelector('#invTable tbody').innerHTML = tbody + totalRow;
+  document.getElementById('invMonthLabel').textContent = m.period_label;
+  document.getElementById('invCount').textContent = `${rows.length}/${m.investors.length}`;
+
+  document.querySelectorAll('#invTable th[data-sort]').forEach(th => {
+    th.classList.remove('sort-asc','sort-desc');
+    if (th.dataset.sort === INV_SORT.key) th.classList.add('sort-'+INV_SORT.dir);
+    th.onclick = () => {
+      const k = th.dataset.sort;
+      if (INV_SORT.key === k) INV_SORT.dir = INV_SORT.dir==='asc' ? 'desc' : 'asc';
+      else { INV_SORT.key = k; INV_SORT.dir = (k==='name'||k==='consultant') ? 'asc' : 'desc'; }
+      renderInvestors();
+    };
+  });
+
+  const search = document.getElementById('invSearch');
+  if (!search.dataset.bound) {
+    search.addEventListener('input', e => { INV_FILTER = e.target.value; renderInvestors(); });
+    search.dataset.bound = '1';
+  }
+}
+
+function renderRecon(){
+  const m = currentMonth();
+  const ft = m.fund_totals;
+  const splitSum = ft.fund_mgmt_pool + ft.consultants_pool + ft.raj_pool + ft.nairne_pool + ft.phil_pool;
+  const splitDiff = Math.abs(splitSum - ft.tpa_perf_fees_crystallized);
+  const splitOk = splitDiff < 1;
+  const investorSum = m.investors.reduce((s, r) => s + r.perf_fee, 0);
+  const investorDiff = Math.abs(investorSum - ft.tpa_perf_fees_crystallized);
+  const investorOk = investorDiff < 1;
+  const unmappedOk = ft.unmapped_count === 0;
+  const pendingCount = m.investors.filter(r => r.consultant.includes('Pending')).length;
+
+  const boxes = [
+    {cls: investorOk ? 'ok' : 'err', label:'Sum of per-investor perf fees',
+     val: fmtUSD(investorSum), sub: investorOk ? `Matches TPA total (Δ ${fmtUSD(investorDiff,{dp:2})})` : `OFF by ${fmtUSD(investorDiff)}`},
+    {cls: splitOk ? 'ok' : 'err', label:'Sum of all split columns',
+     val: fmtUSD(splitSum), sub: splitOk ? `Equals GP pool (Δ ${fmtUSD(splitDiff,{dp:2})})` : `OFF by ${fmtUSD(splitDiff)}`},
+    {cls: unmappedOk ? 'ok' : 'err', label:'Unmapped investors',
+     val: String(ft.unmapped_count), sub: unmappedOk ? 'All attributed to a consultant' : 'Fix in IDS Mapping sheet'},
+    {cls: pendingCount === 0 ? 'ok' : 'warn', label:'Pending split (Fund Hub SPV)',
+     val: String(pendingCount), sub: pendingCount === 0 ? 'No pending allocations' : `${pendingCount} investor${pendingCount>1?'s':''} awaiting AJ/Alec split`},
+    {cls: 'ok', label:'Split percentages',
+     val: '100.00%', sub: `Mgmt 59.5% · Cons 39% · 3×0.5% (fixed)`},
+  ];
+  document.getElementById('reconGrid').innerHTML = boxes.map(b =>
+    `<div class="recon-box ${b.cls}"><div class="r-label">${b.label}</div><div class="r-val">${b.val}</div><div class="r-sub">${b.sub}</div></div>`
+  ).join('');
+}
+
+// ============ BOOT ============
+window.bootDashboard = async function(){
+  if (HISTORY) { renderAll(); return; }
+  await loadHistory();
+  buildMonthSelector();
+  renderAll();
+};
+
+if (sessionStorage.getItem('ap_splits_auth') === '1') {
+  window.bootDashboard();
+}
+</script>
+</body>
+</html>

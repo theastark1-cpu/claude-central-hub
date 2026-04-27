@@ -1,0 +1,1152 @@
+{
+  "fund": "Armada Prime LLP",
+  "months": [
+    {
+      "period": "2026-03",
+      "period_label": "Mar 2026",
+      "as_of": "2026-03-31",
+      "split_pcts": {
+        "fund_mgmt": 0.595,
+        "consultant": 0.39,
+        "raj": 0.005,
+        "nairne": 0.005,
+        "phil": 0.005
+      },
+      "fund_totals": {
+        "tpa_gross_income": 404850.79,
+        "tpa_net_income": 283276.56,
+        "tpa_perf_fees_crystallized": 121404.22,
+        "fund_mgmt_pool": 72235.51,
+        "consultants_pool": 47347.65,
+        "raj_pool": 607.02,
+        "nairne_pool": 607.02,
+        "phil_pool": 607.02,
+        "investor_count": 51,
+        "unmapped_count": 0,
+        "ending_aum": 12051131.75,
+        "gross_mtd_ror": 0.034389,
+        "net_mtd_ror": 0.024072
+      },
+      "consultants": [
+        {
+          "consultant": "Alec Atkinson",
+          "investor_count": 33,
+          "capital_raised": 8002506.62,
+          "gp_earned_consultant_cut": 31440.36,
+          "investors": [
+            {
+              "tpa_id": "14-Class B-1029-1",
+              "name": "Philip Okala",
+              "ending_balance": 1554446.7,
+              "gross_profit": 52197.71,
+              "perf_fee": 15659.31,
+              "consultant_cut": 6107.13
+            },
+            {
+              "tpa_id": "14-Class B-1012-1",
+              "name": "NC Opportunity Fund, LP",
+              "ending_balance": 1504802.83,
+              "gross_profit": 50530.69,
+              "perf_fee": 15159.21,
+              "consultant_cut": 5912.09
+            },
+            {
+              "tpa_id": "14-Class B-1028-1",
+              "name": "DW MILLER LAND AND LIVESTOCK LLC",
+              "ending_balance": 782096.09,
+              "gross_profit": 26262.48,
+              "perf_fee": 7878.74,
+              "consultant_cut": 3072.71
+            },
+            {
+              "tpa_id": "14-Class B-1057-1",
+              "name": "PHF 2008 Descendants Separate Trust",
+              "ending_balance": 532695.99,
+              "gross_profit": 17887.72,
+              "perf_fee": 5366.32,
+              "consultant_cut": 2092.86
+            },
+            {
+              "tpa_id": "14-Class B-1038-1",
+              "name": "SHIRE HOLDINGS FAMILY LP",
+              "ending_balance": 370633.4,
+              "gross_profit": 12445.73,
+              "perf_fee": 3733.72,
+              "consultant_cut": 1456.15
+            },
+            {
+              "tpa_id": "14-Class B-1065-1",
+              "name": "AltoIRA Custodian FBO Michelle Henriques",
+              "ending_balance": 206861.77,
+              "gross_profit": 6946.34,
+              "perf_fee": 2083.9,
+              "consultant_cut": 812.72
+            },
+            {
+              "tpa_id": "14-Class B-1021-1",
+              "name": "Colin Steinberg",
+              "ending_balance": 205186.49,
+              "gross_profit": 6890.08,
+              "perf_fee": 2067.02,
+              "consultant_cut": 806.14
+            },
+            {
+              "tpa_id": "14-Class B-1076-1",
+              "name": "Philippe Henriques",
+              "ending_balance": 188159.19,
+              "gross_profit": 6318.31,
+              "perf_fee": 1895.49,
+              "consultant_cut": 739.24
+            },
+            {
+              "tpa_id": "14-Class B-1003-1",
+              "name": "Benjamin Smith",
+              "ending_balance": 181498.82,
+              "gross_profit": 6094.66,
+              "perf_fee": 1828.4,
+              "consultant_cut": 713.08
+            },
+            {
+              "tpa_id": "14-Class B-1026-1",
+              "name": "AltoIRA Custodian FBO Marcus Whitney",
+              "ending_balance": 155614.84,
+              "gross_profit": 5225.49,
+              "perf_fee": 1567.65,
+              "consultant_cut": 611.38
+            },
+            {
+              "tpa_id": "14-Class B-1073-1",
+              "name": "PGJCHoldings LLC",
+              "ending_balance": 153610.73,
+              "gross_profit": 5158.19,
+              "perf_fee": 1547.46,
+              "consultant_cut": 603.51
+            },
+            {
+              "tpa_id": "14-Class B-1023-1",
+              "name": "Douglas Wilcox and Miles Wesley Wilcox",
+              "ending_balance": 149013.12,
+              "gross_profit": 5003.8,
+              "perf_fee": 1501.14,
+              "consultant_cut": 585.44
+            },
+            {
+              "tpa_id": "14-Class B-1030-1",
+              "name": "Platte River Holdings LLC",
+              "ending_balance": 131452.82,
+              "gross_profit": 4414.13,
+              "perf_fee": 1324.24,
+              "consultant_cut": 516.45
+            },
+            {
+              "tpa_id": "14-Class B-1019-1",
+              "name": "Fred Gorges",
+              "ending_balance": 120660.73,
+              "gross_profit": 4051.74,
+              "perf_fee": 1215.52,
+              "consultant_cut": 474.05
+            },
+            {
+              "tpa_id": "14-Class B-1018-1",
+              "name": "Bryce Dee Christensen",
+              "ending_balance": 117281.71,
+              "gross_profit": 3938.27,
+              "perf_fee": 1181.48,
+              "consultant_cut": 460.78
+            },
+            {
+              "tpa_id": "14-Class B-1011-1",
+              "name": "David Anderson",
+              "ending_balance": 117028.98,
+              "gross_profit": 3929.79,
+              "perf_fee": 1178.94,
+              "consultant_cut": 459.79
+            },
+            {
+              "tpa_id": "14-Class B-1014-1",
+              "name": "BENIK LLC",
+              "ending_balance": 114834.83,
+              "gross_profit": 3856.11,
+              "perf_fee": 1156.83,
+              "consultant_cut": 451.16
+            },
+            {
+              "tpa_id": "14-Class B-1022-1",
+              "name": "John Hudson Taylor Anderson",
+              "ending_balance": 113941.39,
+              "gross_profit": 3826.11,
+              "perf_fee": 1147.83,
+              "consultant_cut": 447.65
+            },
+            {
+              "tpa_id": "14-Class B-1031-1",
+              "name": "Jerry Dwayne Fussell",
+              "ending_balance": 113327.33,
+              "gross_profit": 3805.49,
+              "perf_fee": 1141.65,
+              "consultant_cut": 445.24
+            },
+            {
+              "tpa_id": "14-Class B-1032-1",
+              "name": "Ten Eighty Trading LLC",
+              "ending_balance": 113327.33,
+              "gross_profit": 3805.49,
+              "perf_fee": 1141.65,
+              "consultant_cut": 445.24
+            },
+            {
+              "tpa_id": "14-Class B-1036-1",
+              "name": "Caleb Andrew Cupp",
+              "ending_balance": 112365.21,
+              "gross_profit": 3773.18,
+              "perf_fee": 1131.95,
+              "consultant_cut": 441.46
+            },
+            {
+              "tpa_id": "14-Class B-1053-1",
+              "name": "MATTHEW AND MELINDA WILLIAMS CHARITABLE REMAINDER UNITRUST",
+              "ending_balance": 111426.88,
+              "gross_profit": 3741.67,
+              "perf_fee": 1122.5,
+              "consultant_cut": 437.78
+            },
+            {
+              "tpa_id": "14-Class B-1058-1",
+              "name": "PL Investment Group, LLC",
+              "ending_balance": 109650.6,
+              "gross_profit": 3682.02,
+              "perf_fee": 1104.61,
+              "consultant_cut": 430.8
+            },
+            {
+              "tpa_id": "14-Class B-1037-1",
+              "name": "James Lockhart",
+              "ending_balance": 104520.17,
+              "gross_profit": 3509.75,
+              "perf_fee": 1052.92,
+              "consultant_cut": 410.64
+            },
+            {
+              "tpa_id": "14-Class B-1063-1",
+              "name": "Lyman Phillips",
+              "ending_balance": 103481.71,
+              "gross_profit": 3474.88,
+              "perf_fee": 1042.46,
+              "consultant_cut": 406.56
+            },
+            {
+              "tpa_id": "14-Class B-1062-1",
+              "name": "Lori Brennan",
+              "ending_balance": 103430.88,
+              "gross_profit": 3473.17,
+              "perf_fee": 1041.95,
+              "consultant_cut": 406.36
+            },
+            {
+              "tpa_id": "14-Class B-1066-1",
+              "name": "Brandy and Adam Fisher",
+              "ending_balance": 103412.44,
+              "gross_profit": 3472.55,
+              "perf_fee": 1041.76,
+              "consultant_cut": 406.29
+            },
+            {
+              "tpa_id": "14-Class B-1072-1",
+              "name": "Mashirito LLC",
+              "ending_balance": 102407.15,
+              "gross_profit": 3438.79,
+              "perf_fee": 1031.64,
+              "consultant_cut": 402.34
+            },
+            {
+              "tpa_id": "14-Class B-1068-1",
+              "name": "Weston Shea Christensen",
+              "ending_balance": 102407.15,
+              "gross_profit": 3438.79,
+              "perf_fee": 1031.64,
+              "consultant_cut": 402.34
+            },
+            {
+              "tpa_id": "14-Class B-1002-1",
+              "name": "Frieda Goldsmith 1998 Trust",
+              "ending_balance": 80692.29,
+              "gross_profit": 2709.62,
+              "perf_fee": 812.88,
+              "consultant_cut": 317.02
+            },
+            {
+              "tpa_id": "14-Class B-1025-1",
+              "name": "The Atkinson Group LLC",
+              "ending_balance": 41136.24,
+              "gross_profit": 1381.34,
+              "perf_fee": 414.4,
+              "consultant_cut": 161.62
+            },
+            {
+              "tpa_id": "14-Class B-1010-1",
+              "name": "Mitchell Squires",
+              "ending_balance": 1100.81,
+              "gross_profit": 36.96,
+              "perf_fee": 11.09,
+              "consultant_cut": 4.33
+            },
+            {
+              "tpa_id": "14-Class B-1024-1",
+              "name": "Joel Guy and Jennifer Pasetes",
+              "ending_balance": 0,
+              "gross_profit": 0,
+              "perf_fee": 0,
+              "consultant_cut": 0.0
+            }
+          ],
+          "pct_of_gp_pool": 0.258973
+        },
+        {
+          "consultant": "Jake Gordon",
+          "investor_count": 10,
+          "capital_raised": 2102788.27,
+          "gp_earned_consultant_cut": 8262.46,
+          "investors": [
+            {
+              "tpa_id": "14-Class B-1013-1",
+              "name": "David Loeffler and Lisa C. Loeffler",
+              "ending_balance": 736875.59,
+              "gross_profit": 24752.48,
+              "perf_fee": 7425.74,
+              "consultant_cut": 2896.04
+            },
+            {
+              "tpa_id": "14-Class B-1006-1",
+              "name": "Steve Corpuz",
+              "ending_balance": 255515.88,
+              "gross_profit": 8580.12,
+              "perf_fee": 2574.04,
+              "consultant_cut": 1003.88
+            },
+            {
+              "tpa_id": "14-Class B-1008-1",
+              "name": "Reid Sessions",
+              "ending_balance": 252800.89,
+              "gross_profit": 8488.96,
+              "perf_fee": 2546.69,
+              "consultant_cut": 993.21
+            },
+            {
+              "tpa_id": "14-Class B-1009-1",
+              "name": "Doug Corpuz",
+              "ending_balance": 206967.8,
+              "gross_profit": 6949.9,
+              "perf_fee": 2084.97,
+              "consultant_cut": 813.14
+            },
+            {
+              "tpa_id": "14-Class B-1007-1",
+              "name": "Yan Purba",
+              "ending_balance": 167373.38,
+              "gross_profit": 5620.33,
+              "perf_fee": 1686.1,
+              "consultant_cut": 657.58
+            },
+            {
+              "tpa_id": "14-Class B-1067-1",
+              "name": "Joshua W Miller and Brooke G Miller",
+              "ending_balance": 124076.49,
+              "gross_profit": 4166.44,
+              "perf_fee": 1249.93,
+              "consultant_cut": 487.47
+            },
+            {
+              "tpa_id": "14-Class B-1035-1",
+              "name": "Scott Gordon and Tiffany Dyer Gordon",
+              "ending_balance": 112363.57,
+              "gross_profit": 3773.12,
+              "perf_fee": 1131.94,
+              "consultant_cut": 441.46
+            },
+            {
+              "tpa_id": "14-Class B-1055-1",
+              "name": "Sean D. Reyes",
+              "ending_balance": 111426.88,
+              "gross_profit": 3741.67,
+              "perf_fee": 1122.5,
+              "consultant_cut": 437.78
+            },
+            {
+              "tpa_id": "14-Class B-1056-1",
+              "name": "Richard Gordon",
+              "ending_balance": 78321.57,
+              "gross_profit": 2630.01,
+              "perf_fee": 789.0,
+              "consultant_cut": 307.71
+            },
+            {
+              "tpa_id": "14-Class B-1015-1",
+              "name": "Treyson Gordon",
+              "ending_balance": 57066.22,
+              "gross_profit": 1916.26,
+              "perf_fee": 574.88,
+              "consultant_cut": 224.2
+            }
+          ],
+          "pct_of_gp_pool": 0.068057
+        },
+        {
+          "consultant": "Fund Hub SPV (Pending Split)",
+          "investor_count": 1,
+          "capital_raised": 889926.39,
+          "gp_earned_consultant_cut": 3496.35,
+          "investors": [
+            {
+              "tpa_id": "14-Class B-1027-1",
+              "name": "Fund Hub Investments LLC",
+              "ending_balance": 889926.39,
+              "gross_profit": 29883.38,
+              "perf_fee": 8965.01,
+              "consultant_cut": 3496.35
+            }
+          ],
+          "pct_of_gp_pool": 0.028799
+        },
+        {
+          "consultant": "AJ Affleck",
+          "investor_count": 5,
+          "capital_raised": 838221.5,
+          "gp_earned_consultant_cut": 3293.22,
+          "investors": [
+            {
+              "tpa_id": "14-Class B-1000-1",
+              "name": "Erik Simpson",
+              "ending_balance": 440001.9,
+              "gross_profit": 14775.09,
+              "perf_fee": 4432.53,
+              "consultant_cut": 1728.69
+            },
+            {
+              "tpa_id": "14-Class B-1005-1",
+              "name": "Madison Trust Company, Custodian FBO David Gordon Affleck M24122132",
+              "ending_balance": 115616.76,
+              "gross_profit": 3882.37,
+              "perf_fee": 1164.71,
+              "consultant_cut": 454.24
+            },
+            {
+              "tpa_id": "14-Class B-1061-1",
+              "name": "Craig Levinson",
+              "ending_balance": 109173.32,
+              "gross_profit": 3666.0,
+              "perf_fee": 1099.8,
+              "consultant_cut": 428.92
+            },
+            {
+              "tpa_id": "14-Class B-1059-1",
+              "name": "John Charles Kirkham",
+              "ending_balance": 109123.67,
+              "gross_profit": 3664.33,
+              "perf_fee": 1099.3,
+              "consultant_cut": 428.73
+            },
+            {
+              "tpa_id": "14-Class B-1004-1",
+              "name": "Golden Touch Properties LLC",
+              "ending_balance": 64305.85,
+              "gross_profit": 2159.37,
+              "perf_fee": 647.81,
+              "consultant_cut": 252.65
+            }
+          ],
+          "pct_of_gp_pool": 0.027126
+        },
+        {
+          "consultant": "Luke",
+          "investor_count": 2,
+          "capital_raised": 217688.96,
+          "gp_earned_consultant_cut": 855.26,
+          "investors": [
+            {
+              "tpa_id": "14-Class B-1060-1",
+              "name": "Daniel Welch Kirkham",
+              "ending_balance": 109123.67,
+              "gross_profit": 3664.33,
+              "perf_fee": 1099.3,
+              "consultant_cut": 428.73
+            },
+            {
+              "tpa_id": "14-Class B-1064-1",
+              "name": "Advanta Trust Company Inc. FBO Shreekanth Karwande IRA 1522282",
+              "ending_balance": 108565.29,
+              "gross_profit": 3645.58,
+              "perf_fee": 1093.67,
+              "consultant_cut": 426.53
+            }
+          ],
+          "pct_of_gp_pool": 0.007045
+        }
+      ],
+      "investors": [
+        {
+          "tpa_id": "14-Class B-1029-1",
+          "name": "Philip Okala",
+          "consultant": "Alec Atkinson",
+          "ending_balance": 1554446.7,
+          "gross_profit": 52197.71,
+          "perf_fee": 15659.31,
+          "fund_mgmt_cut": 9317.29,
+          "consultant_cut": 6107.13,
+          "raj_cut": 78.3,
+          "nairne_cut": 78.3,
+          "phil_cut": 78.3
+        },
+        {
+          "tpa_id": "14-Class B-1012-1",
+          "name": "NC Opportunity Fund, LP",
+          "consultant": "Alec Atkinson",
+          "ending_balance": 1504802.83,
+          "gross_profit": 50530.69,
+          "perf_fee": 15159.21,
+          "fund_mgmt_cut": 9019.73,
+          "consultant_cut": 5912.09,
+          "raj_cut": 75.8,
+          "nairne_cut": 75.8,
+          "phil_cut": 75.8
+        },
+        {
+          "tpa_id": "14-Class B-1027-1",
+          "name": "Fund Hub Investments LLC",
+          "consultant": "Fund Hub SPV (Pending Split)",
+          "ending_balance": 889926.39,
+          "gross_profit": 29883.38,
+          "perf_fee": 8965.01,
+          "fund_mgmt_cut": 5334.18,
+          "consultant_cut": 3496.35,
+          "raj_cut": 44.83,
+          "nairne_cut": 44.83,
+          "phil_cut": 44.83
+        },
+        {
+          "tpa_id": "14-Class B-1028-1",
+          "name": "DW MILLER LAND AND LIVESTOCK LLC",
+          "consultant": "Alec Atkinson",
+          "ending_balance": 782096.09,
+          "gross_profit": 26262.48,
+          "perf_fee": 7878.74,
+          "fund_mgmt_cut": 4687.85,
+          "consultant_cut": 3072.71,
+          "raj_cut": 39.39,
+          "nairne_cut": 39.39,
+          "phil_cut": 39.39
+        },
+        {
+          "tpa_id": "14-Class B-1013-1",
+          "name": "David Loeffler and Lisa C. Loeffler",
+          "consultant": "Jake Gordon",
+          "ending_balance": 736875.59,
+          "gross_profit": 24752.48,
+          "perf_fee": 7425.74,
+          "fund_mgmt_cut": 4418.32,
+          "consultant_cut": 2896.04,
+          "raj_cut": 37.13,
+          "nairne_cut": 37.13,
+          "phil_cut": 37.13
+        },
+        {
+          "tpa_id": "14-Class B-1057-1",
+          "name": "PHF 2008 Descendants Separate Trust",
+          "consultant": "Alec Atkinson",
+          "ending_balance": 532695.99,
+          "gross_profit": 17887.72,
+          "perf_fee": 5366.32,
+          "fund_mgmt_cut": 3192.96,
+          "consultant_cut": 2092.86,
+          "raj_cut": 26.83,
+          "nairne_cut": 26.83,
+          "phil_cut": 26.83
+        },
+        {
+          "tpa_id": "14-Class B-1000-1",
+          "name": "Erik Simpson",
+          "consultant": "AJ Affleck",
+          "ending_balance": 440001.9,
+          "gross_profit": 14775.09,
+          "perf_fee": 4432.53,
+          "fund_mgmt_cut": 2637.36,
+          "consultant_cut": 1728.69,
+          "raj_cut": 22.16,
+          "nairne_cut": 22.16,
+          "phil_cut": 22.16
+        },
+        {
+          "tpa_id": "14-Class B-1038-1",
+          "name": "SHIRE HOLDINGS FAMILY LP",
+          "consultant": "Alec Atkinson",
+          "ending_balance": 370633.4,
+          "gross_profit": 12445.73,
+          "perf_fee": 3733.72,
+          "fund_mgmt_cut": 2221.56,
+          "consultant_cut": 1456.15,
+          "raj_cut": 18.67,
+          "nairne_cut": 18.67,
+          "phil_cut": 18.67
+        },
+        {
+          "tpa_id": "14-Class B-1006-1",
+          "name": "Steve Corpuz",
+          "consultant": "Jake Gordon",
+          "ending_balance": 255515.88,
+          "gross_profit": 8580.12,
+          "perf_fee": 2574.04,
+          "fund_mgmt_cut": 1531.55,
+          "consultant_cut": 1003.88,
+          "raj_cut": 12.87,
+          "nairne_cut": 12.87,
+          "phil_cut": 12.87
+        },
+        {
+          "tpa_id": "14-Class B-1008-1",
+          "name": "Reid Sessions",
+          "consultant": "Jake Gordon",
+          "ending_balance": 252800.89,
+          "gross_profit": 8488.96,
+          "perf_fee": 2546.69,
+          "fund_mgmt_cut": 1515.28,
+          "consultant_cut": 993.21,
+          "raj_cut": 12.73,
+          "nairne_cut": 12.73,
+          "phil_cut": 12.73
+        },
+        {
+          "tpa_id": "14-Class B-1009-1",
+          "name": "Doug Corpuz",
+          "consultant": "Jake Gordon",
+          "ending_balance": 206967.8,
+          "gross_profit": 6949.9,
+          "perf_fee": 2084.97,
+          "fund_mgmt_cut": 1240.56,
+          "consultant_cut": 813.14,
+          "raj_cut": 10.42,
+          "nairne_cut": 10.42,
+          "phil_cut": 10.42
+        },
+        {
+          "tpa_id": "14-Class B-1065-1",
+          "name": "AltoIRA Custodian FBO Michelle Henriques",
+          "consultant": "Alec Atkinson",
+          "ending_balance": 206861.77,
+          "gross_profit": 6946.34,
+          "perf_fee": 2083.9,
+          "fund_mgmt_cut": 1239.92,
+          "consultant_cut": 812.72,
+          "raj_cut": 10.42,
+          "nairne_cut": 10.42,
+          "phil_cut": 10.42
+        },
+        {
+          "tpa_id": "14-Class B-1021-1",
+          "name": "Colin Steinberg",
+          "consultant": "Alec Atkinson",
+          "ending_balance": 205186.49,
+          "gross_profit": 6890.08,
+          "perf_fee": 2067.02,
+          "fund_mgmt_cut": 1229.88,
+          "consultant_cut": 806.14,
+          "raj_cut": 10.34,
+          "nairne_cut": 10.34,
+          "phil_cut": 10.34
+        },
+        {
+          "tpa_id": "14-Class B-1076-1",
+          "name": "Philippe Henriques",
+          "consultant": "Alec Atkinson",
+          "ending_balance": 188159.19,
+          "gross_profit": 6318.31,
+          "perf_fee": 1895.49,
+          "fund_mgmt_cut": 1127.82,
+          "consultant_cut": 739.24,
+          "raj_cut": 9.48,
+          "nairne_cut": 9.48,
+          "phil_cut": 9.48
+        },
+        {
+          "tpa_id": "14-Class B-1003-1",
+          "name": "Benjamin Smith",
+          "consultant": "Alec Atkinson",
+          "ending_balance": 181498.82,
+          "gross_profit": 6094.66,
+          "perf_fee": 1828.4,
+          "fund_mgmt_cut": 1087.9,
+          "consultant_cut": 713.08,
+          "raj_cut": 9.14,
+          "nairne_cut": 9.14,
+          "phil_cut": 9.14
+        },
+        {
+          "tpa_id": "14-Class B-1007-1",
+          "name": "Yan Purba",
+          "consultant": "Jake Gordon",
+          "ending_balance": 167373.38,
+          "gross_profit": 5620.33,
+          "perf_fee": 1686.1,
+          "fund_mgmt_cut": 1003.23,
+          "consultant_cut": 657.58,
+          "raj_cut": 8.43,
+          "nairne_cut": 8.43,
+          "phil_cut": 8.43
+        },
+        {
+          "tpa_id": "14-Class B-1026-1",
+          "name": "AltoIRA Custodian FBO Marcus Whitney",
+          "consultant": "Alec Atkinson",
+          "ending_balance": 155614.84,
+          "gross_profit": 5225.49,
+          "perf_fee": 1567.65,
+          "fund_mgmt_cut": 932.75,
+          "consultant_cut": 611.38,
+          "raj_cut": 7.84,
+          "nairne_cut": 7.84,
+          "phil_cut": 7.84
+        },
+        {
+          "tpa_id": "14-Class B-1073-1",
+          "name": "PGJCHoldings LLC",
+          "consultant": "Alec Atkinson",
+          "ending_balance": 153610.73,
+          "gross_profit": 5158.19,
+          "perf_fee": 1547.46,
+          "fund_mgmt_cut": 920.74,
+          "consultant_cut": 603.51,
+          "raj_cut": 7.74,
+          "nairne_cut": 7.74,
+          "phil_cut": 7.74
+        },
+        {
+          "tpa_id": "14-Class B-1023-1",
+          "name": "Douglas Wilcox and Miles Wesley Wilcox",
+          "consultant": "Alec Atkinson",
+          "ending_balance": 149013.12,
+          "gross_profit": 5003.8,
+          "perf_fee": 1501.14,
+          "fund_mgmt_cut": 893.18,
+          "consultant_cut": 585.44,
+          "raj_cut": 7.51,
+          "nairne_cut": 7.51,
+          "phil_cut": 7.51
+        },
+        {
+          "tpa_id": "14-Class B-1030-1",
+          "name": "Platte River Holdings LLC",
+          "consultant": "Alec Atkinson",
+          "ending_balance": 131452.82,
+          "gross_profit": 4414.13,
+          "perf_fee": 1324.24,
+          "fund_mgmt_cut": 787.92,
+          "consultant_cut": 516.45,
+          "raj_cut": 6.62,
+          "nairne_cut": 6.62,
+          "phil_cut": 6.62
+        },
+        {
+          "tpa_id": "14-Class B-1067-1",
+          "name": "Joshua W Miller and Brooke G Miller",
+          "consultant": "Jake Gordon",
+          "ending_balance": 124076.49,
+          "gross_profit": 4166.44,
+          "perf_fee": 1249.93,
+          "fund_mgmt_cut": 743.71,
+          "consultant_cut": 487.47,
+          "raj_cut": 6.25,
+          "nairne_cut": 6.25,
+          "phil_cut": 6.25
+        },
+        {
+          "tpa_id": "14-Class B-1019-1",
+          "name": "Fred Gorges",
+          "consultant": "Alec Atkinson",
+          "ending_balance": 120660.73,
+          "gross_profit": 4051.74,
+          "perf_fee": 1215.52,
+          "fund_mgmt_cut": 723.23,
+          "consultant_cut": 474.05,
+          "raj_cut": 6.08,
+          "nairne_cut": 6.08,
+          "phil_cut": 6.08
+        },
+        {
+          "tpa_id": "14-Class B-1018-1",
+          "name": "Bryce Dee Christensen",
+          "consultant": "Alec Atkinson",
+          "ending_balance": 117281.71,
+          "gross_profit": 3938.27,
+          "perf_fee": 1181.48,
+          "fund_mgmt_cut": 702.98,
+          "consultant_cut": 460.78,
+          "raj_cut": 5.91,
+          "nairne_cut": 5.91,
+          "phil_cut": 5.91
+        },
+        {
+          "tpa_id": "14-Class B-1011-1",
+          "name": "David Anderson",
+          "consultant": "Alec Atkinson",
+          "ending_balance": 117028.98,
+          "gross_profit": 3929.79,
+          "perf_fee": 1178.94,
+          "fund_mgmt_cut": 701.47,
+          "consultant_cut": 459.79,
+          "raj_cut": 5.89,
+          "nairne_cut": 5.89,
+          "phil_cut": 5.89
+        },
+        {
+          "tpa_id": "14-Class B-1005-1",
+          "name": "Madison Trust Company, Custodian FBO David Gordon Affleck M24122132",
+          "consultant": "AJ Affleck",
+          "ending_balance": 115616.76,
+          "gross_profit": 3882.37,
+          "perf_fee": 1164.71,
+          "fund_mgmt_cut": 693.0,
+          "consultant_cut": 454.24,
+          "raj_cut": 5.82,
+          "nairne_cut": 5.82,
+          "phil_cut": 5.82
+        },
+        {
+          "tpa_id": "14-Class B-1014-1",
+          "name": "BENIK LLC",
+          "consultant": "Alec Atkinson",
+          "ending_balance": 114834.83,
+          "gross_profit": 3856.11,
+          "perf_fee": 1156.83,
+          "fund_mgmt_cut": 688.31,
+          "consultant_cut": 451.16,
+          "raj_cut": 5.78,
+          "nairne_cut": 5.78,
+          "phil_cut": 5.78
+        },
+        {
+          "tpa_id": "14-Class B-1022-1",
+          "name": "John Hudson Taylor Anderson",
+          "consultant": "Alec Atkinson",
+          "ending_balance": 113941.39,
+          "gross_profit": 3826.11,
+          "perf_fee": 1147.83,
+          "fund_mgmt_cut": 682.96,
+          "consultant_cut": 447.65,
+          "raj_cut": 5.74,
+          "nairne_cut": 5.74,
+          "phil_cut": 5.74
+        },
+        {
+          "tpa_id": "14-Class B-1031-1",
+          "name": "Jerry Dwayne Fussell",
+          "consultant": "Alec Atkinson",
+          "ending_balance": 113327.33,
+          "gross_profit": 3805.49,
+          "perf_fee": 1141.65,
+          "fund_mgmt_cut": 679.28,
+          "consultant_cut": 445.24,
+          "raj_cut": 5.71,
+          "nairne_cut": 5.71,
+          "phil_cut": 5.71
+        },
+        {
+          "tpa_id": "14-Class B-1032-1",
+          "name": "Ten Eighty Trading LLC",
+          "consultant": "Alec Atkinson",
+          "ending_balance": 113327.33,
+          "gross_profit": 3805.49,
+          "perf_fee": 1141.65,
+          "fund_mgmt_cut": 679.28,
+          "consultant_cut": 445.24,
+          "raj_cut": 5.71,
+          "nairne_cut": 5.71,
+          "phil_cut": 5.71
+        },
+        {
+          "tpa_id": "14-Class B-1036-1",
+          "name": "Caleb Andrew Cupp",
+          "consultant": "Alec Atkinson",
+          "ending_balance": 112365.21,
+          "gross_profit": 3773.18,
+          "perf_fee": 1131.95,
+          "fund_mgmt_cut": 673.51,
+          "consultant_cut": 441.46,
+          "raj_cut": 5.66,
+          "nairne_cut": 5.66,
+          "phil_cut": 5.66
+        },
+        {
+          "tpa_id": "14-Class B-1035-1",
+          "name": "Scott Gordon and Tiffany Dyer Gordon",
+          "consultant": "Jake Gordon",
+          "ending_balance": 112363.57,
+          "gross_profit": 3773.12,
+          "perf_fee": 1131.94,
+          "fund_mgmt_cut": 673.5,
+          "consultant_cut": 441.46,
+          "raj_cut": 5.66,
+          "nairne_cut": 5.66,
+          "phil_cut": 5.66
+        },
+        {
+          "tpa_id": "14-Class B-1053-1",
+          "name": "MATTHEW AND MELINDA WILLIAMS CHARITABLE REMAINDER UNITRUST",
+          "consultant": "Alec Atkinson",
+          "ending_balance": 111426.88,
+          "gross_profit": 3741.67,
+          "perf_fee": 1122.5,
+          "fund_mgmt_cut": 667.89,
+          "consultant_cut": 437.78,
+          "raj_cut": 5.61,
+          "nairne_cut": 5.61,
+          "phil_cut": 5.61
+        },
+        {
+          "tpa_id": "14-Class B-1055-1",
+          "name": "Sean D. Reyes",
+          "consultant": "Jake Gordon",
+          "ending_balance": 111426.88,
+          "gross_profit": 3741.67,
+          "perf_fee": 1122.5,
+          "fund_mgmt_cut": 667.89,
+          "consultant_cut": 437.78,
+          "raj_cut": 5.61,
+          "nairne_cut": 5.61,
+          "phil_cut": 5.61
+        },
+        {
+          "tpa_id": "14-Class B-1058-1",
+          "name": "PL Investment Group, LLC",
+          "consultant": "Alec Atkinson",
+          "ending_balance": 109650.6,
+          "gross_profit": 3682.02,
+          "perf_fee": 1104.61,
+          "fund_mgmt_cut": 657.24,
+          "consultant_cut": 430.8,
+          "raj_cut": 5.52,
+          "nairne_cut": 5.52,
+          "phil_cut": 5.52
+        },
+        {
+          "tpa_id": "14-Class B-1061-1",
+          "name": "Craig Levinson",
+          "consultant": "AJ Affleck",
+          "ending_balance": 109173.32,
+          "gross_profit": 3666.0,
+          "perf_fee": 1099.8,
+          "fund_mgmt_cut": 654.38,
+          "consultant_cut": 428.92,
+          "raj_cut": 5.5,
+          "nairne_cut": 5.5,
+          "phil_cut": 5.5
+        },
+        {
+          "tpa_id": "14-Class B-1060-1",
+          "name": "Daniel Welch Kirkham",
+          "consultant": "Luke",
+          "ending_balance": 109123.67,
+          "gross_profit": 3664.33,
+          "perf_fee": 1099.3,
+          "fund_mgmt_cut": 654.08,
+          "consultant_cut": 428.73,
+          "raj_cut": 5.5,
+          "nairne_cut": 5.5,
+          "phil_cut": 5.5
+        },
+        {
+          "tpa_id": "14-Class B-1059-1",
+          "name": "John Charles Kirkham",
+          "consultant": "AJ Affleck",
+          "ending_balance": 109123.67,
+          "gross_profit": 3664.33,
+          "perf_fee": 1099.3,
+          "fund_mgmt_cut": 654.08,
+          "consultant_cut": 428.73,
+          "raj_cut": 5.5,
+          "nairne_cut": 5.5,
+          "phil_cut": 5.5
+        },
+        {
+          "tpa_id": "14-Class B-1064-1",
+          "name": "Advanta Trust Company Inc. FBO Shreekanth Karwande IRA 1522282",
+          "consultant": "Luke",
+          "ending_balance": 108565.29,
+          "gross_profit": 3645.58,
+          "perf_fee": 1093.67,
+          "fund_mgmt_cut": 650.73,
+          "consultant_cut": 426.53,
+          "raj_cut": 5.47,
+          "nairne_cut": 5.47,
+          "phil_cut": 5.47
+        },
+        {
+          "tpa_id": "14-Class B-1037-1",
+          "name": "James Lockhart",
+          "consultant": "Alec Atkinson",
+          "ending_balance": 104520.17,
+          "gross_profit": 3509.75,
+          "perf_fee": 1052.92,
+          "fund_mgmt_cut": 626.49,
+          "consultant_cut": 410.64,
+          "raj_cut": 5.26,
+          "nairne_cut": 5.26,
+          "phil_cut": 5.26
+        },
+        {
+          "tpa_id": "14-Class B-1063-1",
+          "name": "Lyman Phillips",
+          "consultant": "Alec Atkinson",
+          "ending_balance": 103481.71,
+          "gross_profit": 3474.88,
+          "perf_fee": 1042.46,
+          "fund_mgmt_cut": 620.26,
+          "consultant_cut": 406.56,
+          "raj_cut": 5.21,
+          "nairne_cut": 5.21,
+          "phil_cut": 5.21
+        },
+        {
+          "tpa_id": "14-Class B-1062-1",
+          "name": "Lori Brennan",
+          "consultant": "Alec Atkinson",
+          "ending_balance": 103430.88,
+          "gross_profit": 3473.17,
+          "perf_fee": 1041.95,
+          "fund_mgmt_cut": 619.96,
+          "consultant_cut": 406.36,
+          "raj_cut": 5.21,
+          "nairne_cut": 5.21,
+          "phil_cut": 5.21
+        },
+        {
+          "tpa_id": "14-Class B-1066-1",
+          "name": "Brandy and Adam Fisher",
+          "consultant": "Alec Atkinson",
+          "ending_balance": 103412.44,
+          "gross_profit": 3472.55,
+          "perf_fee": 1041.76,
+          "fund_mgmt_cut": 619.85,
+          "consultant_cut": 406.29,
+          "raj_cut": 5.21,
+          "nairne_cut": 5.21,
+          "phil_cut": 5.21
+        },
+        {
+          "tpa_id": "14-Class B-1072-1",
+          "name": "Mashirito LLC",
+          "consultant": "Alec Atkinson",
+          "ending_balance": 102407.15,
+          "gross_profit": 3438.79,
+          "perf_fee": 1031.64,
+          "fund_mgmt_cut": 613.83,
+          "consultant_cut": 402.34,
+          "raj_cut": 5.16,
+          "nairne_cut": 5.16,
+          "phil_cut": 5.16
+        },
+        {
+          "tpa_id": "14-Class B-1068-1",
+          "name": "Weston Shea Christensen",
+          "consultant": "Alec Atkinson",
+          "ending_balance": 102407.15,
+          "gross_profit": 3438.79,
+          "perf_fee": 1031.64,
+          "fund_mgmt_cut": 613.83,
+          "consultant_cut": 402.34,
+          "raj_cut": 5.16,
+          "nairne_cut": 5.16,
+          "phil_cut": 5.16
+        },
+        {
+          "tpa_id": "14-Class B-1002-1",
+          "name": "Frieda Goldsmith 1998 Trust",
+          "consultant": "Alec Atkinson",
+          "ending_balance": 80692.29,
+          "gross_profit": 2709.62,
+          "perf_fee": 812.88,
+          "fund_mgmt_cut": 483.66,
+          "consultant_cut": 317.02,
+          "raj_cut": 4.06,
+          "nairne_cut": 4.06,
+          "phil_cut": 4.06
+        },
+        {
+          "tpa_id": "14-Class B-1056-1",
+          "name": "Richard Gordon",
+          "consultant": "Jake Gordon",
+          "ending_balance": 78321.57,
+          "gross_profit": 2630.01,
+          "perf_fee": 789.0,
+          "fund_mgmt_cut": 469.45,
+          "consultant_cut": 307.71,
+          "raj_cut": 3.95,
+          "nairne_cut": 3.95,
+          "phil_cut": 3.95
+        },
+        {
+          "tpa_id": "14-Class B-1004-1",
+          "name": "Golden Touch Properties LLC",
+          "consultant": "AJ Affleck",
+          "ending_balance": 64305.85,
+          "gross_profit": 2159.37,
+          "perf_fee": 647.81,
+          "fund_mgmt_cut": 385.45,
+          "consultant_cut": 252.65,
+          "raj_cut": 3.24,
+          "nairne_cut": 3.24,
+          "phil_cut": 3.24
+        },
+        {
+          "tpa_id": "14-Class B-1015-1",
+          "name": "Treyson Gordon",
+          "consultant": "Jake Gordon",
+          "ending_balance": 57066.22,
+          "gross_profit": 1916.26,
+          "perf_fee": 574.88,
+          "fund_mgmt_cut": 342.05,
+          "consultant_cut": 224.2,
+          "raj_cut": 2.87,
+          "nairne_cut": 2.87,
+          "phil_cut": 2.87
+        },
+        {
+          "tpa_id": "14-Class B-1025-1",
+          "name": "The Atkinson Group LLC",
+          "consultant": "Alec Atkinson",
+          "ending_balance": 41136.24,
+          "gross_profit": 1381.34,
+          "perf_fee": 414.4,
+          "fund_mgmt_cut": 246.57,
+          "consultant_cut": 161.62,
+          "raj_cut": 2.07,
+          "nairne_cut": 2.07,
+          "phil_cut": 2.07
+        },
+        {
+          "tpa_id": "14-Class B-1010-1",
+          "name": "Mitchell Squires",
+          "consultant": "Alec Atkinson",
+          "ending_balance": 1100.81,
+          "gross_profit": 36.96,
+          "perf_fee": 11.09,
+          "fund_mgmt_cut": 6.6,
+          "consultant_cut": 4.33,
+          "raj_cut": 0.06,
+          "nairne_cut": 0.06,
+          "phil_cut": 0.06
+        },
+        {
+          "tpa_id": "14-Class B-1024-1",
+          "name": "Joel Guy and Jennifer Pasetes",
+          "consultant": "Alec Atkinson",
+          "ending_balance": 0,
+          "gross_profit": 0,
+          "perf_fee": 0,
+          "fund_mgmt_cut": 0.0,
+          "consultant_cut": 0.0,
+          "raj_cut": 0.0,
+          "nairne_cut": 0.0,
+          "phil_cut": 0.0
+        }
+      ]
+    }
+  ]
+}
