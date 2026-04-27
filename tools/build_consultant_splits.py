@@ -95,6 +95,68 @@ PAYOR_GROUP_DEFAULTS = {
 
 VALID_PAYOR_GROUPS = ("TQ/Armada", "Armada", "Fund Management")
 
+# Per-investor consultant splits — for cases where the consultant 39% cut
+# is shared between multiple consultants (separate from the GP-fixed 0.5%).
+# Two kinds:
+#   - "fixed":  splits sum to 1.0; each consultant gets a fixed share of the
+#               investor's consultant 39% cut.
+#   - "capital_share": one consultant's share is set in dollars (the amount
+#               they raised); the other consultant gets the remainder.
+#               Share = $raised / current ending balance, capped at 100%.
+#               Optional effective_from period (YYYY-MM); pre-effective the
+#               investor's default consultant from IDS handles 100%.
+CONSULTANT_SPLITS = {
+    "14-Class B-1061-1": {  # Craig Levinson
+        "kind": "fixed",
+        "splits": [("AJ Affleck", 0.5), ("Raj (Split)", 0.5)],
+    },
+    "14-Class B-1005-1": {  # Madison Trust Company FBO David Gordon Affleck
+        "kind": "capital_share",
+        "effective_from": "2026-04",
+        "splits": [
+            ("Luke", 200000),
+            ("AJ Affleck", "remainder"),
+        ],
+    },
+}
+
+
+def resolve_consultant_split(tpa_id: str, ending_balance: float, period: str,
+                              default_consultant: str) -> list[tuple[str, float]]:
+    """Return [(consultant, share)] for this investor in this period.
+
+    For unsplit investors, returns [(default_consultant, 1.0)].
+    For split investors, returns multiple entries summing to 1.0.
+    """
+    cfg = CONSULTANT_SPLITS.get(tpa_id)
+    if not cfg:
+        return [(default_consultant, 1.0)]
+
+    if "effective_from" in cfg and period < cfg["effective_from"]:
+        return [(default_consultant, 1.0)]
+
+    if cfg["kind"] == "fixed":
+        return [(c, s) for c, s in cfg["splits"]]
+
+    if cfg["kind"] == "capital_share":
+        if not ending_balance or ending_balance <= 0:
+            return [(default_consultant, 1.0)]
+        shares: list[tuple[str, float]] = []
+        used = 0.0
+        remainder_party: str | None = None
+        for party, amt in cfg["splits"]:
+            if amt == "remainder":
+                remainder_party = party
+            else:
+                pct = min(float(amt) / ending_balance, 1.0)
+                shares.append((party, pct))
+                used += pct
+        if remainder_party is not None:
+            shares.append((remainder_party, max(0.0, 1.0 - used)))
+        return shares
+
+    return [(default_consultant, 1.0)]
+
 # Seed distributions for the Distributions tab. Each entry tracks one cash
 # outflow from the GP pool. "Type" is either "Expense" (cash to a vendor —
 # doesn't count toward any party's payout) or "Payout" (cash to a specific
@@ -261,25 +323,41 @@ def allocate_cost(cost: dict, income: dict[str, float]) -> dict[str, float]:
 # Reconciliation
 # ---------------------------------------------------------------------------
 
-def reconcile(tpa_investors: list[dict], ids_map: dict[str, dict]) -> list[dict]:
-    """Return per-investor rows with consultant attribution and reconciliation flag."""
+def reconcile(tpa_investors: list[dict], ids_map: dict[str, dict],
+              period: str) -> list[dict]:
+    """Return per-investor rows with consultant attribution.
+
+    Investors with multiple consultants (per CONSULTANT_SPLITS) expand into
+    multiple proportional rows — one per consultant — so SUMIF-based
+    aggregations downstream stay correct. All financial fields on each row
+    are pre-multiplied by that consultant's share. The investor name gets a
+    suffix label like " [AJ Affleck 50.0% share]" so the split is visible.
+    """
     out = []
     for inv in tpa_investors:
         tpa_id = str(inv["investor_no"]).strip()
         ids_row = ids_map.get(tpa_id, {})
-        consultant = ids_row.get("consultant") or "Unmapped"
-        out.append({
-            "tpa_id": tpa_id,
-            "name": inv["name"],
-            "consultant": consultant,
-            "position_id": ids_row.get("position_id"),
-            "begin_balance": inv.get("begin_balance", 0) or 0,
-            "ending_balance": inv.get("ending_balance", 0) or 0,
-            "gross_profit": inv.get("gross_profit", 0) or 0,
-            "perf_fee": inv.get("perf_fee", 0) or 0,
-            "additions": inv.get("additions", 0) or 0,
-            "withdrawals": inv.get("withdrawals", 0) or 0,
-        })
+        default_consultant = ids_row.get("consultant") or "Unmapped"
+        ending_balance = inv.get("ending_balance", 0) or 0
+        splits = resolve_consultant_split(tpa_id, ending_balance, period, default_consultant)
+        is_split = len(splits) > 1
+
+        for cons, share in splits:
+            label_suffix = f"  [{cons} {share*100:.1f}% share]" if is_split else ""
+            out.append({
+                "tpa_id": tpa_id,
+                "name": inv["name"] + label_suffix,
+                "consultant": cons,
+                "share": share,
+                "is_split_row": is_split,
+                "position_id": ids_row.get("position_id"),
+                "begin_balance": (inv.get("begin_balance", 0) or 0) * share,
+                "ending_balance": ending_balance * share,
+                "gross_profit": (inv.get("gross_profit", 0) or 0) * share,
+                "perf_fee": (inv.get("perf_fee", 0) or 0) * share,
+                "additions": (inv.get("additions", 0) or 0) * share,
+                "withdrawals": (inv.get("withdrawals", 0) or 0) * share,
+            })
     return out
 
 
@@ -419,12 +497,16 @@ def build_workbook(records: list[dict], period_label: str, output_path: Path,
     _autosize(ws_ids)
 
     # --------- 3. Per-Investor Allocation ---------
+    # NB: Investors with multi-consultant splits (CONSULTANT_SPLITS) are
+    # already expanded into multiple proportional rows by reconcile() — each
+    # row has a single consultant in col C and proportional dollar amounts.
+    # Col N "Share" is 1.0 for unsplit rows, fractional for split rows.
     ws_p = wb.create_sheet("Per-Investor Allocation")
     p_headers = [
         "TPA ID", "Investor", "Consultant",
         "Begin Balance", "Ending Balance", "Gross P&L", "Perf Fee (GP Pool)",
         "Fund Mgmt", "Consultant Cut", "Raj", "Nairne", "Alec (GP)",
-        "Sum Check",
+        "Sum Check", "Share",
     ]
     for i, h in enumerate(p_headers, start=1):
         c = ws_p.cell(row=1, column=i, value=h)
@@ -432,11 +514,10 @@ def build_workbook(records: list[dict], period_label: str, output_path: Path,
 
     for i, rec in enumerate(records, start=2):
         ws_p.cell(row=i, column=1, value=rec["tpa_id"])
-        ws_p.cell(row=i, column=2, value=rec["name"])
-        # Plain string value (not XLOOKUP) so SUMIFs match reliably across all
-        # Excel versions. The IDS Mapping sheet is the authoritative source —
-        # rerun the build script after editing it. To override a single row,
-        # edit this cell directly.
+        # Highlight split rows with a subtle fill on the investor name
+        c_name = ws_p.cell(row=i, column=2, value=rec["name"])
+        if rec.get("is_split_row"):
+            c_name.font = Font(italic=True, color="b45309")
         ws_p.cell(row=i, column=3, value=rec["consultant"])
         ws_p.cell(row=i, column=4, value=rec["begin_balance"]).number_format = '"$"#,##0.00'
         ws_p.cell(row=i, column=5, value=rec["ending_balance"]).number_format = '"$"#,##0.00'
@@ -452,6 +533,11 @@ def build_workbook(records: list[dict], period_label: str, output_path: Path,
         ws_p.cell(row=i, column=12, value=f"=G{i}*GP_Alec_Pct").number_format = '"$"#,##0.00'
         ws_p.cell(row=i, column=13,
                   value=f"=ROUND(SUM(H{i}:L{i})-G{i}, 2)").number_format = '"$"#,##0.00'
+        # Share column — used by Consultant Summary to count investors fractionally
+        c_share = ws_p.cell(row=i, column=14, value=rec["share"])
+        c_share.number_format = "0.00%"
+        if rec.get("is_split_row"):
+            c_share.font = Font(italic=True, color="b45309")
 
     last_inv_row = len(records) + 1
     total_row = last_inv_row + 1
@@ -465,6 +551,11 @@ def build_workbook(records: list[dict], period_label: str, output_path: Path,
         cell.fill = TOTAL_FILL
     ws_p.cell(row=total_row, column=13,
               value=f"=ROUND(SUM(H{total_row}:L{total_row})-G{total_row}, 2)").number_format = '"$"#,##0.00'
+    c_share_total = ws_p.cell(row=total_row, column=14,
+                              value=f"=SUM(N2:N{last_inv_row})")
+    c_share_total.number_format = "0.00"
+    c_share_total.font = Font(bold=True)
+    c_share_total.fill = TOTAL_FILL
 
     wb.defined_names["PI_Consultant"] = DefinedName(
         name="PI_Consultant",
@@ -485,6 +576,10 @@ def build_workbook(records: list[dict], period_label: str, output_path: Path,
     wb.defined_names["PI_Capital"] = DefinedName(
         name="PI_Capital",
         attr_text=f"'Per-Investor Allocation'!$E$2:$E${last_inv_row}",
+    )
+    wb.defined_names["PI_Share"] = DefinedName(
+        name="PI_Share",
+        attr_text=f"'Per-Investor Allocation'!$N$2:$N${last_inv_row}",
     )
     _autosize(ws_p)
 
@@ -510,10 +605,13 @@ def build_workbook(records: list[dict], period_label: str, output_path: Path,
         _style_header(c)
 
     # Section 1: consultants
+    # # Investors uses SUMIF on the Share column so split investors contribute
+    # fractionally (e.g., Craig Levinson contributes 0.5 to AJ + 0.5 to Raj).
     for i, name in enumerate(consultant_names, start=2):
         ws_c.cell(row=i, column=1, value=name)
-        ws_c.cell(row=i, column=2,
-                  value=f'=COUNTIF(PI_Consultant, A{i})')
+        c = ws_c.cell(row=i, column=2,
+                      value=f'=SUMIF(PI_Consultant, A{i}, PI_Share)')
+        c.number_format = "0.00"
         ws_c.cell(row=i, column=3,
                   value=f'=SUMIF(PI_Consultant, A{i}, PI_Capital)').number_format = '"$"#,##0.00'
         ws_c.cell(row=i, column=4,
@@ -987,16 +1085,21 @@ def build_json_snapshot(
     tq_income = compute_tq_income(tpa_record)
 
     # Per-consultant aggregation (computed values, not formulas)
+    # NB: financial fields on each record are already share-weighted (split
+    # investors are split into proportional rows by reconcile()), so summing
+    # is correct. investor_count uses sum of `share` so a split investor
+    # contributes fractionally to each consultant — Craig Levinson 50/50
+    # gives AJ 0.5 + Raj (Split) 0.5 instead of double-counting as 1+1.
     by_cons: dict[str, dict] = {}
     for r in records:
         bucket = by_cons.setdefault(r["consultant"], {
             "consultant": r["consultant"],
-            "investor_count": 0,
+            "investor_count": 0.0,
             "capital_raised": 0.0,
             "gp_earned_consultant_cut": 0.0,
             "investors": [],
         })
-        bucket["investor_count"] += 1
+        bucket["investor_count"] += r.get("share", 1.0)
         bucket["capital_raised"] += r["ending_balance"]
         bucket["gp_earned_consultant_cut"] += r["perf_fee"] * SPLIT_PCTS["consultant"]
         bucket["investors"].append({
@@ -1006,12 +1109,14 @@ def build_json_snapshot(
             "gross_profit": round(r["gross_profit"], 2),
             "perf_fee": round(r["perf_fee"], 2),
             "consultant_cut": round(r["perf_fee"] * SPLIT_PCTS["consultant"], 2),
+            "share": r.get("share", 1.0),
         })
 
     consultants = []
     for k, v in sorted(by_cons.items(), key=lambda kv: -kv[1]["gp_earned_consultant_cut"]):
         consultants.append({
             **v,
+            "investor_count": round(v["investor_count"], 2),
             "capital_raised": round(v["capital_raised"], 2),
             "gp_earned_consultant_cut": round(v["gp_earned_consultant_cut"], 2),
             "pct_of_gp_pool": round(v["gp_earned_consultant_cut"] / total_perf, 6) if total_perf else 0,
@@ -1159,7 +1264,7 @@ def main() -> int:
     ids_map = load_ids(args.internal)
     print(f"  IDS rows: {len(ids_map)}  (incl. {len(CONSULTANT_OVERRIDES)} confirmed overrides)")
 
-    records = reconcile(tpa["investors"], ids_map)
+    records = reconcile(tpa["investors"], ids_map, tpa["period"])
     unmapped = [r for r in records if r["consultant"] == "Unmapped"]
     print(f"Reconciled: {len(records)} investors, {len(unmapped)} unmapped")
     for u in unmapped:
