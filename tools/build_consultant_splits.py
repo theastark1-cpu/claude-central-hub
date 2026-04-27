@@ -294,9 +294,11 @@ def build_workbook(records: list[dict], period_label: str, output_path: Path,
     for i, rec in enumerate(records, start=2):
         ws_p.cell(row=i, column=1, value=rec["tpa_id"])
         ws_p.cell(row=i, column=2, value=rec["name"])
-        # Live xlookup so consultant changes in IDS Mapping flow through
-        ws_p.cell(row=i, column=3,
-                  value=f'=IFERROR(XLOOKUP(A{i}, IDS_TPA, IDS_Consultant), "Unmapped")')
+        # Plain string value (not XLOOKUP) so SUMIFs match reliably across all
+        # Excel versions. The IDS Mapping sheet is the authoritative source —
+        # rerun the build script after editing it. To override a single row,
+        # edit this cell directly.
+        ws_p.cell(row=i, column=3, value=rec["consultant"])
         ws_p.cell(row=i, column=4, value=rec["begin_balance"]).number_format = '"$"#,##0.00'
         ws_p.cell(row=i, column=5, value=rec["ending_balance"]).number_format = '"$"#,##0.00'
         ws_p.cell(row=i, column=6, value=rec["gross_profit"]).number_format = '"$"#,##0.00'
@@ -348,40 +350,67 @@ def build_workbook(records: list[dict], period_label: str, output_path: Path,
     _autosize(ws_p)
 
     # --------- 4. Consultant Summary ---------
+    # Two sections:
+    #   1. CONSULTANTS — only people who raised capital. Their numbers come from
+    #      SUMIF on Per-Investor!C (which is now plain text, so SUMIFs work in
+    #      every Excel version).
+    #   2. GP POOL — OTHER RECIPIENTS — Fund Mgmt + Raj/Nairne/Alec(GP) fixed.
+    #      These rows do NOT have investors or capital raised — Fund Mgmt's
+    #      59.5% is GP-pool-wide, not tied to specific investors.
     consultant_names = sorted({r["consultant"] for r in records if r["consultant"] != "Unmapped"})
     if any(r["consultant"] == "Unmapped" for r in records):
         consultant_names.append("Unmapped")
 
     ws_c = wb.create_sheet("Consultant Summary")
     c_headers = [
-        "Consultant", "# Investors", "Capital Raised", "GP Earned",
-        "% of GP Pool", "Allocated Expenses", "Net Payout",
+        "Consultant", "# Investors", "Capital Raised", "Gross GP",
+        "% of GP Pool", "Weighted Expense", "Net Profit",
     ]
     for i, h in enumerate(c_headers, start=1):
         c = ws_c.cell(row=1, column=i, value=h)
         _style_header(c)
 
+    # Section 1: consultants
     for i, name in enumerate(consultant_names, start=2):
         ws_c.cell(row=i, column=1, value=name)
         ws_c.cell(row=i, column=2,
                   value=f'=COUNTIF(PI_Consultant, A{i})')
         ws_c.cell(row=i, column=3,
                   value=f'=SUMIF(PI_Consultant, A{i}, PI_Capital)').number_format = '"$"#,##0.00'
-        # GP Earned = sum of consultant cut for this consultant's investors
         ws_c.cell(row=i, column=4,
                   value=f'=SUMIF(PI_Consultant, A{i}, PI_ConsultantCut)').number_format = '"$"#,##0.00'
 
-    # Row for Fund Mgmt aggregate (every investor contributes regardless of consultant)
-    fm_row = len(consultant_names) + 2
-    ws_c.cell(row=fm_row, column=1, value="Fund Mgmt").font = Font(italic=True, color="93c5fd")
-    ws_c.cell(row=fm_row, column=2, value=f'=COUNTA(PI_Consultant)')
-    ws_c.cell(row=fm_row, column=3, value=f'=SUM(PI_Capital)').number_format = '"$"#,##0.00'
-    ws_c.cell(row=fm_row, column=4, value=f'=SUM(PI_FundMgmt)').number_format = '"$"#,##0.00'
+    last_consultant_row = len(consultant_names) + 1
+    consultant_subtotal_row = last_consultant_row + 1
 
-    # Fixed partners (Raj/Nairne/Alec — Alec replaced Phil 2026-04-27 as new GP)
+    # Subtotal row for consultants
+    ws_c.cell(row=consultant_subtotal_row, column=1, value="CONSULTANTS SUBTOTAL").font = Font(bold=True, color="a78bfa")
+    for col_letter in ("B", "C", "D"):
+        cell = ws_c.cell(row=consultant_subtotal_row, column={'B':2,'C':3,'D':4}[col_letter])
+        cell.value = f"=SUM({col_letter}2:{col_letter}{last_consultant_row})"
+        cell.font = Font(bold=True)
+        cell.fill = TOTAL_FILL
+        if col_letter != "B":
+            cell.number_format = '"$"#,##0.00'
+
+    # Spacer row, then Section 2
+    section_label_row = consultant_subtotal_row + 2
+    ws_c.cell(row=section_label_row, column=1,
+              value="GP POOL — OTHER RECIPIENTS").font = Font(bold=True, color="93c5fd")
+
+    other_start = section_label_row + 1
+
+    # Fund Mgmt — 59.5% of pool, no investor attribution
+    fm_row = other_start
+    ws_c.cell(row=fm_row, column=1, value="Fund Mgmt").font = Font(italic=True, color="93c5fd")
+    ws_c.cell(row=fm_row, column=2, value="—")
+    ws_c.cell(row=fm_row, column=3, value="—")
+    ws_c.cell(row=fm_row, column=4, value=f'=SUM(PI_PerfFee)*GP_FundMgmt_Pct').number_format = '"$"#,##0.00'
+
+    # Fixed partners (Raj / Nairne / Alec GP)
     fixed_specs = [
-        ("Raj (fixed 0.5%)", "GP_Raj_Pct"),
-        ("Nairne (fixed 0.5%)", "GP_Nairne_Pct"),
+        ("Raj (GP fixed 0.5%)", "GP_Raj_Pct"),
+        ("Nairne (GP fixed 0.5%)", "GP_Nairne_Pct"),
         ("Alec (GP fixed 0.5%)", "GP_Alec_Pct"),
     ]
     for j, (label, pct_name) in enumerate(fixed_specs, start=1):
@@ -392,28 +421,48 @@ def build_workbook(records: list[dict], period_label: str, output_path: Path,
         ws_c.cell(row=r, column=4,
                   value=f'=SUM(PI_PerfFee)*{pct_name}').number_format = '"$"#,##0.00'
 
-    last_summary_row = fm_row + len(fixed_specs)
+    last_other_row = fm_row + len(fixed_specs)
 
-    # GP Pool total used for % calc
-    pool_cell = f"$D${last_summary_row + 1}"
+    # GP Pool grand total — at the very bottom, equals the perf fee pool
+    grand_total_row = last_other_row + 1
+    ws_c.cell(row=grand_total_row, column=1, value="GP POOL TOTAL").font = Font(bold=True)
+    ws_c.cell(row=grand_total_row, column=4,
+              value=f"=SUM(D2:D{last_consultant_row})+SUM(D{fm_row}:D{last_other_row})").number_format = '"$"#,##0.00'
 
-    for r in range(2, last_summary_row + 1):
+    pool_cell = f"$D${grand_total_row}"
+
+    # % of pool, weighted expense, net profit — for both sections
+    fillable_rows = list(range(2, last_consultant_row + 1)) + list(range(fm_row, last_other_row + 1))
+    for r in fillable_rows:
         ws_c.cell(row=r, column=5, value=f"=IFERROR(D{r}/{pool_cell},0)").number_format = "0.00%"
         ws_c.cell(row=r, column=6,
                   value=f"=IFERROR(D{r}/{pool_cell},0)*Expense_Pool").number_format = '"$"#,##0.00'
         ws_c.cell(row=r, column=7, value=f"=D{r}-F{r}").number_format = '"$"#,##0.00'
 
-    # Total row
-    total_r = last_summary_row + 1
-    ws_c.cell(row=total_r, column=1, value="GP POOL TOTAL").font = Font(bold=True)
-    for col_letter in ("D", "F", "G"):
-        cell = ws_c[f"{col_letter}{total_r}"]
-        # Need a sum that doesn't double-count: GP Earned column already includes
-        # consultants + Fund Mgmt + fixed; total is the sum of column D for rows 2..last_summary_row
-        cell.value = f"=SUM({col_letter}2:{col_letter}{last_summary_row})"
-        cell.number_format = '"$"#,##0.00'
-        cell.font = Font(bold=True)
-        cell.fill = TOTAL_FILL
+    # Subtotal row for consultants — fill columns E, F, G
+    ws_c.cell(row=consultant_subtotal_row, column=5,
+              value=f"=IFERROR(D{consultant_subtotal_row}/{pool_cell},0)").number_format = "0.00%"
+    ws_c.cell(row=consultant_subtotal_row, column=5).font = Font(bold=True)
+    ws_c.cell(row=consultant_subtotal_row, column=5).fill = TOTAL_FILL
+    ws_c.cell(row=consultant_subtotal_row, column=6,
+              value=f"=SUM(F2:F{last_consultant_row})").number_format = '"$"#,##0.00'
+    ws_c.cell(row=consultant_subtotal_row, column=6).font = Font(bold=True)
+    ws_c.cell(row=consultant_subtotal_row, column=6).fill = TOTAL_FILL
+    ws_c.cell(row=consultant_subtotal_row, column=7,
+              value=f"=SUM(G2:G{last_consultant_row})").number_format = '"$"#,##0.00'
+    ws_c.cell(row=consultant_subtotal_row, column=7).font = Font(bold=True)
+    ws_c.cell(row=consultant_subtotal_row, column=7).fill = TOTAL_FILL
+
+    # Grand total — fill columns E, F, G
+    ws_c.cell(row=grand_total_row, column=5, value=f"=D{grand_total_row}/{pool_cell}").number_format = "0.00%"
+    ws_c.cell(row=grand_total_row, column=6, value="=Expense_Pool").number_format = '"$"#,##0.00'
+    ws_c.cell(row=grand_total_row, column=7, value=f"=D{grand_total_row}-F{grand_total_row}").number_format = '"$"#,##0.00'
+    for col in range(1, 8):
+        ws_c.cell(row=grand_total_row, column=col).font = Font(bold=True)
+        ws_c.cell(row=grand_total_row, column=col).fill = TOTAL_FILL
+
+    # Track for Costs sheet allocation lookup
+    last_summary_row = grand_total_row
 
     _autosize(ws_c)
 
