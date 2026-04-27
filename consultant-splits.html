@@ -202,15 +202,16 @@ if(sessionStorage.getItem('ap_splits_auth')==='1'){
 
     <div class="grid-2">
       <div class="card" style="margin-bottom:0">
-        <h2><span class="icon">👥</span> Consultant Payouts (Net of Allocated Costs)</h2>
+        <h2><span class="icon">👥</span> GP Pool Payouts — Net of Allocated Costs</h2>
+        <p style="font-size:0.78rem;color:var(--text-dim);margin-bottom:0.8rem;line-height:1.5">Every party receiving a GP cut pays a share of costs equal to their share of the pool — Fund Mgmt, consultants, and the fixed Raj / Nairne / Alec (GP) cuts.</p>
         <div style="overflow-x:auto">
           <table class="data-table" id="consultantTable">
             <thead>
               <tr>
-                <th data-sort="consultant">Consultant</th>
+                <th data-sort="party">Party</th>
                 <th data-sort="investor_count" class="right"># Inv</th>
                 <th data-sort="capital_raised" class="right">Capital Raised</th>
-                <th data-sort="gp_earned_consultant_cut" class="right sort-desc">GP Earned</th>
+                <th data-sort="gp_earned" class="right sort-desc">GP Earned</th>
                 <th data-sort="pct_of_gp_pool" class="right">% Pool</th>
                 <th data-sort="allocated_expense" class="right">− Costs</th>
                 <th data-sort="net_payout" class="right">Net Payout</th>
@@ -310,7 +311,7 @@ if(sessionStorage.getItem('ap_splits_auth')==='1'){
 // ============ STATE ============
 let HISTORY = null;
 let CURRENT_MONTH_IDX = 0;
-let CONS_SORT = {key:'gp_earned_consultant_cut', dir:'desc'};
+let CONS_SORT = {key:'gp_earned', dir:'desc'};
 let INV_SORT = {key:'perf_fee', dir:'desc'};
 let INV_FILTER = '';
 const CHARTS = {};
@@ -416,49 +417,74 @@ function renderCascade(){
 function renderConsultants(){
   const m = currentMonth();
   const totalCosts = m.fund_totals.total_costs ?? 0;
-  // Enrich consultants with allocated_expense + net_payout
-  const rows = m.consultants.map(c => {
-    const allocated_expense = c.pct_of_gp_pool * totalCosts;
+  const ft = m.fund_totals;
+  const totalPool = ft.tpa_perf_fees_crystallized || 1;
+
+  // Build the full party list: Fund Mgmt + each consultant + Raj / Nairne / Alec (GP fixed).
+  // Every row pays its pro-rata share of costs.
+  const enrich = (party, gp_earned, opts={}) => {
+    const pct = gp_earned / totalPool;
+    const allocated_expense = pct * totalCosts;
     return {
-      ...c,
+      party,
+      investor_count: opts.investor_count ?? null,
+      capital_raised: opts.capital_raised ?? null,
+      gp_earned,
+      pct_of_gp_pool: pct,
       allocated_expense,
-      net_payout: c.gp_earned_consultant_cut - allocated_expense,
+      net_payout: gp_earned - allocated_expense,
+      kind: opts.kind ?? 'consultant',
     };
-  });
+  };
+  const rows = [
+    enrich('Fund Mgmt', ft.fund_mgmt_pool, {kind:'mgmt'}),
+    ...m.consultants.map(c => enrich(c.consultant, c.gp_earned_consultant_cut, {
+      investor_count: c.investor_count,
+      capital_raised: c.capital_raised,
+      kind: c.consultant.includes('Pending') ? 'pending' : 'consultant',
+    })),
+    enrich('Raj (GP fixed 0.5%)', ft.raj_pool, {kind:'fixed'}),
+    enrich('Nairne (GP fixed 0.5%)', ft.nairne_pool, {kind:'fixed'}),
+    enrich('Alec (GP fixed 0.5%)', ft.alec_gp_pool, {kind:'fixed'}),
+  ];
   rows.sort((a,b) => {
     const av = a[CONS_SORT.key], bv = b[CONS_SORT.key];
+    if (av === null && bv === null) return 0;
+    if (av === null) return 1;
+    if (bv === null) return -1;
     if (typeof av === 'string') return CONS_SORT.dir==='asc' ? av.localeCompare(bv) : bv.localeCompare(av);
     return CONS_SORT.dir==='asc' ? av - bv : bv - av;
   });
-  const totalPool = m.fund_totals.tpa_perf_fees_crystallized;
   const totals = rows.reduce((acc, r) => {
-    acc.investor_count += r.investor_count;
-    acc.capital_raised += r.capital_raised;
-    acc.gp_earned_consultant_cut += r.gp_earned_consultant_cut;
+    acc.investor_count += r.investor_count ?? 0;
+    acc.capital_raised += r.capital_raised ?? 0;
+    acc.gp_earned += r.gp_earned;
     acc.allocated_expense += r.allocated_expense;
     acc.net_payout += r.net_payout;
     return acc;
-  }, {investor_count:0, capital_raised:0, gp_earned_consultant_cut:0, allocated_expense:0, net_payout:0});
+  }, {investor_count:0, capital_raised:0, gp_earned:0, allocated_expense:0, net_payout:0});
 
   const tbody = rows.map(r => {
-    const pending = r.consultant.includes('Pending') || r.consultant === 'Unmapped';
+    const pending = r.kind === 'pending';
+    const partyStyle = r.kind === 'mgmt' ? 'color:#93c5fd;font-weight:600'
+                     : r.kind === 'fixed' ? 'color:#d8b4fe;font-style:italic' : '';
+    const dash = '<span style="color:var(--text-muted)">—</span>';
     return `<tr class="${pending ? 'pending' : ''}">
-      <td>${r.consultant}${pending ? ' <span class="tag warn">PENDING</span>' : ''}</td>
-      <td class="right mono">${r.investor_count}</td>
-      <td class="right mono">${fmtUSD(r.capital_raised,{compact:true})}</td>
-      <td class="right mono" style="color:var(--purple);font-weight:600">${fmtUSD(r.gp_earned_consultant_cut)}</td>
+      <td style="${partyStyle}">${r.party}${pending ? ' <span class="tag warn">PENDING</span>' : ''}</td>
+      <td class="right mono">${r.investor_count === null ? dash : r.investor_count}</td>
+      <td class="right mono">${r.capital_raised === null ? dash : fmtUSD(r.capital_raised,{compact:true})}</td>
+      <td class="right mono" style="color:var(--purple);font-weight:600">${fmtUSD(r.gp_earned)}</td>
       <td class="right mono">${fmtPct(r.pct_of_gp_pool)}</td>
       <td class="right mono" style="color:var(--red)">−${fmtUSD(r.allocated_expense)}</td>
       <td class="right mono" style="color:var(--green);font-weight:600">${fmtUSD(r.net_payout)}</td>
     </tr>`;
   }).join('');
-  const totalPct = totalPool ? totals.gp_earned_consultant_cut / totalPool : 0;
   const totalRow = `<tr class="total-row">
-    <td>TOTAL · Consultants 39%</td>
+    <td>TOTAL · GP Pool</td>
     <td class="right mono">${totals.investor_count}</td>
     <td class="right mono">${fmtUSD(totals.capital_raised,{compact:true})}</td>
-    <td class="right mono">${fmtUSD(totals.gp_earned_consultant_cut)}</td>
-    <td class="right mono">${fmtPct(totalPct)}</td>
+    <td class="right mono">${fmtUSD(totals.gp_earned)}</td>
+    <td class="right mono">${fmtPct(totals.gp_earned / totalPool)}</td>
     <td class="right mono">−${fmtUSD(totals.allocated_expense)}</td>
     <td class="right mono">${fmtUSD(totals.net_payout)}</td>
   </tr>`;
@@ -470,7 +496,7 @@ function renderConsultants(){
     th.onclick = () => {
       const k = th.dataset.sort;
       if (CONS_SORT.key === k) CONS_SORT.dir = CONS_SORT.dir==='asc' ? 'desc' : 'asc';
-      else { CONS_SORT.key = k; CONS_SORT.dir = (k==='consultant') ? 'asc' : 'desc'; }
+      else { CONS_SORT.key = k; CONS_SORT.dir = (k==='party') ? 'asc' : 'desc'; }
       renderConsultants();
     };
   });
