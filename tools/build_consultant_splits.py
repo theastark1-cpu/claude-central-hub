@@ -95,6 +95,45 @@ PAYOR_GROUP_DEFAULTS = {
 
 VALID_PAYOR_GROUPS = ("TQ/Armada", "Armada", "Fund Management")
 
+# Seed distributions for the Distributions tab. Each entry tracks one cash
+# outflow from the GP pool. "Type" is either "Expense" (cash to a vendor —
+# doesn't count toward any party's payout) or "Payout" (cash to a specific
+# party — counts toward their settlement).
+# Edit the Distributions sheet directly for new transfers; the Per-Party
+# Settlement section uses SUMIFS so Outstanding updates automatically.
+DISTRIBUTIONS_DEFAULT = [
+    {
+        "date": None,
+        "type": "Expense",
+        "party": "Expenses",
+        "description": "Royal KKS Collective + Atkinson Group + Chris March (per app screenshot)",
+        "amount": 56026.00,
+        "method": "Wire",
+        "status": "Completed",
+        "notes": "Includes Feb/March reimbursements — Nairne, Chris hotel/ticket, Charalece, Alec NYC, Taxes, Chris",
+    },
+    {
+        "date": None,
+        "type": "Payout",
+        "party": "Fund Mgmt",
+        "description": "Management cut (partial)",
+        "amount": 30604.06,
+        "method": "Wire",
+        "status": "Completed",
+        "notes": "",
+    },
+    {
+        "date": None,
+        "type": "Payout",
+        "party": "AJ Affleck",
+        "description": "Consultant cut (partial)",
+        "amount": 937.76,
+        "method": "Wire",
+        "status": "Completed",
+        "notes": "",
+    },
+]
+
 
 # ---------------------------------------------------------------------------
 # IDS loader
@@ -710,7 +749,164 @@ def build_workbook(records: list[dict], period_label: str, output_path: Path,
         ws_costs.column_dimensions[get_column_letter(col)].width = 14
     ws_costs.row_dimensions[3].height = 28
 
-    # --------- 6. Reconciliation ---------
+    # --------- 6. Distributions ---------
+    # Tracks every cash outflow from the GP pool. Three sections:
+    #   1. Pool status — total pool, cash distributed, remaining
+    #   2. Distributions log — each transfer (Expense or Payout) with details
+    #   3. Per-Party Settlement — per party: expected net, paid, outstanding
+    ws_dist = wb.create_sheet("Distributions")
+    ws_dist["A1"] = "GP Pool Distribution Tracker"
+    ws_dist["A1"].font = TITLE_FONT
+    ws_dist.merge_cells("A1:I1")
+    ws_dist["A2"] = f"Period: {period_label}"
+    ws_dist["A2"].font = Font(italic=True, color="94a3b8")
+
+    # --- Pool Status ---
+    ws_dist["A4"] = "Pool Status"
+    ws_dist["A4"].font = Font(bold=True, color="e2e8f0")
+    pool_status_rows = [
+        ("Total GP Pool", f"=SUM(PI_PerfFee)"),
+        ("Cash Distributed (this period)", None),  # placeholder, fill later
+        ("Remaining in Pool", None),
+    ]
+    for i, (label, formula) in enumerate(pool_status_rows, start=5):
+        ws_dist.cell(row=i, column=1, value=label).font = Font(bold=True)
+        if formula is not None:
+            c = ws_dist.cell(row=i, column=2, value=formula)
+            c.number_format = '"$"#,##0.00'
+
+    # --- Distributions Log ---
+    log_header_row = 9
+    ws_dist.cell(row=log_header_row - 1, column=1,
+                 value="Distributions Log").font = Font(bold=True, color="e2e8f0")
+    log_headers = ["#", "Date", "Type", "Party / Payee", "Description", "Amount", "Method", "Status", "Notes"]
+    for i, h in enumerate(log_headers, start=1):
+        c = ws_dist.cell(row=log_header_row, column=i, value=h)
+        _style_header(c)
+
+    log_data_start = log_header_row + 1
+    for i, dist in enumerate(DISTRIBUTIONS_DEFAULT, start=log_data_start):
+        ws_dist.cell(row=i, column=1, value=i - log_data_start + 1)
+        ws_dist.cell(row=i, column=2, value=dist["date"] or "").alignment = Alignment(horizontal="center")
+        c = ws_dist.cell(row=i, column=3, value=dist["type"])
+        c.fill = PatternFill("solid", fgColor=("fef3c7" if dist["type"] == "Expense" else "dbeafe"))
+        c.font = Font(bold=True, color=("92400e" if dist["type"] == "Expense" else "1e3a8a"))
+        c.alignment = Alignment(horizontal="center")
+        ws_dist.cell(row=i, column=4, value=dist["party"])
+        ws_dist.cell(row=i, column=5, value=dist["description"])
+        c = ws_dist.cell(row=i, column=6, value=dist["amount"])
+        c.number_format = '"$"#,##0.00'
+        c.fill = INPUT_FILL
+        ws_dist.cell(row=i, column=7, value=dist["method"])
+        ws_dist.cell(row=i, column=8, value=dist["status"])
+        ws_dist.cell(row=i, column=9, value=dist["notes"])
+
+    # Reserve extra empty rows so the user can add more distributions in-line
+    extra_rows = 10
+    last_log_row = log_data_start + len(DISTRIBUTIONS_DEFAULT) + extra_rows - 1
+    log_total_row = last_log_row + 1
+    ws_dist.cell(row=log_total_row, column=4, value="TOTAL").font = Font(bold=True)
+    c = ws_dist.cell(row=log_total_row, column=6,
+                     value=f"=SUM(F{log_data_start}:F{last_log_row})")
+    c.number_format = '"$"#,##0.00'
+    c.font = Font(bold=True)
+    c.fill = TOTAL_FILL
+
+    # Now wire the Pool Status's "Cash Distributed" + "Remaining"
+    ws_dist["B6"] = f"=F{log_total_row}"
+    ws_dist["B6"].number_format = '"$"#,##0.00'
+    ws_dist["B7"] = "=B5-B6"
+    ws_dist["B7"].number_format = '"$"#,##0.00'
+    ws_dist["B7"].font = Font(bold=True, color="10b981")
+
+    # Named ranges for Per-Party Settlement to reference
+    wb.defined_names["Dist_Type"] = DefinedName(
+        name="Dist_Type",
+        attr_text=f"Distributions!$C${log_data_start}:$C${last_log_row}",
+    )
+    wb.defined_names["Dist_Party"] = DefinedName(
+        name="Dist_Party",
+        attr_text=f"Distributions!$D${log_data_start}:$D${last_log_row}",
+    )
+    wb.defined_names["Dist_Amount"] = DefinedName(
+        name="Dist_Amount",
+        attr_text=f"Distributions!$F${log_data_start}:$F${last_log_row}",
+    )
+
+    # --- Per-Party Settlement ---
+    settlement_label_row = log_total_row + 2
+    ws_dist.cell(row=settlement_label_row, column=1,
+                 value="Per-Party Settlement").font = Font(bold=True, color="e2e8f0")
+    settlement_header_row = settlement_label_row + 1
+    settlement_headers = [
+        "Party", "Expected Net", "Cash Paid Out", "Outstanding",
+        "Suggested Recipient / Wire Info", "Status",
+    ]
+    for i, h in enumerate(settlement_headers, start=1):
+        c = ws_dist.cell(row=settlement_header_row, column=i, value=h)
+        _style_header(c)
+
+    # Each Armada party: pull Expected Net from Consultant Summary's column G,
+    # sum payouts to that party from the distributions log, outstanding = expected - paid.
+    armada_parties = consultant_names + ["Fund Mgmt"] + [s[0] for s in fixed_specs]
+    for i, party in enumerate(armada_parties, start=settlement_header_row + 1):
+        ws_dist.cell(row=i, column=1, value=party)
+        ws_dist.cell(row=i, column=2,
+                     value=f"=IFERROR(VLOOKUP(A{i}, 'Consultant Summary'!$A$2:$G${last_summary_row}, 7, FALSE), 0)").number_format = '"$"#,##0.00'
+        ws_dist.cell(row=i, column=3,
+                     value=f'=SUMIFS(Dist_Amount, Dist_Party, A{i}, Dist_Type, "Payout")').number_format = '"$"#,##0.00'
+        ws_dist.cell(row=i, column=4, value=f"=B{i}-C{i}").number_format = '"$"#,##0.00'
+        ws_dist.cell(row=i, column=6,
+                     value=f'=IF(ROUND(D{i},2)=0,"Settled",IF(ROUND(D{i},2)<0,"Overpaid","Outstanding"))')
+        c = ws_dist.cell(row=i, column=5, value="")
+        c.fill = INPUT_FILL
+
+    settle_total_row = settlement_header_row + 1 + len(armada_parties)
+    ws_dist.cell(row=settle_total_row, column=1, value="TOTAL (Armada GP Pool)").font = Font(bold=True)
+    for col_letter in ("B", "C", "D"):
+        col_idx = {"B": 2, "C": 3, "D": 4}[col_letter]
+        c = ws_dist.cell(row=settle_total_row, column=col_idx,
+                         value=f'=SUM({col_letter}{settlement_header_row + 1}:{col_letter}{settle_total_row - 1})')
+        c.number_format = '"$"#,##0.00'
+        c.font = Font(bold=True)
+        c.fill = TOTAL_FILL
+
+    # TruQuant — shown below the total since it's external (paid upstream)
+    tq_settle_row = settle_total_row + 2
+    ws_dist.cell(row=tq_settle_row - 1, column=1,
+                 value="External (does not draw from this pool)").font = Font(italic=True, color="94a3b8")
+    ws_dist.cell(row=tq_settle_row, column=1, value="TruQuant").font = Font(italic=True, color="fbbf24")
+    ws_dist.cell(row=tq_settle_row, column=2,
+                 value=f"=TQ_Income-IFERROR(INDEX(Costs_PartyTotals, MATCH(A{tq_settle_row}, Costs_PartyHeaders, 0)),0)").number_format = '"$"#,##0.00'
+    ws_dist.cell(row=tq_settle_row, column=3, value="—").alignment = Alignment(horizontal="right")
+    ws_dist.cell(row=tq_settle_row, column=4, value="—").alignment = Alignment(horizontal="right")
+    ws_dist.cell(row=tq_settle_row, column=5,
+                 value="External — TruQuant's 18% comes upstream of this pool. Their share of TQ/Armada costs is also paid externally.")
+    ws_dist.cell(row=tq_settle_row, column=6, value="External")
+
+    # Note row
+    note_row = tq_settle_row + 2
+    ws_dist.cell(row=note_row, column=1,
+                 value=("Note: Expenses (vendor cash) reduce the pool but don't count toward any party's "
+                        "Cash Paid Out — only Payout-type distributions do. Cash Paid Out aggregates from "
+                        "the Distributions Log via SUMIFS on Type='Payout'. To record a new transfer, add "
+                        "a row in the Distributions Log above and the Settlement table updates automatically.")
+                 ).font = Font(italic=True, color="94a3b8")
+    ws_dist.merge_cells(f"A{note_row}:I{note_row}")
+    ws_dist.cell(row=note_row, column=1).alignment = Alignment(wrap_text=True)
+
+    # Column widths
+    ws_dist.column_dimensions["A"].width = 32
+    ws_dist.column_dimensions["B"].width = 18
+    ws_dist.column_dimensions["C"].width = 14
+    ws_dist.column_dimensions["D"].width = 18
+    ws_dist.column_dimensions["E"].width = 50
+    ws_dist.column_dimensions["F"].width = 18
+    ws_dist.column_dimensions["G"].width = 12
+    ws_dist.column_dimensions["H"].width = 12
+    ws_dist.column_dimensions["I"].width = 38
+
+    # --------- 7. Reconciliation ---------
     ws_r = wb.create_sheet("Reconciliation")
     ws_r["A1"] = "Reconciliation Checks"
     ws_r["A1"].font = TITLE_FONT
