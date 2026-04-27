@@ -74,6 +74,27 @@ CONSULTANT_OVERRIDES = {
     "14-Class B-1068-1": "Alec Atkinson",                  # Weston Shea Christensen
 }
 
+# Default Payor Group per cost line item, used when the internal Costs sheet
+# leaves column D empty. Confirmed by user 2026-04-27 from their existing
+# internal cost sheet. Edit when adding new line item types.
+#   "TQ/Armada"     → split among everyone receiving income (incl. TruQuant)
+#                     in proportion to each party's income.
+#   "Armada"        → split among Armada-side income recipients only
+#                     (excludes TruQuant). Pro-rata by income.
+#   "Fund Management" → 100% paid by Fund Mgmt. No consultant or fixed-GP burden.
+PAYOR_GROUP_DEFAULTS = {
+    "Chris": "TQ/Armada",
+    "TPA": "Armada",
+    "Chris (Hotel+Ticket)": "TQ/Armada",
+    "Charalece": "Armada",
+    "Alec (Ticket)": "Fund Management",
+    "Alec (Hotel)": "Fund Management",
+    "Taxes": "Armada",
+    "Legal": "Armada",
+}
+
+VALID_PAYOR_GROUPS = ("TQ/Armada", "Armada", "Fund Management")
+
 
 # ---------------------------------------------------------------------------
 # IDS loader
@@ -112,7 +133,9 @@ def load_ids(internal_xlsx: Path) -> dict[str, dict]:
 def load_costs(internal_xlsx: Path) -> list[dict]:
     """Read the Costs sheet from the internal Monthly Return file.
 
-    Returns a list of {name, amount} dicts (excludes the TOTAL row).
+    Returns a list of {name, amount, payor_group} dicts (excludes the TOTAL row).
+    Payor Group reads column D if populated; otherwise falls back to
+    PAYOR_GROUP_DEFAULTS keyed by name. Raises if a name has no default.
     """
     wb = openpyxl.load_workbook(internal_xlsx, data_only=True)
     ws = wb["Costs"]
@@ -122,6 +145,7 @@ def load_costs(internal_xlsx: Path) -> list[dict]:
             continue
         name = row[0]
         amount = row[1] if len(row) > 1 else None
+        payor_group = row[3] if len(row) > 3 else None
         if not isinstance(name, str):
             continue
         name = name.strip()
@@ -129,8 +153,69 @@ def load_costs(internal_xlsx: Path) -> list[dict]:
             break
         if not isinstance(amount, (int, float)):
             continue
-        out.append({"name": name, "amount": float(amount)})
+        if isinstance(payor_group, str):
+            payor_group = payor_group.strip()
+        if not payor_group:
+            payor_group = PAYOR_GROUP_DEFAULTS.get(name)
+        if payor_group not in VALID_PAYOR_GROUPS:
+            raise ValueError(
+                f"Cost {name!r}: payor_group {payor_group!r} not in {VALID_PAYOR_GROUPS}. "
+                "Either fill column D in the internal Costs sheet or add a default to "
+                "PAYOR_GROUP_DEFAULTS in tools/build_consultant_splits.py"
+            )
+        out.append({"name": name, "amount": float(amount), "payor_group": payor_group})
     return out
+
+
+def compute_tq_income(tpa_record: dict) -> float:
+    """TruQuant takes 18% of TRUE gross, upstream of Armada Prime's books.
+
+    The TPA's 'Total Income' is Armada's 82% cut. Inverse-grossed:
+        TQ_income = total_income * 18 / 82
+    For March 2026: $404,850.79 * 18/82 = $88,869.69
+    """
+    fund_total_income = tpa_record.get("income_statement", {}).get("total_income", 0) or 0
+    return fund_total_income * 0.18 / 0.82
+
+
+def build_income_map(records: list[dict], tpa_record: dict) -> dict[str, float]:
+    """Each party's income for the period. Used as weighting denominator
+    when allocating costs.
+    """
+    consultant_totals: dict[str, float] = {}
+    for r in records:
+        consultant_totals.setdefault(r["consultant"], 0.0)
+        consultant_totals[r["consultant"]] += r["perf_fee"] * SPLIT_PCTS["consultant"]
+    total_perf = sum(r["perf_fee"] for r in records)
+    income = dict(consultant_totals)
+    income["Fund Mgmt"] = total_perf * SPLIT_PCTS["fund_mgmt"]
+    income["Raj (GP fixed 0.5%)"] = total_perf * SPLIT_PCTS["raj"]
+    income["Nairne (GP fixed 0.5%)"] = total_perf * SPLIT_PCTS["nairne"]
+    income["Alec (GP fixed 0.5%)"] = total_perf * SPLIT_PCTS["alec"]
+    income["TruQuant"] = compute_tq_income(tpa_record)
+    return income
+
+
+def allocate_cost(cost: dict, income: dict[str, float]) -> dict[str, float]:
+    """Returns {party: amount} that this single cost is split into."""
+    pg = cost["payor_group"]
+    amount = cost["amount"]
+    if pg == "Fund Management":
+        return {"Fund Mgmt": amount}
+    if pg == "Armada":
+        # Exclude TruQuant; split among Armada participants by income share
+        armada = {p: i for p, i in income.items() if p != "TruQuant" and i > 0}
+        total = sum(armada.values())
+        if total == 0:
+            return {}
+        return {p: amount * i / total for p, i in armada.items()}
+    if pg == "TQ/Armada":
+        nz = {p: i for p, i in income.items() if i > 0}
+        total = sum(nz.values())
+        if total == 0:
+            return {}
+        return {p: amount * i / total for p, i in nz.items()}
+    raise ValueError(f"Unknown payor_group: {pg!r}")
 
 
 # ---------------------------------------------------------------------------
@@ -189,8 +274,11 @@ def _autosize(ws, min_w: int = 10, max_w: int = 48):
 
 
 def build_workbook(records: list[dict], period_label: str, output_path: Path,
-                   costs: list[dict]) -> dict:
+                   costs: list[dict], tpa_record: dict) -> dict:
     """Write the dynamic Excel. Returns summary dict."""
+    income_map = build_income_map(records, tpa_record)
+    # cost_alloc[i] = {party: $} for cost i (same order as `costs`)
+    cost_alloc = [allocate_cost(c, income_map) for c in costs]
     wb = openpyxl.Workbook()
     wb.remove(wb.active)
 
@@ -232,15 +320,27 @@ def build_workbook(records: list[dict], period_label: str, output_path: Path,
     ws_in["B14"].font = Font(bold=True, color="10b981")
     wb.defined_names["Expense_Pool"] = DefinedName(name="Expense_Pool", attr_text="Inputs!$B$14")
 
-    ws_in["A16"] = "Notes"
+    # TruQuant income — 18% of TRUE gross. The TPA shows Armada's 82% cut,
+    # so TQ_Income = TPA_total_income * 18/82. Hardcoded value (computed in
+    # Python from the TPA package); used by the Consultant Summary's TQ row.
+    ws_in["A16"] = "TruQuant Income (upstream)"
     ws_in["A16"].font = Font(bold=True, color="e2e8f0")
-    ws_in["A17"] = (
+    ws_in["A17"] = "TQ takes 18% before Armada's books"
+    tq_income = compute_tq_income(tpa_record)
+    ws_in["B17"] = round(tq_income, 2)
+    ws_in["B17"].number_format = '"$"#,##0.00'
+    ws_in["B17"].fill = INPUT_FILL
+    wb.defined_names["TQ_Income"] = DefinedName(name="TQ_Income", attr_text="Inputs!$B$17")
+
+    ws_in["A19"] = "Notes"
+    ws_in["A19"].font = Font(bold=True, color="e2e8f0")
+    ws_in["A20"] = (
         "TPA per-investor performance-fee crystallized = each investor's GP pool. "
         "Consultant attribution flows from IDS → Per-Investor Allocation → Consultant Summary. "
-        "Edit the Per-Investor sheet to override perf_fee for what-if scenarios."
+        "Cost line items live on the Costs sheet — edit there and amounts re-flow to Consultant Summary."
     )
-    ws_in["A17"].alignment = Alignment(wrap_text=True, vertical="top")
-    ws_in.merge_cells("A17:F19")
+    ws_in["A20"].alignment = Alignment(wrap_text=True, vertical="top")
+    ws_in.merge_cells("A20:F22")
 
     ws_in.column_dimensions["A"].width = 38
     ws_in.column_dimensions["B"].width = 18
@@ -431,15 +531,17 @@ def build_workbook(records: list[dict], period_label: str, output_path: Path,
 
     pool_cell = f"$D${grand_total_row}"
 
-    # % of pool, weighted expense, net profit — for both sections
+    # Weighted Expense column → INDEX/MATCH against the per-party totals row
+    # in the Costs sheet matrix (named ranges Costs_PartyTotals + Costs_PartyHeaders
+    # are defined when the Costs sheet is built later).
     fillable_rows = list(range(2, last_consultant_row + 1)) + list(range(fm_row, last_other_row + 1))
     for r in fillable_rows:
         ws_c.cell(row=r, column=5, value=f"=IFERROR(D{r}/{pool_cell},0)").number_format = "0.00%"
         ws_c.cell(row=r, column=6,
-                  value=f"=IFERROR(D{r}/{pool_cell},0)*Expense_Pool").number_format = '"$"#,##0.00'
+                  value=f'=IFERROR(INDEX(Costs_PartyTotals, MATCH(A{r}, Costs_PartyHeaders, 0)), 0)').number_format = '"$"#,##0.00'
         ws_c.cell(row=r, column=7, value=f"=D{r}-F{r}").number_format = '"$"#,##0.00'
 
-    # Subtotal row for consultants — fill columns E, F, G
+    # Subtotal row for consultants
     ws_c.cell(row=consultant_subtotal_row, column=5,
               value=f"=IFERROR(D{consultant_subtotal_row}/{pool_cell},0)").number_format = "0.00%"
     ws_c.cell(row=consultant_subtotal_row, column=5).font = Font(bold=True)
@@ -453,88 +555,160 @@ def build_workbook(records: list[dict], period_label: str, output_path: Path,
     ws_c.cell(row=consultant_subtotal_row, column=7).font = Font(bold=True)
     ws_c.cell(row=consultant_subtotal_row, column=7).fill = TOTAL_FILL
 
-    # Grand total — fill columns E, F, G
+    # GP Pool total — Armada-side only ($121,404.22). Excludes TruQuant.
     ws_c.cell(row=grand_total_row, column=5, value=f"=D{grand_total_row}/{pool_cell}").number_format = "0.00%"
-    ws_c.cell(row=grand_total_row, column=6, value="=Expense_Pool").number_format = '"$"#,##0.00'
+    # The GP pool's share of total costs = sum of every Armada party's allocation in Costs
+    ws_c.cell(row=grand_total_row, column=6,
+              value=f"=SUM(F2:F{last_consultant_row})+SUM(F{fm_row}:F{last_other_row})").number_format = '"$"#,##0.00'
     ws_c.cell(row=grand_total_row, column=7, value=f"=D{grand_total_row}-F{grand_total_row}").number_format = '"$"#,##0.00'
     for col in range(1, 8):
         ws_c.cell(row=grand_total_row, column=col).font = Font(bold=True)
         ws_c.cell(row=grand_total_row, column=col).fill = TOTAL_FILL
 
-    # Track for Costs sheet allocation lookup
-    last_summary_row = grand_total_row
+    # Section 3: External — TruQuant (18% upstream). Not in the GP pool, but
+    # TQ pays its share of any TQ/Armada-classified costs.
+    tq_section_row = grand_total_row + 2
+    ws_c.cell(row=tq_section_row, column=1,
+              value="EXTERNAL — TruQuant (18% upstream of Armada's books)").font = Font(bold=True, color="fbbf24")
+    tq_row = tq_section_row + 1
+    ws_c.cell(row=tq_row, column=1, value="TruQuant").font = Font(italic=True, color="fbbf24")
+    ws_c.cell(row=tq_row, column=2, value="—")
+    ws_c.cell(row=tq_row, column=3, value="—")
+    # TruQuant income = (TPA total income / 0.82) × 0.18, computed from a
+    # named cell defined in Inputs (TQ_Income).
+    ws_c.cell(row=tq_row, column=4, value=f"=TQ_Income").number_format = '"$"#,##0.00'
+    ws_c.cell(row=tq_row, column=5, value="—")  # TQ isn't part of the GP pool
+    ws_c.cell(row=tq_row, column=6,
+              value=f'=IFERROR(INDEX(Costs_PartyTotals, MATCH(A{tq_row}, Costs_PartyHeaders, 0)), 0)').number_format = '"$"#,##0.00'
+    ws_c.cell(row=tq_row, column=7, value=f"=D{tq_row}-F{tq_row}").number_format = '"$"#,##0.00'
+
+    # Section 4: Grand total (incl. TQ)
+    grand_total_with_tq = tq_row + 2
+    ws_c.cell(row=grand_total_with_tq, column=1, value="GRAND TOTAL (Armada + TQ)").font = Font(bold=True)
+    ws_c.cell(row=grand_total_with_tq, column=4,
+              value=f"=D{grand_total_row}+D{tq_row}").number_format = '"$"#,##0.00'
+    ws_c.cell(row=grand_total_with_tq, column=6,
+              value=f"=F{grand_total_row}+F{tq_row}").number_format = '"$"#,##0.00'
+    ws_c.cell(row=grand_total_with_tq, column=7,
+              value=f"=D{grand_total_with_tq}-F{grand_total_with_tq}").number_format = '"$"#,##0.00'
+    for col in range(1, 8):
+        ws_c.cell(row=grand_total_with_tq, column=col).font = Font(bold=True)
+        ws_c.cell(row=grand_total_with_tq, column=col).fill = TOTAL_FILL
+
+    last_summary_row = grand_total_with_tq
 
     _autosize(ws_c)
 
     # --------- 5. Costs ---------
-    # The Costs sheet feeds Expense_Pool (named cell) and is then allocated
-    # pro-rata by GP % via the existing Allocated Expenses formula in
-    # Consultant Summary. Edit a cost line item and everything downstream
-    # recalculates.
+    # Matrix layout: rows = cost line items, columns = parties.
+    # Each cell shows the dollar amount that party pays for that cost,
+    # determined by Payor Group:
+    #   Fund Management → 100% to Fund Mgmt
+    #   Armada          → split among Armada parties (excl. TruQuant) by income
+    #   TQ/Armada       → split among everyone (incl. TruQuant) by income
+    # The TOTAL row is each party's full expense burden, which Consultant
+    # Summary picks up via INDEX/MATCH on the Costs_PartyTotals named range.
+    party_order = consultant_names + ["Fund Mgmt", "TruQuant"] + [s[0] for s in fixed_specs]
+
     ws_costs = wb.create_sheet("Costs")
-    ws_costs["A1"] = "Operating Costs"
+    ws_costs["A1"] = "Costs — Allocation by Payor Group"
     ws_costs["A1"].font = TITLE_FONT
-    ws_costs.merge_cells("A1:D1")
+    ws_costs.merge_cells(f"A1:{get_column_letter(4 + len(party_order))}1")
     ws_costs["A2"] = f"Period: {period_label}"
     ws_costs["A2"].font = Font(italic=True, color="94a3b8")
+    ws_costs["A3"] = ("Payor Groups: 'TQ/Armada' = split among everyone (incl. TruQuant) by income share. "
+                      "'Armada' = split among Armada parties only (excludes TruQuant) by income. "
+                      "'Fund Management' = 100% Fund Mgmt.")
+    ws_costs["A3"].font = Font(italic=True, color="94a3b8", size=9)
+    ws_costs["A3"].alignment = Alignment(wrap_text=True)
+    ws_costs.merge_cells(f"A3:{get_column_letter(4 + len(party_order))}3")
 
-    cost_headers = ["Category", "Amount", "Notes", "% of Pool"]
-    for i, h in enumerate(cost_headers, start=1):
-        c = ws_costs.cell(row=4, column=i, value=h)
+    cost_header_row = 5
+    fixed_headers = ["Expense Item", "Total Cost", "Status", "Payor Group"]
+    for i, h in enumerate(fixed_headers, start=1):
+        c = ws_costs.cell(row=cost_header_row, column=i, value=h)
+        _style_header(c)
+    for j, party in enumerate(party_order, start=5):
+        c = ws_costs.cell(row=cost_header_row, column=j, value=party)
         _style_header(c)
 
-    cost_data_start = 5
-    for i, item in enumerate(costs, start=cost_data_start):
+    cost_data_start = cost_header_row + 1
+    for i, (item, alloc) in enumerate(zip(costs, cost_alloc), start=cost_data_start):
         ws_costs.cell(row=i, column=1, value=item["name"])
-        cell = ws_costs.cell(row=i, column=2, value=item["amount"])
-        cell.number_format = '"$"#,##0.00'
-        cell.fill = INPUT_FILL
-        ws_costs.cell(row=i, column=4,
-                      value=f"=B{i}/Costs_Total").number_format = "0.00%"
+        c = ws_costs.cell(row=i, column=2, value=item["amount"])
+        c.number_format = '"$"#,##0.00'
+        c.fill = INPUT_FILL
+        ws_costs.cell(row=i, column=3, value=item.get("status") or "")
+        c = ws_costs.cell(row=i, column=4, value=item["payor_group"])
+        c.font = Font(italic=True, color="a78bfa")
+        for j, party in enumerate(party_order, start=5):
+            amt = alloc.get(party, 0)
+            c = ws_costs.cell(row=i, column=j, value=round(amt, 2) if amt else 0)
+            c.number_format = '"$"#,##0.00'
 
     last_cost_row = cost_data_start + len(costs) - 1
     total_row_costs = last_cost_row + 1
     ws_costs.cell(row=total_row_costs, column=1, value="TOTAL").font = Font(bold=True)
-    total_cell = ws_costs.cell(row=total_row_costs, column=2,
-                               value=f"=SUM(B{cost_data_start}:B{last_cost_row})")
-    total_cell.number_format = '"$"#,##0.00'
-    total_cell.font = Font(bold=True)
-    total_cell.fill = TOTAL_FILL
-    ws_costs.cell(row=total_row_costs, column=4, value="=SUM(D5:D" + str(last_cost_row) + ")").number_format = "0.00%"
+    # Total Cost column = sum of all costs (input column)
+    c = ws_costs.cell(row=total_row_costs, column=2,
+                      value=f"=SUM(B{cost_data_start}:B{last_cost_row})")
+    c.number_format = '"$"#,##0.00'
+    c.font = Font(bold=True)
+    c.fill = TOTAL_FILL
+    # Each party column → sum of their allocations across all cost rows
+    for j in range(5, 5 + len(party_order)):
+        col = get_column_letter(j)
+        c = ws_costs.cell(row=total_row_costs, column=j,
+                          value=f"=SUM({col}{cost_data_start}:{col}{last_cost_row})")
+        c.number_format = '"$"#,##0.00'
+        c.font = Font(bold=True)
+        c.fill = TOTAL_FILL
 
+    # Named ranges that Consultant Summary uses to look up each party's burden
+    first_party_col = get_column_letter(5)
+    last_party_col = get_column_letter(4 + len(party_order))
+    wb.defined_names["Costs_PartyHeaders"] = DefinedName(
+        name="Costs_PartyHeaders",
+        attr_text=f"Costs!${first_party_col}${cost_header_row}:${last_party_col}${cost_header_row}",
+    )
+    wb.defined_names["Costs_PartyTotals"] = DefinedName(
+        name="Costs_PartyTotals",
+        attr_text=f"Costs!${first_party_col}${total_row_costs}:${last_party_col}${total_row_costs}",
+    )
     wb.defined_names["Costs_Total"] = DefinedName(
         name="Costs_Total",
         attr_text=f"Costs!$B${total_row_costs}",
     )
 
-    # Allocation by party section (mirrors Consultant Summary's Allocated Expenses)
-    ws_costs.cell(row=total_row_costs + 2, column=1, value="Allocation by GP %").font = Font(bold=True, color="e2e8f0")
-    alloc_hdr_row = total_row_costs + 3
-    for i, h in enumerate(["Party", "% of GP Pool", "Allocated Expense"], start=1):
-        c = ws_costs.cell(row=alloc_hdr_row, column=i, value=h)
+    # Income reference table — shows what we used as the weighting denominator
+    # for cost allocation. Editable but: changing these here does NOT propagate
+    # because cost allocations were pre-computed in Python. Re-run the script
+    # after editing.
+    ref_start = total_row_costs + 3
+    ws_costs.cell(row=ref_start, column=1,
+                  value="Income Reference (used for cost weighting)").font = Font(bold=True, color="e2e8f0")
+    for i, h in enumerate(["Party", "Income", "% TQ+Armada", "% Armada-only"], start=1):
+        c = ws_costs.cell(row=ref_start + 1, column=i, value=h)
         _style_header(c)
-    # Reference Consultant Summary directly so it always agrees
-    parties = consultant_names + ["Fund Mgmt"] + [s[0] for s in fixed_specs]
-    for i, party in enumerate(parties, start=alloc_hdr_row + 1):
+    total_with_tq = sum(income_map.values())
+    total_armada = sum(v for k, v in income_map.items() if k != "TruQuant")
+    for i, party in enumerate(party_order, start=ref_start + 2):
+        inc = income_map.get(party, 0)
         ws_costs.cell(row=i, column=1, value=party)
-        ws_costs.cell(row=i, column=2,
-                      value=f'=IFERROR(VLOOKUP(A{i},\'Consultant Summary\'!$A$2:$E${last_summary_row},5,FALSE),0)').number_format = "0.00%"
-        ws_costs.cell(row=i, column=3, value=f"=B{i}*Costs_Total").number_format = '"$"#,##0.00'
-    alloc_total_row = alloc_hdr_row + 1 + len(parties)
-    ws_costs.cell(row=alloc_total_row, column=1, value="TOTAL").font = Font(bold=True)
-    for col_letter, formula in [("B", f"=SUM(B{alloc_hdr_row+1}:B{alloc_total_row-1})"),
-                                  ("C", f"=SUM(C{alloc_hdr_row+1}:C{alloc_total_row-1})")]:
-        cell = ws_costs[f"{col_letter}{alloc_total_row}"]
-        cell.value = formula
-        cell.font = Font(bold=True)
-        cell.fill = TOTAL_FILL
-    ws_costs[f"B{alloc_total_row}"].number_format = "0.00%"
-    ws_costs[f"C{alloc_total_row}"].number_format = '"$"#,##0.00'
+        c = ws_costs.cell(row=i, column=2, value=round(inc, 2))
+        c.number_format = '"$"#,##0.00'
+        c = ws_costs.cell(row=i, column=3, value=inc / total_with_tq if total_with_tq else 0)
+        c.number_format = "0.00%"
+        if party == "TruQuant":
+            ws_costs.cell(row=i, column=4, value="—").alignment = Alignment(horizontal="right")
+        else:
+            c = ws_costs.cell(row=i, column=4, value=inc / total_armada if total_armada else 0)
+            c.number_format = "0.00%"
 
-    ws_costs.column_dimensions["A"].width = 32
-    ws_costs.column_dimensions["B"].width = 16
-    ws_costs.column_dimensions["C"].width = 36
-    ws_costs.column_dimensions["D"].width = 12
+    ws_costs.column_dimensions["A"].width = 30
+    for col in range(2, 5 + len(party_order)):
+        ws_costs.column_dimensions[get_column_letter(col)].width = 14
+    ws_costs.row_dimensions[3].height = 28
 
     # --------- 6. Reconciliation ---------
     ws_r = wb.create_sheet("Reconciliation")
@@ -595,6 +769,9 @@ def build_json_snapshot(
     """Compute static snapshot used by the dashboard."""
     total_perf = sum(r["perf_fee"] for r in records)
     total_costs = sum(c["amount"] for c in costs)
+    income_map = build_income_map(records, tpa_record)
+    cost_alloc = [allocate_cost(c, income_map) for c in costs]
+    tq_income = compute_tq_income(tpa_record)
 
     # Per-consultant aggregation (computed values, not formulas)
     by_cons: dict[str, dict] = {}
@@ -634,22 +811,32 @@ def build_json_snapshot(
         "alec_gp": total_perf * SPLIT_PCTS["alec"],
     }
 
-    # Compute each party's % of GP pool, used to weight expense allocation.
-    # Each consultant: their consultant_cut / total_perf
-    # Fund Mgmt: 59.5%; Raj/Nairne fixed: 0.5% each; Alec (GP) fixed: 0.5%
-    # NB: Alec Atkinson the consultant gets BOTH his consultant 39% and the
-    # new GP-fixed 0.5% — these are separate buckets.
-    pool_share = {}
-    for c in consultants:
-        pool_share[c["consultant"]] = c["pct_of_gp_pool"]
-    pool_share["Fund Mgmt"] = SPLIT_PCTS["fund_mgmt"]
-    pool_share["Raj (GP fixed)"] = SPLIT_PCTS["raj"]
-    pool_share["Nairne (GP fixed)"] = SPLIT_PCTS["nairne"]
-    pool_share["Alec (GP fixed)"] = SPLIT_PCTS["alec"]
+    # Per-party total expense burden (sum of their share across every cost line item)
+    party_burden: dict[str, float] = {}
+    for alloc in cost_alloc:
+        for party, amt in alloc.items():
+            party_burden[party] = party_burden.get(party, 0.0) + amt
 
-    cost_allocation = [
-        {"party": party, "pct_of_gp_pool": share, "allocated_expense": round(share * total_costs, 2)}
-        for party, share in pool_share.items()
+    # Cost allocation matrix for the dashboard (rows = costs, cols = parties)
+    cost_matrix_parties = sorted(income_map.keys(), key=lambda p: -income_map[p])
+    cost_matrix = []
+    for cost, alloc in zip(costs, cost_alloc):
+        cost_matrix.append({
+            "name": cost["name"],
+            "amount": round(cost["amount"], 2),
+            "payor_group": cost["payor_group"],
+            "by_party": {p: round(alloc.get(p, 0.0), 2) for p in cost_matrix_parties},
+        })
+
+    income_breakdown = [
+        {
+            "party": p,
+            "income": round(i, 2),
+            "pct_tq_armada": round(i / sum(income_map.values()), 6) if sum(income_map.values()) else 0,
+            "pct_armada": round(i / sum(v for k, v in income_map.items() if k != "TruQuant"), 6)
+                          if p != "TruQuant" else None,
+        }
+        for p, i in sorted(income_map.items(), key=lambda kv: -kv[1])
     ]
 
     bs = tpa_record.get("balance_sheet", {})
@@ -676,8 +863,16 @@ def build_json_snapshot(
             "gross_mtd_ror": fl.get("gross_mtd_ror", 0),
             "net_mtd_ror": fl.get("net_mtd_ror", 0),
             "total_costs": round(total_costs, 2),
+            "tq_income": round(tq_income, 2),
         },
-        "consultants": consultants,
+        "consultants": [
+            {
+                **c,
+                "weighted_expense": round(party_burden.get(c["consultant"], 0), 2),
+                "net_profit": round(c["gp_earned_consultant_cut"] - party_burden.get(c["consultant"], 0), 2),
+            }
+            for c in consultants
+        ],
         "investors": [
             {
                 "tpa_id": r["tpa_id"],
@@ -696,11 +891,13 @@ def build_json_snapshot(
         ],
         "costs": {
             "total": round(total_costs, 2),
-            "line_items": [
-                {"name": c["name"], "amount": round(c["amount"], 2)}
-                for c in costs
+            "matrix_parties": cost_matrix_parties,
+            "line_items": cost_matrix,
+            "party_burden": [
+                {"party": p, "amount": round(party_burden.get(p, 0), 2)}
+                for p in sorted(party_burden, key=lambda x: -party_burden[x])
             ],
-            "allocation_by_party": cost_allocation,
+            "income_breakdown": income_breakdown,
         },
     }
 
@@ -759,7 +956,7 @@ def main() -> int:
     print(f"Costs: {len(costs)} line items, total ${sum(c['amount'] for c in costs):,.2f}")
 
     label = args.label or tpa["period_label"]
-    summary = build_workbook(records, label, args.output_xlsx, costs)
+    summary = build_workbook(records, label, args.output_xlsx, costs, tpa)
     print(f"Wrote Excel: {args.output_xlsx}")
 
     snapshot = build_json_snapshot(records, tpa, label, costs)

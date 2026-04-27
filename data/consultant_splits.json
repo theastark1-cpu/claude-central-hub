@@ -26,7 +26,8 @@
         "ending_aum": 12051131.75,
         "gross_mtd_ror": 0.034389,
         "net_mtd_ror": 0.024072,
-        "total_costs": 51234.17
+        "total_costs": 51234.17,
+        "tq_income": 88869.69
       },
       "consultants": [
         {
@@ -300,7 +301,9 @@
               "consultant_cut": 0.0
             }
           ],
-          "pct_of_gp_pool": 0.258973
+          "pct_of_gp_pool": 0.258973,
+          "weighted_expense": 11506.55,
+          "net_profit": 19933.81
         },
         {
           "consultant": "Jake Gordon",
@@ -389,7 +392,9 @@
               "consultant_cut": 224.2
             }
           ],
-          "pct_of_gp_pool": 0.068057
+          "pct_of_gp_pool": 0.068057,
+          "weighted_expense": 3023.9,
+          "net_profit": 5238.56
         },
         {
           "consultant": "Fund Hub SPV (Pending Split)",
@@ -406,7 +411,9 @@
               "consultant_cut": 3496.35
             }
           ],
-          "pct_of_gp_pool": 0.028799
+          "pct_of_gp_pool": 0.028799,
+          "weighted_expense": 1279.6,
+          "net_profit": 2216.75
         },
         {
           "consultant": "AJ Affleck",
@@ -455,7 +462,9 @@
               "consultant_cut": 252.65
             }
           ],
-          "pct_of_gp_pool": 0.027126
+          "pct_of_gp_pool": 0.027126,
+          "weighted_expense": 1205.25,
+          "net_profit": 2087.97
         },
         {
           "consultant": "Luke",
@@ -480,7 +489,9 @@
               "consultant_cut": 426.53
             }
           ],
-          "pct_of_gp_pool": 0.007045
+          "pct_of_gp_pool": 0.007045,
+          "weighted_expense": 313.01,
+          "net_profit": 542.25
         }
       ],
       "investors": [
@@ -1150,85 +1161,258 @@
       ],
       "costs": {
         "total": 51234.17,
+        "matrix_parties": [
+          "TruQuant",
+          "Fund Mgmt",
+          "Alec Atkinson",
+          "Jake Gordon",
+          "Fund Hub SPV (Pending Split)",
+          "AJ Affleck",
+          "Luke",
+          "Raj (GP fixed 0.5%)",
+          "Nairne (GP fixed 0.5%)",
+          "Alec (GP fixed 0.5%)"
+        ],
         "line_items": [
           {
             "name": "Chris",
-            "amount": 8000.0
+            "amount": 8000.0,
+            "payor_group": "TQ/Armada",
+            "by_party": {
+              "TruQuant": 3381.1,
+              "Fund Mgmt": 2748.24,
+              "Alec Atkinson": 1196.17,
+              "Jake Gordon": 314.35,
+              "Fund Hub SPV (Pending Split)": 133.02,
+              "AJ Affleck": 125.29,
+              "Luke": 32.54,
+              "Raj (GP fixed 0.5%)": 23.09,
+              "Nairne (GP fixed 0.5%)": 23.09,
+              "Alec (GP fixed 0.5%)": 23.09
+            }
           },
           {
             "name": "TPA",
-            "amount": 1200.0
+            "amount": 1200.0,
+            "payor_group": "Armada",
+            "by_party": {
+              "TruQuant": 0.0,
+              "Fund Mgmt": 714.0,
+              "Alec Atkinson": 310.77,
+              "Jake Gordon": 81.67,
+              "Fund Hub SPV (Pending Split)": 34.56,
+              "AJ Affleck": 32.55,
+              "Luke": 8.45,
+              "Raj (GP fixed 0.5%)": 6.0,
+              "Nairne (GP fixed 0.5%)": 6.0,
+              "Alec (GP fixed 0.5%)": 6.0
+            }
           },
           {
             "name": "Chris (Hotel+Ticket)",
-            "amount": 3226.17
+            "amount": 3226.17,
+            "payor_group": "TQ/Armada",
+            "by_party": {
+              "TruQuant": 1363.5,
+              "Fund Mgmt": 1108.29,
+              "Alec Atkinson": 482.38,
+              "Jake Gordon": 126.77,
+              "Fund Hub SPV (Pending Split)": 53.64,
+              "AJ Affleck": 50.53,
+              "Luke": 13.12,
+              "Raj (GP fixed 0.5%)": 9.31,
+              "Nairne (GP fixed 0.5%)": 9.31,
+              "Alec (GP fixed 0.5%)": 9.31
+            }
           },
           {
             "name": "Charalece",
-            "amount": 4000.0
+            "amount": 4000.0,
+            "payor_group": "Armada",
+            "by_party": {
+              "TruQuant": 0.0,
+              "Fund Mgmt": 2380.0,
+              "Alec Atkinson": 1035.89,
+              "Jake Gordon": 272.23,
+              "Fund Hub SPV (Pending Split)": 115.2,
+              "AJ Affleck": 108.5,
+              "Luke": 28.18,
+              "Raj (GP fixed 0.5%)": 20.0,
+              "Nairne (GP fixed 0.5%)": 20.0,
+              "Alec (GP fixed 0.5%)": 20.0
+            }
           },
           {
             "name": "Alec (Ticket)",
-            "amount": 886.0
+            "amount": 886.0,
+            "payor_group": "Fund Management",
+            "by_party": {
+              "TruQuant": 0.0,
+              "Fund Mgmt": 886.0,
+              "Alec Atkinson": 0.0,
+              "Jake Gordon": 0.0,
+              "Fund Hub SPV (Pending Split)": 0.0,
+              "AJ Affleck": 0.0,
+              "Luke": 0.0,
+              "Raj (GP fixed 0.5%)": 0.0,
+              "Nairne (GP fixed 0.5%)": 0.0,
+              "Alec (GP fixed 0.5%)": 0.0
+            }
           },
           {
             "name": "Alec (Hotel)",
-            "amount": 1172.0
+            "amount": 1172.0,
+            "payor_group": "Fund Management",
+            "by_party": {
+              "TruQuant": 0.0,
+              "Fund Mgmt": 1172.0,
+              "Alec Atkinson": 0.0,
+              "Jake Gordon": 0.0,
+              "Fund Hub SPV (Pending Split)": 0.0,
+              "AJ Affleck": 0.0,
+              "Luke": 0.0,
+              "Raj (GP fixed 0.5%)": 0.0,
+              "Nairne (GP fixed 0.5%)": 0.0,
+              "Alec (GP fixed 0.5%)": 0.0
+            }
           },
           {
             "name": "Taxes",
-            "amount": 6750.0
+            "amount": 6750.0,
+            "payor_group": "Armada",
+            "by_party": {
+              "TruQuant": 0.0,
+              "Fund Mgmt": 4016.25,
+              "Alec Atkinson": 1748.06,
+              "Jake Gordon": 459.39,
+              "Fund Hub SPV (Pending Split)": 194.4,
+              "AJ Affleck": 183.1,
+              "Luke": 47.55,
+              "Raj (GP fixed 0.5%)": 33.75,
+              "Nairne (GP fixed 0.5%)": 33.75,
+              "Alec (GP fixed 0.5%)": 33.75
+            }
           },
           {
             "name": "Legal",
-            "amount": 26000.0
+            "amount": 26000.0,
+            "payor_group": "Armada",
+            "by_party": {
+              "TruQuant": 0.0,
+              "Fund Mgmt": 15470.0,
+              "Alec Atkinson": 6733.29,
+              "Jake Gordon": 1769.49,
+              "Fund Hub SPV (Pending Split)": 748.78,
+              "AJ Affleck": 705.28,
+              "Luke": 183.16,
+              "Raj (GP fixed 0.5%)": 130.0,
+              "Nairne (GP fixed 0.5%)": 130.0,
+              "Alec (GP fixed 0.5%)": 130.0
+            }
           }
         ],
-        "allocation_by_party": [
+        "party_burden": [
+          {
+            "party": "Fund Mgmt",
+            "amount": 28494.78
+          },
           {
             "party": "Alec Atkinson",
-            "pct_of_gp_pool": 0.258973,
-            "allocated_expense": 13268.27
+            "amount": 11506.55
+          },
+          {
+            "party": "TruQuant",
+            "amount": 4744.6
           },
           {
             "party": "Jake Gordon",
-            "pct_of_gp_pool": 0.068057,
-            "allocated_expense": 3486.84
+            "amount": 3023.9
           },
           {
             "party": "Fund Hub SPV (Pending Split)",
-            "pct_of_gp_pool": 0.028799,
-            "allocated_expense": 1475.49
+            "amount": 1279.6
           },
           {
             "party": "AJ Affleck",
-            "pct_of_gp_pool": 0.027126,
-            "allocated_expense": 1389.78
+            "amount": 1205.25
           },
           {
             "party": "Luke",
-            "pct_of_gp_pool": 0.007045,
-            "allocated_expense": 360.94
+            "amount": 313.01
+          },
+          {
+            "party": "Raj (GP fixed 0.5%)",
+            "amount": 222.16
+          },
+          {
+            "party": "Nairne (GP fixed 0.5%)",
+            "amount": 222.16
+          },
+          {
+            "party": "Alec (GP fixed 0.5%)",
+            "amount": 222.16
+          }
+        ],
+        "income_breakdown": [
+          {
+            "party": "TruQuant",
+            "income": 88869.69,
+            "pct_tq_armada": 0.422638,
+            "pct_armada": null
           },
           {
             "party": "Fund Mgmt",
-            "pct_of_gp_pool": 0.595,
-            "allocated_expense": 30484.33
+            "income": 72235.51,
+            "pct_tq_armada": 0.343531,
+            "pct_armada": 0.595
           },
           {
-            "party": "Raj (GP fixed)",
-            "pct_of_gp_pool": 0.005,
-            "allocated_expense": 256.17
+            "party": "Alec Atkinson",
+            "income": 31440.36,
+            "pct_tq_armada": 0.149521,
+            "pct_armada": 0.258973
           },
           {
-            "party": "Nairne (GP fixed)",
-            "pct_of_gp_pool": 0.005,
-            "allocated_expense": 256.17
+            "party": "Jake Gordon",
+            "income": 8262.46,
+            "pct_tq_armada": 0.039294,
+            "pct_armada": 0.068057
           },
           {
-            "party": "Alec (GP fixed)",
-            "pct_of_gp_pool": 0.005,
-            "allocated_expense": 256.17
+            "party": "Fund Hub SPV (Pending Split)",
+            "income": 3496.35,
+            "pct_tq_armada": 0.016628,
+            "pct_armada": 0.028799
+          },
+          {
+            "party": "AJ Affleck",
+            "income": 3293.22,
+            "pct_tq_armada": 0.015662,
+            "pct_armada": 0.027126
+          },
+          {
+            "party": "Luke",
+            "income": 855.26,
+            "pct_tq_armada": 0.004067,
+            "pct_armada": 0.007045
+          },
+          {
+            "party": "Raj (GP fixed 0.5%)",
+            "income": 607.02,
+            "pct_tq_armada": 0.002887,
+            "pct_armada": 0.005
+          },
+          {
+            "party": "Nairne (GP fixed 0.5%)",
+            "income": 607.02,
+            "pct_tq_armada": 0.002887,
+            "pct_armada": 0.005
+          },
+          {
+            "party": "Alec (GP fixed 0.5%)",
+            "income": 607.02,
+            "pct_tq_armada": 0.002887,
+            "pct_armada": 0.005
           }
         ]
       }

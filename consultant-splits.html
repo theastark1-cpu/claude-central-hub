@@ -258,16 +258,30 @@ if(sessionStorage.getItem('ap_splits_auth')==='1'){
 
   <!-- ============ COSTS TAB ============ -->
   <div id="tab-costs" class="tab-content">
+    <div class="card">
+      <h2><span class="icon">🧾</span> Cost Allocation Matrix</h2>
+      <p style="font-size:0.78rem;color:var(--text-dim);margin-bottom:0.8rem;line-height:1.5">
+        Each cost is allocated by its <strong>Payor Group</strong>:
+        <span style="color:var(--purple)">TQ/Armada</span> = split among everyone (incl. TruQuant) by income share ·
+        <span style="color:var(--accent)">Armada</span> = split among Armada parties only (excludes TruQuant) by income ·
+        <span style="color:var(--amber)">Fund Management</span> = 100% Fund Mgmt.
+      </p>
+      <div style="overflow-x:auto">
+        <table class="data-table" id="costMatrixTable">
+          <thead></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
     <div class="grid-2">
       <div class="card" style="margin-bottom:0">
-        <h2><span class="icon">🧾</span> Cost Line Items</h2>
+        <h2><span class="icon">📊</span> Total Burden Per Party</h2>
         <div style="overflow-x:auto">
-          <table class="data-table" id="costsTable">
+          <table class="data-table" id="costAllocTable">
             <thead>
               <tr>
-                <th data-sort="name">Category</th>
-                <th data-sort="amount" class="right sort-desc">Amount</th>
-                <th data-sort="pct" class="right">% of Pool</th>
+                <th data-sort="party">Party</th>
+                <th data-sort="amount" class="right sort-desc">Total Cost Share</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -275,15 +289,16 @@ if(sessionStorage.getItem('ap_splits_auth')==='1'){
         </div>
       </div>
       <div class="card" style="margin-bottom:0">
-        <h2><span class="icon">⚖️</span> Allocation by GP %</h2>
-        <p style="font-size:0.78rem;color:var(--text-dim);margin-bottom:0.8rem;line-height:1.5">Each party pays the same % of costs as their share of the GP pool. Alec Atkinson appears once as a consultant (his 39%-of-GP investors) and once as Alec (GP) for the new fixed 0.5% — <strong>he carries both expense burdens</strong>.</p>
+        <h2><span class="icon">💰</span> Income Reference (weighting denominator)</h2>
+        <p style="font-size:0.74rem;color:var(--text-dim);margin-bottom:0.8rem;line-height:1.5">For Armada-only costs, divide by Armada total. For TQ/Armada costs, divide by full total (incl. TruQuant).</p>
         <div style="overflow-x:auto">
-          <table class="data-table" id="costAllocTable">
+          <table class="data-table" id="incomeRefTable">
             <thead>
               <tr>
                 <th data-sort="party">Party</th>
-                <th data-sort="pct_of_gp_pool" class="right">% Pool</th>
-                <th data-sort="allocated_expense" class="right sort-desc">Allocated $</th>
+                <th data-sort="income" class="right sort-desc">Income</th>
+                <th data-sort="pct_armada" class="right">% Armada</th>
+                <th data-sort="pct_tq_armada" class="right">% TQ+Armada</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -416,15 +431,16 @@ function renderCascade(){
 
 function renderConsultants(){
   const m = currentMonth();
-  const totalCosts = m.fund_totals.total_costs ?? 0;
   const ft = m.fund_totals;
   const totalPool = ft.tpa_perf_fees_crystallized || 1;
+  // Per-party real expense burden, computed from the cost matrix (not just
+  // GP-pool-weighted — accounts for Payor Group rules).
+  const burdenMap = {};
+  (m.costs?.party_burden ?? []).forEach(b => { burdenMap[b.party] = b.amount; });
 
-  // Build the full party list: Fund Mgmt + each consultant + Raj / Nairne / Alec (GP fixed).
-  // Every row pays its pro-rata share of costs.
   const enrich = (party, gp_earned, opts={}) => {
     const pct = gp_earned / totalPool;
-    const allocated_expense = pct * totalCosts;
+    const allocated_expense = burdenMap[party] ?? 0;
     return {
       party,
       investor_count: opts.investor_count ?? null,
@@ -446,12 +462,22 @@ function renderConsultants(){
     enrich('Raj (GP fixed 0.5%)', ft.raj_pool, {kind:'fixed'}),
     enrich('Nairne (GP fixed 0.5%)', ft.nairne_pool, {kind:'fixed'}),
     enrich('Alec (GP fixed 0.5%)', ft.alec_gp_pool, {kind:'fixed'}),
+    // External — TruQuant (18% upstream, pays its share of TQ/Armada costs)
+    {
+      party: 'TruQuant (external 18%)',
+      investor_count: null,
+      capital_raised: null,
+      gp_earned: ft.tq_income ?? 0,
+      pct_of_gp_pool: null,
+      allocated_expense: burdenMap['TruQuant'] ?? 0,
+      net_payout: (ft.tq_income ?? 0) - (burdenMap['TruQuant'] ?? 0),
+      kind: 'external',
+    },
   ];
   rows.sort((a,b) => {
-    const av = a[CONS_SORT.key], bv = b[CONS_SORT.key];
-    if (av === null && bv === null) return 0;
-    if (av === null) return 1;
-    if (bv === null) return -1;
+    let av = a[CONS_SORT.key], bv = b[CONS_SORT.key];
+    if (av === null || av === undefined) return 1;
+    if (bv === null || bv === undefined) return -1;
     if (typeof av === 'string') return CONS_SORT.dir==='asc' ? av.localeCompare(bv) : bv.localeCompare(av);
     return CONS_SORT.dir==='asc' ? av - bv : bv - av;
   });
@@ -467,24 +493,26 @@ function renderConsultants(){
   const tbody = rows.map(r => {
     const pending = r.kind === 'pending';
     const partyStyle = r.kind === 'mgmt' ? 'color:#93c5fd;font-weight:600'
-                     : r.kind === 'fixed' ? 'color:#d8b4fe;font-style:italic' : '';
+                     : r.kind === 'fixed' ? 'color:#d8b4fe;font-style:italic'
+                     : r.kind === 'external' ? 'color:#fbbf24;font-style:italic' : '';
     const dash = '<span style="color:var(--text-muted)">—</span>';
     return `<tr class="${pending ? 'pending' : ''}">
       <td style="${partyStyle}">${r.party}${pending ? ' <span class="tag warn">PENDING</span>' : ''}</td>
       <td class="right mono">${r.investor_count === null ? dash : r.investor_count}</td>
       <td class="right mono">${r.capital_raised === null ? dash : fmtUSD(r.capital_raised,{compact:true})}</td>
       <td class="right mono" style="color:var(--purple);font-weight:600">${fmtUSD(r.gp_earned)}</td>
-      <td class="right mono">${fmtPct(r.pct_of_gp_pool)}</td>
+      <td class="right mono">${r.pct_of_gp_pool === null ? dash : fmtPct(r.pct_of_gp_pool)}</td>
       <td class="right mono" style="color:var(--red)">−${fmtUSD(r.allocated_expense)}</td>
       <td class="right mono" style="color:var(--green);font-weight:600">${fmtUSD(r.net_payout)}</td>
     </tr>`;
   }).join('');
+  // Total = Armada GP pool ($121,404) + TruQuant external ($88,870)
   const totalRow = `<tr class="total-row">
-    <td>TOTAL · GP Pool</td>
+    <td>TOTAL · All Earners (Armada + TQ)</td>
     <td class="right mono">${totals.investor_count}</td>
     <td class="right mono">${fmtUSD(totals.capital_raised,{compact:true})}</td>
     <td class="right mono">${fmtUSD(totals.gp_earned)}</td>
-    <td class="right mono">${fmtPct(totals.gp_earned / totalPool)}</td>
+    <td class="right mono"><span style="color:var(--text-muted)">—</span></td>
     <td class="right mono">−${fmtUSD(totals.allocated_expense)}</td>
     <td class="right mono">${fmtUSD(totals.net_payout)}</td>
   </tr>`;
@@ -641,71 +669,73 @@ function renderRecon(){
 }
 
 // ============ COSTS ============
-let COST_SORT = {key:'amount', dir:'desc'};
-let ALLOC_SORT = {key:'allocated_expense', dir:'desc'};
+let ALLOC_SORT = {key:'amount', dir:'desc'};
+let INCOME_SORT = {key:'income', dir:'desc'};
+
+function payorGroupTag(pg){
+  const cls = pg === 'TQ/Armada' ? 'background:rgba(139,92,246,0.15);color:#a78bfa'
+            : pg === 'Armada' ? 'background:rgba(59,130,246,0.15);color:#60a5fa'
+            : 'background:rgba(245,158,11,0.15);color:#fbbf24';
+  return `<span style="${cls};padding:0.12rem 0.5rem;border-radius:4px;font-size:0.65rem;font-weight:600">${pg}</span>`;
+}
 
 function renderCosts(){
   const m = currentMonth();
-  const items = (m.costs?.line_items ?? []).map(c => ({
-    ...c,
-    pct: m.costs.total ? c.amount / m.costs.total : 0,
-  }));
-  items.sort((a,b) => {
-    const av = a[COST_SORT.key], bv = b[COST_SORT.key];
-    if (typeof av === 'string') return COST_SORT.dir==='asc' ? av.localeCompare(bv) : bv.localeCompare(av);
-    return COST_SORT.dir==='asc' ? av - bv : bv - av;
-  });
-  const tbody = items.map(c => `
-    <tr>
-      <td>${c.name}</td>
-      <td class="right mono">${fmtUSD(c.amount)}</td>
-      <td class="right mono">${fmtPct(c.pct)}</td>
-    </tr>
-  `).join('');
+  const costs = m.costs ?? {};
+  const lines = costs.line_items ?? [];
+  const parties = costs.matrix_parties ?? [];
+
+  // ---- Cost matrix: rows = costs, cols = parties ----
+  const headerCols = ['Expense', 'Total', 'Payor Group', ...parties];
+  const headerRow = `<tr>${headerCols.map((h, i) =>
+    `<th class="${i >= 3 ? 'right' : ''}">${h}</th>`).join('')}</tr>`;
+
+  const rows = lines.map(li => {
+    const tds = [
+      `<td>${li.name}</td>`,
+      `<td class="right mono">${fmtUSD(li.amount)}</td>`,
+      `<td>${payorGroupTag(li.payor_group)}</td>`,
+      ...parties.map(p => {
+        const v = li.by_party[p] ?? 0;
+        return `<td class="right mono" style="${v === 0 ? 'color:var(--text-muted)' : ''}">${v === 0 ? '—' : fmtUSD(v)}</td>`;
+      }),
+    ];
+    return `<tr>${tds.join('')}</tr>`;
+  }).join('');
+
+  // Totals row
+  const totals = parties.map(p => lines.reduce((s, li) => s + (li.by_party[p] ?? 0), 0));
+  const grandTotal = totals.reduce((s, v) => s + v, 0);
   const totalRow = `<tr class="total-row">
     <td>TOTAL</td>
-    <td class="right mono" style="color:var(--red);font-weight:700">${fmtUSD(m.costs?.total ?? 0)}</td>
-    <td class="right mono">100.00%</td>
+    <td class="right mono" style="color:var(--red);font-weight:700">${fmtUSD(grandTotal)}</td>
+    <td></td>
+    ${totals.map(t => `<td class="right mono" style="font-weight:600">${fmtUSD(t)}</td>`).join('')}
   </tr>`;
-  document.querySelector('#costsTable tbody').innerHTML = tbody + totalRow;
-  document.querySelectorAll('#costsTable th[data-sort]').forEach(th => {
-    th.classList.remove('sort-asc','sort-desc');
-    if (th.dataset.sort === COST_SORT.key) th.classList.add('sort-'+COST_SORT.dir);
-    th.onclick = () => {
-      const k = th.dataset.sort;
-      if (COST_SORT.key === k) COST_SORT.dir = COST_SORT.dir==='asc' ? 'desc' : 'asc';
-      else { COST_SORT.key = k; COST_SORT.dir = (k==='name') ? 'asc' : 'desc'; }
-      renderCosts();
-    };
-  });
 
-  // Allocation by party
-  const alloc = [...(m.costs?.allocation_by_party ?? [])];
-  alloc.sort((a,b) => {
+  document.querySelector('#costMatrixTable thead').innerHTML = headerRow;
+  document.querySelector('#costMatrixTable tbody').innerHTML = rows + totalRow;
+
+  // ---- Total burden per party ----
+  const burden = [...(costs.party_burden ?? [])];
+  burden.sort((a,b) => {
     const av = a[ALLOC_SORT.key], bv = b[ALLOC_SORT.key];
     if (typeof av === 'string') return ALLOC_SORT.dir==='asc' ? av.localeCompare(bv) : bv.localeCompare(av);
     return ALLOC_SORT.dir==='asc' ? av - bv : bv - av;
   });
-  const allocTbody = alloc.map(a => {
-    const isFundMgmt = a.party === 'Fund Mgmt';
-    const isFixed = a.party.includes('GP fixed');
+  const burdenTbody = burden.map(a => {
     const pending = a.party.includes('Pending');
-    const cls = pending ? 'pending' : '';
-    const partyStyle = isFundMgmt ? 'color:#93c5fd;font-weight:600' : (isFixed ? 'color:#d8b4fe;font-style:italic' : '');
-    return `<tr class="${cls}">
-      <td style="${partyStyle}">${a.party}${pending ? ' <span class="tag warn">PENDING</span>' : ''}</td>
-      <td class="right mono">${fmtPct(a.pct_of_gp_pool)}</td>
-      <td class="right mono" style="color:var(--red)">${fmtUSD(a.allocated_expense)}</td>
+    return `<tr class="${pending ? 'pending' : ''}">
+      <td>${a.party}${pending ? ' <span class="tag warn">PENDING</span>' : ''}</td>
+      <td class="right mono" style="color:var(--red);font-weight:600">${fmtUSD(a.amount)}</td>
     </tr>`;
   }).join('');
-  const allocTotal = alloc.reduce((s,a) => s + a.allocated_expense, 0);
-  const allocPct = alloc.reduce((s,a) => s + a.pct_of_gp_pool, 0);
-  const allocTotalRow = `<tr class="total-row">
+  const burdenTotal = burden.reduce((s,a) => s + a.amount, 0);
+  const burdenTotalRow = `<tr class="total-row">
     <td>TOTAL</td>
-    <td class="right mono">${fmtPct(allocPct)}</td>
-    <td class="right mono" style="color:var(--red);font-weight:700">${fmtUSD(allocTotal)}</td>
+    <td class="right mono" style="color:var(--red);font-weight:700">${fmtUSD(burdenTotal)}</td>
   </tr>`;
-  document.querySelector('#costAllocTable tbody').innerHTML = allocTbody + allocTotalRow;
+  document.querySelector('#costAllocTable tbody').innerHTML = burdenTbody + burdenTotalRow;
   document.querySelectorAll('#costAllocTable th[data-sort]').forEach(th => {
     th.classList.remove('sort-asc','sort-desc');
     if (th.dataset.sort === ALLOC_SORT.key) th.classList.add('sort-'+ALLOC_SORT.dir);
@@ -713,6 +743,43 @@ function renderCosts(){
       const k = th.dataset.sort;
       if (ALLOC_SORT.key === k) ALLOC_SORT.dir = ALLOC_SORT.dir==='asc' ? 'desc' : 'asc';
       else { ALLOC_SORT.key = k; ALLOC_SORT.dir = (k==='party') ? 'asc' : 'desc'; }
+      renderCosts();
+    };
+  });
+
+  // ---- Income reference ----
+  const income = [...(costs.income_breakdown ?? [])];
+  income.sort((a,b) => {
+    const av = a[INCOME_SORT.key], bv = b[INCOME_SORT.key];
+    if (av === null || av === undefined) return 1;
+    if (bv === null || bv === undefined) return -1;
+    if (typeof av === 'string') return INCOME_SORT.dir==='asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+    return INCOME_SORT.dir==='asc' ? av - bv : bv - av;
+  });
+  const incomeTbody = income.map(i => `
+    <tr ${i.party === 'TruQuant' ? 'style="color:var(--amber)"' : ''}>
+      <td>${i.party}</td>
+      <td class="right mono">${fmtUSD(i.income)}</td>
+      <td class="right mono">${i.pct_armada === null ? '<span style="color:var(--text-muted)">—</span>' : fmtPct(i.pct_armada)}</td>
+      <td class="right mono">${fmtPct(i.pct_tq_armada)}</td>
+    </tr>
+  `).join('');
+  const incTotalArmada = income.filter(i => i.party !== 'TruQuant').reduce((s,i) => s + i.income, 0);
+  const incTotalAll = income.reduce((s,i) => s + i.income, 0);
+  const incTotalRow = `<tr class="total-row">
+    <td>TOTAL</td>
+    <td class="right mono">${fmtUSD(incTotalAll)}</td>
+    <td class="right mono">100.00%</td>
+    <td class="right mono">100.00%</td>
+  </tr>`;
+  document.querySelector('#incomeRefTable tbody').innerHTML = incomeTbody + incTotalRow;
+  document.querySelectorAll('#incomeRefTable th[data-sort]').forEach(th => {
+    th.classList.remove('sort-asc','sort-desc');
+    if (th.dataset.sort === INCOME_SORT.key) th.classList.add('sort-'+INCOME_SORT.dir);
+    th.onclick = () => {
+      const k = th.dataset.sort;
+      if (INCOME_SORT.key === k) INCOME_SORT.dir = INCOME_SORT.dir==='asc' ? 'desc' : 'asc';
+      else { INCOME_SORT.key = k; INCOME_SORT.dir = (k==='party') ? 'asc' : 'desc'; }
       renderCosts();
     };
   });
