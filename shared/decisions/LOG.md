@@ -10,14 +10,16 @@ Per Nairne, year-end accounting for the GP entity Armada Prime Tech LLC for tax 
 - **K-1 members (per Nairne)**: Raj Duggal (50%) and Nairne (50%) of GP net income. Everyone else who got GP-pool payouts is a 1099 contractor — including Phil (0.5% slice in 2025), Fund Mgmt entity (59.5%), all consultants in the 39% pool, and TruQuant for the August-only "Trader & Developer" line.
 - **Source of truth**: TPA Reporting Packages (Performance Fees Crystallized) for what GP earned. Distributions Armada Tech 2025 (INTERNAL ONLY) ledger for what GP actually paid out (cash basis). Both views included in deliverable.
 - **August 2025 anomaly recognized**: Aug used a different waterfall (9.5% Consultant + 13.5% Trader & Developer + 5.5% Mgmt + 1.5% to Raj/Nairne/Phil = 30% of true gross). TruQuant's 18% moved upstream of the GP entity from September onwards.
-- **TruQuant excluded from GP expenses entirely (per Nairne 2026-04-30)**: even the August "Trader & Developer" $6,909.93 and Spydr $170.86 (Aug+Sep) are NOT 1099 expenses of Armada Prime Tech LLC. TQ's relationship is upstream of the GP entity. The ~$6,999 TQ-tagged Aug amounts effectively stay in GP retained earnings → flow to K-1 net income.
+- **TruQuant excluded from GP expenses entirely (per Nairne 2026-04-30)**: even the August "Trader & Developer" $6,909.93 and Spydr $170.86 (Aug+Sep) are NOT 1099 expenses of Armada Prime Tech LLC. TQ's relationship is upstream of the GP entity.
+- **Fund Mgmt 59.5% slice IS Nairne's K-1 income, NOT a separate entity 1099 (per Nairne 2026-04-30)**: Nairne owns 60% of Armada Prime Tech LLC (= 59.5% Fund Mgmt + 0.5% direct). Raj owns 0.5%. This is partnership-correct accounting: partner allocations don't reduce partnership net income; only contractor 1099 expenses + op expenses do.
 
-Headline numbers:
+Headline numbers (corrected partnership accounting):
 - 2025 GP gross income (TPA-authoritative): **$153,023.03**
-- 2025 1099 payments (cash basis from Distributions ledger, ex-TruQuant): **$139,541.45** (Fund Mgmt $85,049.86; Alec Atkinson $38,076.87; Jake Gordon $10,388.66; AJ Affleck $4,152.70; Phil $946.97; Issac $761.49; Luke $164.90)
-- 2025 Raj K-1 direct slice: $946.97; Nairne K-1 direct slice: $946.97
-- 2025 GP-paid op expenses (preliminary, subject to reclass): **$91,225** (includes $25k Oct 506c SPV Loan and $18k Dec Insurance which the accountant likely needs to reclass)
-- 2025 net income flowing to K-1s (50/50 Raj/Nairne): **−$79,637** (loss; will reduce after expense reclass)
+- 2025 1099 contractor expenses: **$54,491.59** (Alec $38,076.87; Jake $10,388.66; AJ $4,152.70; Phil $946.97; Issac $761.49; Luke $164.90)
+- 2025 GP-paid op expenses (preliminary, subject to reclass): **$91,225** (includes $25k Oct 506c SPV Loan and $18k Dec Insurance which the accountant likely needs to reclass — adjusted ~$51K)
+- 2025 Partnership net income (allocated to K-1 partners): **+$7,306.44** (positive! was previously shown as a loss because Fund Mgmt was mistakenly counted as expense)
+- 2025 K-1 cash distributions: Nairne $85,996.83 (Fund Mgmt $85,049.86 + direct $946.97); Raj $946.97
+- 2025 K-1 allocated net income (per derived ownership 99.17/0.83): Nairne $7,246.06; Raj $60.38
 
 Deliverable files:
 - `tools/build_2025_year_end.py` — aggregator (re-runnable)

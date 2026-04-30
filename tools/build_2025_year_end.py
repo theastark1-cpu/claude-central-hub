@@ -47,6 +47,10 @@ OUT_XLSX = REPO_ROOT / "2025-armada-prime-tech-1099-k1.xlsx"
 OUT_MD = REPO_ROOT / "2025-armada-prime-tech-summary.md"
 
 # 2025 GP split — Phil holds the 0.5% slice (Alec replaced Phil in 2026-04).
+# Per Nairne 2026-04-30: the 59.5% "Fund Mgmt" slice IS Nairne's income (not
+# a separate entity 1099 expense). So Nairne's economic ownership is 60.0%
+# (59.5 Fund Mgmt + 0.5 direct), Raj is 0.5%, Phil is 0.5% (1099 contractor),
+# Consultants pool is 39%.
 SPLIT_PCTS_2025 = {
     "fund_mgmt": 0.595,
     "consultant": 0.39,
@@ -54,6 +58,12 @@ SPLIT_PCTS_2025 = {
     "nairne": 0.005,
     "phil": 0.005,
 }
+
+# Recipients in ACTUAL_PAID that are partner allocations (K-1 income to
+# Nairne or Raj), NOT contractor 1099 expenses.
+NAIRNE_ALIASES = {"Fund Mgmt", "Nairne"}
+RAJ_ALIASES = {"Raj"}
+K1_RECIPIENTS = NAIRNE_ALIASES | RAJ_ALIASES
 
 # Dec 2025 BEST ONE for IDS mapping (most complete 2025 mapping).
 INTERNAL_IDS = Path("/Users/nairne/Downloads/BEST ONE of December 2025 Monthly Return.xlsx")
@@ -368,40 +378,42 @@ def build_workbook(agg: dict) -> None:
     style_header_row(ws, r, 3)
 
     actual_total_paid = sum(actual_year_totals.values())
+    # K-1 partner allocations (Nairne owns 60% = Fund Mgmt 59.5 + direct 0.5; Raj owns 0.5%)
+    nairne_total = sum(actual_year_totals.get(a, 0.0) for a in NAIRNE_ALIASES)
+    actual_raj = actual_year_totals.get("Raj", 0.0)
+    actual_phil = actual_year_totals.get("Phil", 0.0)
+    # Contractor 1099 expenses = everyone except K-1 partners
     actual_consultant_total = sum(
         v for k, v in actual_year_totals.items()
-        if k not in ("Fund Mgmt", "Raj", "Nairne", "Phil")
+        if k not in K1_RECIPIENTS and k != "Phil"
     )
-    actual_raj = actual_year_totals.get("Raj", 0.0)
-    actual_nairne = actual_year_totals.get("Nairne", 0.0)
-    actual_phil = actual_year_totals.get("Phil", 0.0)
-    actual_fund_mgmt = actual_year_totals.get("Fund Mgmt", 0.0)
-    actual_1099_total = actual_consultant_total + actual_fund_mgmt + actual_phil
-    net_income_actual = total_perf_fees - actual_1099_total - actual_raj - actual_nairne - op_expense_year_total
+    actual_1099_total = actual_consultant_total + actual_phil
+    # Partnership net income = gross - 1099 expenses - op expenses
+    # Partner allocations are NOT expenses; they're how net income is divided.
+    net_income_actual = total_perf_fees - actual_1099_total - op_expense_year_total
 
     rows = [
         ("GROSS INCOME", None, ""),
         ("  Performance Fees from Armada Prime LLP", total_perf_fees, "TPA Performance Fees Crystallized, Aug-Dec 2025"),
         ("  TOTAL GROSS INCOME", total_perf_fees, "= Armada Prime Tech LLC's gross 2025 receipts"),
         ("", None, ""),
-        ("LESS: 1099 PAYMENTS TO CONTRACTORS (ACTUAL PAID per Distributions Ledger)", None, ""),
-        ("  Fund Mgmt entity", actual_fund_mgmt, "Recipient entity name TBD — likely Armada Capital Group LLC"),
-        ("  Consultants (incl. Aug Trader & Developer to TruQuant)", actual_consultant_total, "See 1099 Summary tab for per-consultant breakdown"),
-        ("  Phil — fixed 0.5% slice", actual_phil, "Phil held the 0.5% GP slice in 2025 (Alec took it over in 2026-04)"),
-        ("  TOTAL 1099 PAYMENTS", actual_1099_total, "= sum of all non-member contractor payments"),
+        ("LESS: 1099 EXPENSES (contractor payments — partners excluded)", None, ""),
+        ("  Consultant pool (Alec, Jake, AJ, Issac, Luke)", actual_consultant_total, "See 1099 Summary tab for per-consultant breakdown"),
+        ("  Phil (0.5% GP fixed slice)", actual_phil, "Phil held the 0.5% slice in 2025 as a 1099 contractor"),
+        ("  TOTAL 1099 EXPENSES", actual_1099_total, ""),
         ("", None, ""),
         ("LESS: GP-PAID OPERATING EXPENSES", None, ""),
-        ("  Vendor expenses (Chris, Insurance, PVD, Website, etc.)", op_expense_year_total, "See GP Expenses tab. Sum of Aug-Dec Distributions Ledger Costs sections + Dec BEST ONE Costs."),
+        ("  Vendor expenses (Chris, Insurance, PVD, Website, etc.)", op_expense_year_total, "See GP Expenses tab. Includes items likely needing reclass (SPV loans → balance sheet, Insurance pro-rata)."),
         ("", None, ""),
-        ("LESS: K-1 MEMBER DISTRIBUTIONS", None, ""),
-        ("  Raj Duggal (0.5% direct)", actual_raj, ""),
-        ("  Nairne (0.5% direct)", actual_nairne, ""),
+        ("PARTNERSHIP NET INCOME (allocated to K-1 partners)", net_income_actual, "Gross - 1099 expenses - Op expenses. This is what flows to K-1s."),
         ("", None, ""),
-        ("NET INCOME (residual to GP)", net_income_actual, "Gross - 1099s - Op Expenses - Direct Member Slices"),
+        ("K-1 ALLOCATION (per ownership: Nairne 60% / Raj 0.5%)", None, ""),
+        ("  Nairne — Fund Mgmt 59.5% slice received as cash", actual_year_totals.get("Fund Mgmt", 0), "Reported as K-1 income (partner allocation, not expense)"),
+        ("  Nairne — direct 0.5% slice received as cash", actual_year_totals.get("Nairne", 0), "Reported as K-1 income"),
+        ("  Nairne — TOTAL cash received (60% of perf fees)", nairne_total, "= Fund Mgmt + direct slice"),
+        ("  Raj — direct 0.5% slice received as cash", actual_raj, "Reported as K-1 income"),
         ("", None, ""),
-        ("K-1 ALLOCATION (50/50 of net income, per Nairne 2026-04-30)", None, ""),
-        ("  Raj Duggal — total K-1 income", actual_raj + net_income_actual / 2, "Direct slice + 50% of residual net income"),
-        ("  Nairne — total K-1 income", actual_nairne + net_income_actual / 2, "Direct slice + 50% of residual net income"),
+        ("(K-1 net income vs cash distributions reconcile on accountant's K-1 forms)", None, "Cash received above is what each partner got operationally. The K-1 'net income' line above is the partnership's taxable income — accountant allocates it per the operating agreement."),
     ]
     for label, val, note in rows:
         r += 1
@@ -417,12 +429,17 @@ def build_workbook(agg: dict) -> None:
                 for c in range(1, 4):
                     ws.cell(row=r, column=c).fill = TOTAL_FILL
 
-    # Reconciliation row
+    # Cross-check (cash basis sum should approximately equal gross perf fees)
     r += 2
-    ws.cell(row=r, column=1, value="CHECK: 1099s + Phil + Raj + Nairne = Gross").font = Font(italic=True, bold=True)
-    check = total_fund_mgmt + total_consultant_pool + total_phil + total_raj + total_nairne
-    ws.cell(row=r, column=2, value=check).number_format = MONEY
-    ws.cell(row=r, column=3, value=f"Should equal {total_perf_fees:,.2f}").font = Font(italic=True)
+    ws.cell(row=r, column=1, value="CROSS-CHECK").font = Font(italic=True, bold=True)
+    r += 1
+    cash_total = actual_1099_total + nairne_total + actual_raj
+    ws.cell(row=r, column=1, value=f"Total cash out (1099s ${actual_1099_total:,.2f} + Nairne K-1 ${nairne_total:,.2f} + Raj K-1 ${actual_raj:,.2f})")
+    ws.cell(row=r, column=2, value=cash_total).number_format = MONEY
+    ws.cell(row=r, column=3, value=f"vs Gross ${total_perf_fees:,.2f} — delta ${total_perf_fees - cash_total:,.2f} (= retained / cash-vs-accrual / TQ exclusion)").font = Font(italic=True)
+    r += 1
+    ws.cell(row=r, column=1, value="Operating expenses + retained should equal the delta above (with cash-vs-accrual smoothing).").font = Font(italic=True, color="666666")
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=3)
 
     autosize(ws, max_w=70)
     ws.column_dimensions["A"].width = 50
@@ -444,15 +461,11 @@ def build_workbook(agg: dict) -> None:
         ws.cell(row=r, column=i, value=h)
     style_header_row(ws, r, len(headers))
 
-    # Build recipient list using ACTUAL_PAID totals (cash basis from Distributions
-    # ledger). For the user's accountant, these are the amounts actually
-    # disbursed. Compare against the per-investor TPA-derived (accrual) view
-    # in the "Per-Consultant Monthly" tab.
+    # Build 1099 list: contractor recipients only (Fund Mgmt is K-1 to Nairne, NOT a 1099)
     one099_rows = []
-    one099_rows.append(("Fund Mgmt entity (TBD — Armada Capital Group LLC?)", actual_year_totals.get("Fund Mgmt", 0), "Entity 1099", "59.5% slice (Sep-Dec) + 5.5% slice (Aug)"))
     one099_rows.append(("Phil (last name TBD)", actual_year_totals.get("Phil", 0), "Individual 1099", "0.5% GP fixed slice (held by Phil all 2025)"))
-    # All non-member recipients (consultants + TruQuant + Aug Trader & Developer)
-    consultant_names = [k for k in actual_year_totals if k not in ("Fund Mgmt", "Raj", "Nairne", "Phil")]
+    # Consultants (excludes K-1 partners and Phil who's already added)
+    consultant_names = [k for k in actual_year_totals if k not in K1_RECIPIENTS and k != "Phil"]
     for cons_name in sorted(consultant_names, key=lambda k: -actual_year_totals[k]):
         one099_rows.append((cons_name, actual_year_totals[cons_name], "Individual 1099", "From Distributions ledger (cash actually paid)"))
 
@@ -476,9 +489,10 @@ def build_workbook(agg: dict) -> None:
 
     r += 2
     raj_actual = actual_year_totals.get("Raj", 0)
-    nairne_actual = actual_year_totals.get("Nairne", 0)
-    ws.cell(row=r, column=1, value=f"Cross-check: 1099 total (${total_1099:,.2f}) + Raj K-1 direct (${raj_actual:,.2f}) + Nairne K-1 direct (${nairne_actual:,.2f}) = ${total_1099 + raj_actual + nairne_actual:,.2f}").font = Font(italic=True)
-    ws.cell(row=r+1, column=1, value=f"Should approx equal Gross Perf Fees Crystallized (TPA): ${total_perf_fees:,.2f} — delta = ${total_perf_fees - total_1099 - raj_actual - nairne_actual:,.2f} (= cash-vs-accrual timing + Aug TQ-T&D treatment)").font = Font(italic=True)
+    nairne_total_check = sum(actual_year_totals.get(a, 0) for a in NAIRNE_ALIASES)
+    ws.cell(row=r, column=1, value=f"K-1 partner cash distributions (NOT on 1099s): Nairne ${nairne_total_check:,.2f} + Raj ${raj_actual:,.2f} = ${nairne_total_check + raj_actual:,.2f}").font = Font(italic=True)
+    grand = total_1099 + nairne_total_check + raj_actual
+    ws.cell(row=r+1, column=1, value=f"Cross-check: 1099 total (${total_1099:,.2f}) + K-1 cash (${nairne_total_check + raj_actual:,.2f}) = ${grand:,.2f}; Gross perf fees per TPA = ${total_perf_fees:,.2f}; delta = ${total_perf_fees - grand:,.2f} (cash-vs-accrual timing + Aug TQ-T&D excluded)").font = Font(italic=True)
 
     autosize(ws)
     ws.column_dimensions["A"].width = 45
@@ -490,31 +504,37 @@ def build_workbook(agg: dict) -> None:
     ws["A1"] = "Armada Prime Tech LLC — 2025 K-1 Members"
     ws["A1"].font = Font(bold=True, size=14)
     ws.merge_cells("A1:E1")
-    ws["A2"] = "Members per Nairne 2026-04-30: Raj Duggal (50%) and Nairne (50%) of GP net income."
+    ws["A2"] = "Members per Nairne 2026-04-30: Nairne (60% — Fund Mgmt 59.5% + direct 0.5%) and Raj Duggal (0.5%). Net income allocated per the operating agreement."
     ws["A2"].font = Font(italic=True, color="666666")
     ws.merge_cells("A2:E2")
 
     r = 4
-    headers = ["Member", "Direct 0.5% Slice ($)", "Share of GP Net Income (50%)", "Total K-1 Income ($)", "SSN/EIN + Address (fill in)"]
+    headers = ["Member", "Ownership %", "Cash Distributions ($)", "Allocated Share of Net Income ($)", "SSN/EIN + Address (fill in)"]
     for i, h in enumerate(headers, 1):
         ws.cell(row=r, column=i, value=h)
     style_header_row(ws, r, len(headers))
 
-    # Net income from Summary calc: gross - 1099s - op expenses - direct member slices
     raj_actual = actual_year_totals.get("Raj", 0)
-    nairne_actual = actual_year_totals.get("Nairne", 0)
-    actual_1099 = sum(v for k, v in actual_year_totals.items() if k not in ("Raj", "Nairne"))
-    net_income = total_perf_fees - actual_1099 - raj_actual - nairne_actual - op_expense_year_total
-    member_share = net_income / 2
+    nairne_total = sum(actual_year_totals.get(a, 0) for a in NAIRNE_ALIASES)
+    contractor_1099 = sum(v for k, v in actual_year_totals.items() if k not in K1_RECIPIENTS)
+    # Partnership net income (what gets allocated on K-1 schedule K)
+    net_income = total_perf_fees - contractor_1099 - op_expense_year_total
+    # Per ownership: Nairne 60/60.5 = 99.17%, Raj 0.5/60.5 = 0.83% (placeholder; real op agreement governs)
+    nairne_ownership = 60.0 / 60.5
+    raj_ownership = 0.5 / 60.5
 
-    for member, direct in [("Raj Duggal", raj_actual), ("Nairne", nairne_actual)]:
+    for member, owner_pct, cash in [
+        ("Nairne", nairne_ownership, nairne_total),
+        ("Raj Duggal", raj_ownership, raj_actual),
+    ]:
         r += 1
         ws.cell(row=r, column=1, value=member)
-        ws.cell(row=r, column=2, value=direct).number_format = MONEY
-        ws.cell(row=r, column=3, value=member_share).number_format = MONEY
-        ws.cell(row=r, column=4, value=direct + member_share).number_format = MONEY
+        ws.cell(row=r, column=2, value=f"{owner_pct*100:.2f}%")
+        ws.cell(row=r, column=3, value=cash).number_format = MONEY
+        allocated = net_income * owner_pct
+        ws.cell(row=r, column=4, value=allocated).number_format = MONEY
         ws.cell(row=r, column=5, value="")
-        if direct + member_share < 0:
+        if allocated < 0:
             ws.cell(row=r, column=4).font = Font(bold=True, color="C00000")
 
     r += 2
@@ -522,11 +542,11 @@ def build_workbook(agg: dict) -> None:
     r += 1
     arith_lines = [
         f"GP Gross Income (TPA Perf Fees Crystallized): ${total_perf_fees:,.2f}",
-        f"Less: 1099 contractor payments (incl. Fund Mgmt + Phil + consultants + Aug Trader & Developer): ${actual_1099 - raj_actual - nairne_actual:,.2f}",
-        f"Less: Direct 0.5% slices to Raj + Nairne: ${raj_actual + nairne_actual:,.2f}",
+        f"Less: 1099 contractor expenses (Alec/Jake/AJ/Phil/Issac/Luke): ${contractor_1099:,.2f}",
         f"Less: GP-paid operating expenses: ${op_expense_year_total:,.2f}",
-        f"= GP Net Income (residual): ${net_income:,.2f}",
-        f"Per K-1 member (50/50): ${member_share:,.2f}",
+        f"= Partnership NET INCOME (allocated to K-1s): ${net_income:,.2f}",
+        f"Nairne allocated share ({nairne_ownership*100:.2f}%): ${net_income * nairne_ownership:,.2f}",
+        f"Raj allocated share ({raj_ownership*100:.2f}%): ${net_income * raj_ownership:,.2f}",
     ]
     for line in arith_lines:
         ws.cell(row=r, column=1, value=line)
@@ -536,10 +556,12 @@ def build_workbook(agg: dict) -> None:
     r += 1
     ws.cell(row=r, column=1, value="NOTES").font = Font(bold=True, color="C00000")
     notes = [
-        "If Net Income is negative, the K-1s issue a loss — verify with accountant whether the loss can offset other income for the members.",
-        "Operating expenses include items that may be reclassed by the accountant (506c SPV Loans = capital not expense; Insurance $18k may be annual not Dec).",
+        "Fund Mgmt 59.5% slice is Nairne's K-1 income (per Nairne 2026-04-30 — it's not a separate entity 1099).",
+        "Cash distributions and allocated K-1 net income are different things in partnership tax — Schedule K-1 reports both. The accountant will compute capital account changes.",
+        "Operating expenses include items that may be reclassed by the accountant (506c SPV Loans → balance sheet; Insurance $18k may need annual proration).",
         "Cash-basis 1099s (above) may differ from accrual-basis (TPA-derived). Confirm GP's tax basis with accountant.",
-        "TruQuant payments are excluded per Nairne 2026-04-30 (TQ is not a GP expense). Aug TQ-tagged ~$6,999 effectively flows into GP retained earnings → increases the K-1 net income line above.",
+        "TruQuant payments are excluded per Nairne 2026-04-30 (TQ is not a GP expense).",
+        "Ownership % shown (Nairne 99.17%/Raj 0.83%) is derived from the 60/0.5 split. The actual LLC operating agreement governs — confirm with the accountant before filing.",
     ]
     r += 1
     for note in notes:
@@ -732,12 +754,17 @@ def build_workbook(agg: dict) -> None:
         ws.cell(row=r, column=i, value=h)
     style_header_row(ws, r, len(headers))
 
-    # All recipients sorted by year total
+    # All recipients sorted by year total — annotate K-1 partners
     all_recipients = sorted(actual_year_totals.keys(), key=lambda k: -actual_year_totals[k])
     col_totals = [0.0] * len(months)
     for recipient in all_recipients:
         r += 1
-        ws.cell(row=r, column=1, value=recipient)
+        label = recipient
+        if recipient == "Fund Mgmt":
+            label = "Fund Mgmt 59.5% (= Nairne K-1)"
+        elif recipient in K1_RECIPIENTS:
+            label = f"{recipient} (K-1 partner)"
+        ws.cell(row=r, column=1, value=label)
         row_total = 0.0
         for j, period in enumerate(months):
             val = ACTUAL_PAID.get(period, {}).get(recipient, 0.0)
@@ -748,6 +775,9 @@ def build_workbook(agg: dict) -> None:
         cell = ws.cell(row=r, column=2 + len(months), value=row_total)
         cell.number_format = MONEY
         cell.font = Font(bold=True)
+        if recipient in K1_RECIPIENTS:
+            for c in range(1, 2 + len(months) + 1):
+                ws.cell(row=r, column=c).fill = PatternFill(start_color="E8F4FD", end_color="E8F4FD", fill_type="solid")
 
     r += 1
     ws.cell(row=r, column=1, value="MONTH TOTAL (cash actually paid out)")
@@ -865,22 +895,32 @@ def build_markdown(agg: dict) -> None:
     lines.append("")
     lines.append(f"**Tax year:** 2025  \n**Period covered:** Aug 1, 2025 – Dec 31, 2025 (entity formed at Armada Prime relaunch)  \n**Source of truth:** TPA Reporting Packages (Performance Fees Crystallized line)")
     lines.append("")
+    nairne_total = sum(actual_year_totals.get(a, 0) for a in NAIRNE_ALIASES)
+    raj_actual = actual_year_totals.get("Raj", 0)
+    contractor_1099 = sum(v for k, v in actual_year_totals.items() if k not in K1_RECIPIENTS)
+    net_income = total_perf_fees - contractor_1099 - op_expense_year
+    nairne_ownership = 60.0 / 60.5
+    raj_ownership = 0.5 / 60.5
+
     lines.append("## Bottom Line")
     lines.append("")
     lines.append(f"- **Gross income (perf fees from Armada Prime LLP):** **${total_perf_fees:,.2f}**")
-    lines.append(f"- **1099 payments to contractors (cash actually paid per Distributions Ledger):** ${actual_total - actual_year_totals.get('Raj',0) - actual_year_totals.get('Nairne',0):,.2f}")
-    lines.append(f"  - Fund Mgmt entity: ${actual_year_totals.get('Fund Mgmt', 0):,.2f}  *(recipient name TBD — likely Armada Capital Group LLC)*")
-    consultant_breakdown = sorted(((k, v) for k, v in actual_year_totals.items() if k not in ('Fund Mgmt', 'Raj', 'Nairne', 'Phil')), key=lambda x: -x[1])
+    lines.append(f"- **1099 contractor expenses (cash paid per Distributions Ledger):** **${contractor_1099:,.2f}**")
+    consultant_breakdown = sorted(((k, v) for k, v in actual_year_totals.items() if k not in K1_RECIPIENTS and k != 'Phil'), key=lambda x: -x[1])
     for name, amt in consultant_breakdown:
         lines.append(f"  - {name}: ${amt:,.2f}")
     lines.append(f"  - Phil (0.5% GP fixed): ${actual_year_totals.get('Phil', 0):,.2f}")
-    lines.append(f"- **K-1 distributions to members (Raj 50% / Nairne 50%):**")
-    lines.append(f"  - Raj Duggal (0.5% direct): ${actual_year_totals.get('Raj', 0):,.2f}")
-    lines.append(f"  - Nairne (0.5% direct): ${actual_year_totals.get('Nairne', 0):,.2f}")
-    lines.append(f"- **GP-paid operating expenses (Aug-Dec 2025):** ${op_expense_year:,.2f} *(see GP Expenses tab; verify Insurance + TPA double-count)*")
-    actual_1099 = actual_total - actual_year_totals.get('Raj',0) - actual_year_totals.get('Nairne',0)
-    net_income = total_perf_fees - actual_1099 - actual_year_totals.get('Raj',0) - actual_year_totals.get('Nairne',0) - op_expense_year
-    lines.append(f"- **Net income at GP (residual after all payouts + op expenses):** **${net_income:,.2f}** *(50/50 to Raj/Nairne K-1s — likely a loss)*")
+    lines.append(f"- **GP-paid operating expenses (Aug-Dec 2025):** ${op_expense_year:,.2f} *(see GP Expenses tab; verify Insurance + TPA double-count + SPV loans reclass)*")
+    lines.append(f"- **Partnership net income (allocated to K-1 partners):** **${net_income:,.2f}**")
+    lines.append("")
+    lines.append("**K-1 partner allocations** (Nairne 60% ownership = Fund Mgmt 59.5% + direct 0.5%; Raj 0.5% ownership):")
+    lines.append("")
+    lines.append(f"- **Nairne** ({nairne_ownership*100:.2f}% ownership):")
+    lines.append(f"  - Cash distributions: ${nairne_total:,.2f} (Fund Mgmt ${actual_year_totals.get('Fund Mgmt', 0):,.2f} + direct 0.5% ${actual_year_totals.get('Nairne', 0):,.2f})")
+    lines.append(f"  - Allocated share of net income: ${net_income * nairne_ownership:,.2f}")
+    lines.append(f"- **Raj Duggal** ({raj_ownership*100:.2f}% ownership):")
+    lines.append(f"  - Cash distributions: ${raj_actual:,.2f}")
+    lines.append(f"  - Allocated share of net income: ${net_income * raj_ownership:,.2f}")
     lines.append("")
     lines.append("## Monthly Roll-Up")
     lines.append("")
@@ -926,7 +966,7 @@ def build_markdown(agg: dict) -> None:
     lines.append("")
     lines.append("## Open Items Before Sending to Accountant")
     lines.append("")
-    lines.append(f"1. **Fund Mgmt entity name + EIN** — the ${actual_year_totals.get('Fund Mgmt', 0):,.2f} 1099 needs to go to whichever entity holds the Fund Mgmt slice. Likely Armada Capital Group LLC per the recent `[Amber] Add GP LLC entity` commit, but confirm.")
+    lines.append("1. **LLC operating agreement / capital accounts** — confirm with accountant the formal ownership % and net-income allocation for K-1s. The 60/0.5 derived from the Distributions ledger is operational, not legal.")
     lines.append("2. **Phil's last name + SSN/address** — for his $946.97 1099.")
     lines.append("3. **Operating expense reclassification** — review the GP Expenses tab. Likely needs reclass:")
     lines.append("   - **506c SPV Loans** ($4,275 Aug + $25,000 Oct = $29,275): these may be loans/capital, not expenses.")
@@ -948,7 +988,7 @@ def build_markdown(agg: dict) -> None:
     lines.append("")
     lines.append("- **Source of GP gross income:** TPA Reporting Package's `Performance Fees Crystallized` (per investor, in the Investor Capital Summary). Per the 2026-04-27 decision, TPA — not the internal Monthly Return — is authoritative for GP/consultant compensation.")
     lines.append("- **Investor → consultant mapping:** the IDS sheet from `BEST ONE of December 2025 Monthly Return.xlsx` (most complete 2025 mapping), augmented with the standard `CONSULTANT_OVERRIDES` from `tools/build_consultant_splits.py`.")
-    lines.append("- **GP split (2025):** Fund Mgmt 59.5% / Consultant 39% / Raj 0.5% / Nairne 0.5% / **Phil 0.5%**. Phil held the 0.5% slice all of 2025; Alec replaced him in April 2026.")
+    lines.append("- **GP economic split (2025):** **Nairne 60%** (= Fund Mgmt 59.5% + direct 0.5%) / **Raj 0.5%** / Consultant 39% / **Phil 0.5%**. Per Nairne 2026-04-30: Fund Mgmt is Nairne's K-1 income, not a separate entity 1099. Nairne and Raj are K-1 partners; Phil and the consultants are 1099 contractors. Phil held the 0.5% slice all of 2025; Alec replaced him in April 2026.")
     lines.append("- **TruQuant:** From September 2025 onwards, TruQuant takes 18% of true gross **upstream** of Armada Prime LLP and it never enters the GP's books. **In August 2025, however**, TruQuant was paid INSIDE the GP entity as 'Trader & Developer' (13.5%) and 'Spydr' (a small slice of the consultant pool) — these Aug payments DO appear in the 1099 list.")
     lines.append("- **Tax classification (per Nairne 2026-04-30):** Raj and Nairne are LLC members → K-1. Everyone else who received GP-pool payouts is a 1099 contractor.")
     lines.append("")
