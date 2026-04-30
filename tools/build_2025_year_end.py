@@ -84,23 +84,23 @@ PERIOD_LABELS = {
 # 59.5/39/0.5/0.5/0.5 split.
 ACTUAL_PAID = {
     # Aug 2025 from Distributions xlsx — sheet "August" R2-R14
+    # TruQuant entries (Trader & Developer $6,909.93 and Spydr $88.78) are
+    # excluded per Nairne 2026-04-30 — TQ is not a GP expense / 1099 recipient.
     "2025-08": {
         "AJ Affleck": 335.47,
         "Alec Atkinson": 3172.12,
         "Jake Gordon": 1266.18,
-        "Spydr (TruQuant)": 88.78,
-        "Trader & Developer (TruQuant)": 6909.93,  # Aug-only — moved upstream from Sep
         "Fund Mgmt": 2815.16,
         "Raj": 255.92,
         "Nairne": 255.92,
         "Phil": 255.92,
     },
     # Sep 2025 from Distributions xlsx — sheet "September" R6-R15
+    # Spydr/TruQuant entry ($82.08) excluded per Nairne 2026-04-30.
     "2025-09": {
         "AJ Affleck": 285.77,
         "Alec Atkinson": 3561.92,
         "Jake Gordon": 930.90,
-        "Spydr (TruQuant)": 82.08,
         "Fund Mgmt": 7415.62,
         "Raj": 62.32,
         "Nairne": 62.32,
@@ -356,7 +356,7 @@ def build_workbook(agg: dict) -> None:
     ws["A3"] = "Sources: TPA Reporting Packages (gross income); Distributions Armada Tech 2025 ledger (actual paid); BEST ONE Dec 2025 Monthly Return (Dec breakdown)"
     ws["A3"].font = Font(italic=True, color="666666")
     ws.merge_cells("A3:D3")
-    ws["A4"] = "AUG ANOMALY: Aug used a different waterfall (9.5% Consultant + 13.5% Trader & Developer + 5.5% Mgmt + 1.5% to principals = 30%). TruQuant moved upstream from Sep onwards. See 1099 Summary + Distributions Ledger tabs."
+    ws["A4"] = "TruQuant payments excluded entirely (per Nairne 2026-04-30) — TQ is not a GP expense / 1099 recipient. Aug TQ-tagged ~$6,999 stays in retained earnings → flows to K-1 net income."
     ws["A4"].font = Font(italic=True, color="C00000")
     ws.merge_cells("A4:D4")
     ws.row_dimensions[4].height = 30
@@ -539,6 +539,7 @@ def build_workbook(agg: dict) -> None:
         "If Net Income is negative, the K-1s issue a loss — verify with accountant whether the loss can offset other income for the members.",
         "Operating expenses include items that may be reclassed by the accountant (506c SPV Loans = capital not expense; Insurance $18k may be annual not Dec).",
         "Cash-basis 1099s (above) may differ from accrual-basis (TPA-derived). Confirm GP's tax basis with accountant.",
+        "TruQuant payments are excluded per Nairne 2026-04-30 (TQ is not a GP expense). Aug TQ-tagged ~$6,999 effectively flows into GP retained earnings → increases the K-1 net income line above.",
     ]
     r += 1
     for note in notes:
@@ -909,7 +910,7 @@ def build_markdown(agg: dict) -> None:
     lines.append("")
     lines.append("### August Anomaly — DIFFERENT WATERFALL")
     lines.append("")
-    lines.append("In August 2025, the GP cut (30% of fund net) was split as: 9.5% Consultant + 13.5% Trader & Developer (TruQuant) + 5.5% Mgmt + 0.5% × 3 (Raj/Nairne/Phil) = 30% of true gross. From September onwards, TruQuant's 18% moved upstream of the GP entity, and the GP cut adopted the standard 59.5/39/0.5/0.5/0.5 split. **The August $6,909.93 paid to 'Trader & Developer' is a 1099 owed to TruQuant**, not a fund-level cut.")
+    lines.append("In August 2025, the GP cut (30% of fund net) was split as: 9.5% Consultant + 13.5% Trader & Developer (TruQuant) + 5.5% Mgmt + 0.5% × 3 (Raj/Nairne/Phil) = 30% of true gross. From September onwards, TruQuant's 18% moved upstream of the GP entity, and the GP cut adopted the standard 59.5/39/0.5/0.5/0.5 split. **TruQuant payments are excluded from this reconciliation entirely** (per Nairne 2026-04-30) — TQ is not a GP expense / 1099 recipient. The Aug TQ-tagged amounts (~$6,999) effectively flow to GP retained income → K-1 net income.")
     lines.append("")
     lines.append("## GP-Paid Operating Expenses (Aug-Dec 2025)")
     lines.append("")
@@ -927,14 +928,13 @@ def build_markdown(agg: dict) -> None:
     lines.append("")
     lines.append(f"1. **Fund Mgmt entity name + EIN** — the ${actual_year_totals.get('Fund Mgmt', 0):,.2f} 1099 needs to go to whichever entity holds the Fund Mgmt slice. Likely Armada Capital Group LLC per the recent `[Amber] Add GP LLC entity` commit, but confirm.")
     lines.append("2. **Phil's last name + SSN/address** — for his $946.97 1099.")
-    lines.append("3. **TruQuant 1099s for August** — the $6,909.93 'Trader & Developer' line in Aug + $170.86 'Spydr' (Aug+Sep) appear to be payments to TruQuant inside the GP entity. Need TruQuant's correct legal name + EIN, and confirm whether these belong on a 1099 from Armada Prime Tech LLC or are reclassified differently.")
-    lines.append("4. **Operating expense reclassification** — review the GP Expenses tab. Likely needs reclass:")
+    lines.append("3. **Operating expense reclassification** — review the GP Expenses tab. Likely needs reclass:")
     lines.append("   - **506c SPV Loans** ($4,275 Aug + $25,000 Oct = $29,275): these may be loans/capital, not expenses.")
     lines.append("   - **Insurance $18k Dec**: confirm whether annual or already pro-rated.")
     lines.append("   - **TPA fees** (Dec $600 + $4,500 = $5,100; Nov $600): confirm GP-paid vs fund-paid (fund books already have $600/mo admin).")
     lines.append("   - **PVD, Badtwin, Ad Spend, Website**: vendor names + 1099 obligations need confirmation.")
-    lines.append("5. **Per-recipient SSN/address** — required for all 1099 forms (placeholder cells in workbook).")
-    lines.append(f"6. **Cash-vs-accrual basis** — Total cash paid (${sum(actual_year_totals.values()):,.2f}) vs Total owed per TPA (${total_perf_fees:,.2f}) = ${total_perf_fees - sum(actual_year_totals.values()):,.2f} difference. Confirm GP's tax basis with accountant; this will determine whether to use Distributions Ledger or TPA-derived 1099 amounts.")
+    lines.append("4. **Per-recipient SSN/address** — required for all 1099 forms (placeholder cells in workbook).")
+    lines.append(f"5. **Cash-vs-accrual basis** — Total cash paid (${sum(actual_year_totals.values()):,.2f}) vs Total owed per TPA (${total_perf_fees:,.2f}) = ${total_perf_fees - sum(actual_year_totals.values()):,.2f} difference. The delta includes ~$6,999 of August TruQuant-tagged amounts that are excluded per the 'TQ is not a GP expense' policy. Confirm GP's tax basis (cash vs accrual) with accountant.")
     lines.append("")
     if unmapped:
         lines.append("## Unmapped Investors (excluded from 1099 attribution)")

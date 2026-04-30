@@ -9,14 +9,15 @@ Per Nairne, year-end accounting for the GP entity Armada Prime Tech LLC for tax 
 - **Period**: Aug 1, 2025 – Dec 31, 2025 only. Armada Prime Tech LLC didn't exist before Aug 2025; the Jan–Jul 2025 fund was Arcane Capital Partners with a separate (different) GP entity, separate tax filing.
 - **K-1 members (per Nairne)**: Raj Duggal (50%) and Nairne (50%) of GP net income. Everyone else who got GP-pool payouts is a 1099 contractor — including Phil (0.5% slice in 2025), Fund Mgmt entity (59.5%), all consultants in the 39% pool, and TruQuant for the August-only "Trader & Developer" line.
 - **Source of truth**: TPA Reporting Packages (Performance Fees Crystallized) for what GP earned. Distributions Armada Tech 2025 (INTERNAL ONLY) ledger for what GP actually paid out (cash basis). Both views included in deliverable.
-- **August 2025 anomaly recognized**: Aug used a different waterfall (9.5% Consultant + 13.5% Trader & Developer + 5.5% Mgmt + 1.5% to Raj/Nairne/Phil = 30% of true gross). TruQuant's 18% moved upstream of the GP entity from September onwards. This means the August "Trader & Developer" $6,909.93 IS a 1099 owed to TruQuant from Armada Prime Tech LLC.
+- **August 2025 anomaly recognized**: Aug used a different waterfall (9.5% Consultant + 13.5% Trader & Developer + 5.5% Mgmt + 1.5% to Raj/Nairne/Phil = 30% of true gross). TruQuant's 18% moved upstream of the GP entity from September onwards.
+- **TruQuant excluded from GP expenses entirely (per Nairne 2026-04-30)**: even the August "Trader & Developer" $6,909.93 and Spydr $170.86 (Aug+Sep) are NOT 1099 expenses of Armada Prime Tech LLC. TQ's relationship is upstream of the GP entity. The ~$6,999 TQ-tagged Aug amounts effectively stay in GP retained earnings → flow to K-1 net income.
 
 Headline numbers:
 - 2025 GP gross income (TPA-authoritative): **$153,023.03**
-- 2025 1099 payments (cash basis from Distributions ledger): **$146,622.24** (Fund Mgmt $85,049.86; Alec Atkinson $38,076.87; Jake Gordon $10,388.66; TruQuant Aug T&D $6,909.93; AJ Affleck $4,152.70; Phil $946.97; Issac $761.49; Spydr (TQ) $170.86; Luke $164.90)
+- 2025 1099 payments (cash basis from Distributions ledger, ex-TruQuant): **$139,541.45** (Fund Mgmt $85,049.86; Alec Atkinson $38,076.87; Jake Gordon $10,388.66; AJ Affleck $4,152.70; Phil $946.97; Issac $761.49; Luke $164.90)
 - 2025 Raj K-1 direct slice: $946.97; Nairne K-1 direct slice: $946.97
 - 2025 GP-paid op expenses (preliminary, subject to reclass): **$91,225** (includes $25k Oct 506c SPV Loan and $18k Dec Insurance which the accountant likely needs to reclass)
-- 2025 net income flowing to K-1s (50/50 Raj/Nairne): **−$86,718** (loss; will reduce after expense reclass)
+- 2025 net income flowing to K-1s (50/50 Raj/Nairne): **−$79,637** (loss; will reduce after expense reclass)
 
 Deliverable files:
 - `tools/build_2025_year_end.py` — aggregator (re-runnable)
