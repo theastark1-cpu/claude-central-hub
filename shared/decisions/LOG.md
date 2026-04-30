@@ -2,6 +2,58 @@
 
 Record decisions here so both agents stay aligned.
 
+## 2026-04-30 — Armada Prime Tech LLC 2025 year-end reconciliation built (1099/K-1 prep)
+
+Per Nairne, year-end accounting for the GP entity Armada Prime Tech LLC for tax year 2025. Scope decisions:
+
+- **Period**: Aug 1, 2025 – Dec 31, 2025 only. Armada Prime Tech LLC didn't exist before Aug 2025; the Jan–Jul 2025 fund was Arcane Capital Partners with a separate (different) GP entity, separate tax filing.
+- **K-1 members (per Nairne)**: Raj Duggal (50%) and Nairne (50%) of GP net income. Everyone else who got GP-pool payouts is a 1099 contractor — including Phil (0.5% slice in 2025), Fund Mgmt entity (59.5%), all consultants in the 39% pool, and TruQuant for the August-only "Trader & Developer" line.
+- **Source of truth**: TPA Reporting Packages (Performance Fees Crystallized) for what GP earned. Distributions Armada Tech 2025 (INTERNAL ONLY) ledger for what GP actually paid out (cash basis). Both views included in deliverable.
+- **August 2025 anomaly recognized**: Aug used a different waterfall (9.5% Consultant + 13.5% Trader & Developer + 5.5% Mgmt + 1.5% to Raj/Nairne/Phil = 30% of true gross). TruQuant's 18% moved upstream of the GP entity from September onwards. This means the August "Trader & Developer" $6,909.93 IS a 1099 owed to TruQuant from Armada Prime Tech LLC.
+
+Headline numbers:
+- 2025 GP gross income (TPA-authoritative): **$153,023.03**
+- 2025 1099 payments (cash basis from Distributions ledger): **$146,622.24** (Fund Mgmt $85,049.86; Alec Atkinson $38,076.87; Jake Gordon $10,388.66; TruQuant Aug T&D $6,909.93; AJ Affleck $4,152.70; Phil $946.97; Issac $761.49; Spydr (TQ) $170.86; Luke $164.90)
+- 2025 Raj K-1 direct slice: $946.97; Nairne K-1 direct slice: $946.97
+- 2025 GP-paid op expenses (preliminary, subject to reclass): **$91,225** (includes $25k Oct 506c SPV Loan and $18k Dec Insurance which the accountant likely needs to reclass)
+- 2025 net income flowing to K-1s (50/50 Raj/Nairne): **−$86,718** (loss; will reduce after expense reclass)
+
+Deliverable files:
+- `tools/build_2025_year_end.py` — aggregator (re-runnable)
+- `2025-armada-prime-tech-1099-k1.xlsx` — 8-tab workbook for the accountant (Summary, 1099 Summary, K-1 Summary, Monthly Detail, Per-Consultant Monthly, GP Expenses, Distributions Ledger, Reconciliation)
+- `2025-armada-prime-tech-summary.md` — narrative summary
+
+Open items before sending to accountant: Fund Mgmt entity name+EIN, Phil's last name+SSN, TruQuant 1099 treatment, op expense reclassification (esp. SPV Loans + Insurance), per-recipient SSN/address.
+
+## 2026-04-30 — Accelerated Consulting Capital Relations OS scaffolded in `accelerated-os/`
+
+The Alec Playbook (April 2026, v1.0) was implemented as `accelerated-os/`: a Capital Relations Operating System for converting Alec's ~5K-name UHNW network into systematic relationships across Armada Prime LLP and adjacent products. Brand was renamed mid-build from "Cipher Strategies" to "Accelerated Consulting" (per Nairne 2026-04-30).
+
+Architecture decisions (frozen):
+- **CRM source-of-truth**: GoHighLevel (already provisioned with 5K contacts loaded). Custom fields, pipelines, sequences spec'd in `accelerated-os/GHL_CONFIG_SPEC.md`. Wiring is manual GHL UI work.
+- **Intelligence layer**: this repo, in `accelerated-os/`. Voice memo intake (Telegram → Whisper → Claude structuring → GHL writeback), draft engine (Claude in Alec's voice → mobile approval inbox → GHL send), daily brief, weekly audit, monthly LP notes, quarterly newsletter.
+- **Scheduling**: GitHub Actions cron (reuses pattern from `yt-automation/.github/workflows/daily-ideas.yml`).
+- **Voice memo capture**: Telegram bot (default; reconsider WhatsApp Business API in Phase 2 if friction).
+- **Approval inbox UI**: dedicated mobile-first HTML (gh-pages) with swipe approve/edit/reject. SMS-based reply approval was rejected — edit-in-place can't work over SMS.
+- **Newsletter**: Substack for T3/T4 quarterly. GHL native and Beehiiv rejected — Substack has the strongest UHNW-curated-reading brand association.
+- **Voice cloning** (ElevenLabs etc.): deferred to Phase 6 and scoped to T3/T4 voicemails only — voice-cloning T1/T2 fails the "Alec's actual voice" trust contract.
+
+Roles:
+- Alec is the principal (sender, voice memo source, decision-maker).
+- Nairne is the operator (Amber-equivalent: tiers DB, drafts follow-ups, runs dinners, owns the system).
+- Sends always under Alec's name and number/email; Amber's email is exposed only as the logistics contact in dinner invites.
+
+Key files:
+- Plan: `~/.claude/plans/users-nairne-downloads-alecplaybook-doc-joyful-gizmo.md`
+- Repo: `accelerated-os/README.md` (entry point), `accelerated-os/GHL_CONFIG_SPEC.md`, `accelerated-os/tiering_worksheet.md`
+- Templates: `accelerated-os/draft_engine/prompts/` (14 files, one per Layer 5 template)
+- Playbooks: `accelerated-os/playbooks/` (Milken, LA dinner, NYC dinner, operating cadence)
+- Code: `accelerated-os/voice_memo/`, `accelerated-os/draft_engine/`, `accelerated-os/orchestrator/`, `accelerated-os/approval_inbox/`, `accelerated-os/daily_brief/`
+
+Status: Phase 1 build is on the Claude side complete (this commit). Phase 1 finishes when (1) GHL is wired per spec, (2) the 5K is tiered, (3) GitHub Secrets are set, (4) Telegram bot is created. Real first stress test is the LA dinner late June, not Milken.
+
+Recurring monthly cost target: ~$1,000–1,200/mo (GHL Agency Pro $497, Claude API $300–500, Whisper $20–30, LinkedIn Sales Nav $99, Notion $16, R2 $5, misc $50).
+
 ## 2026-04-27 — Consultant compensation calculated off TPA, not internal model
 
 The internal Monthly Return file recalculates each investor's P&L from a flat fund-level return %; the TPA package uses actual per-investor accruals. Consultant compensation now flows from TPA's per-investor performance-fee column (the GP pool), not the internal makeshift sheet.
