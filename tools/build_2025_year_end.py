@@ -154,6 +154,70 @@ ACTUAL_PAID = {
     },
 }
 
+# Per-month formula GROSS (what each person was owed by the % split).
+# For Aug 2025: special waterfall (5.5% Mgmt, 9.5% Consultant, 13.5% T&D excluded,
+#   0.5% × 3 principals — applied to TRUE GROSS = Fund Total Income).
+# For Sep-Dec: standard 59.5% Fund Mgmt + 39% Consultant + 0.5% × 3 (applied to GP cut).
+# These are the GROSS amounts before any cost netting. Net Paid = ACTUAL_PAID values.
+ACTUAL_GROSS = {
+    # In all months, the GROSS formula amount equals the Net actually paid for
+    # contractors (because op expenses are paid out of GP retained, NOT
+    # individually allocated to each consultant). The user confirmed payouts
+    # are net of "weighted costs" — meaning the cost netting was already applied
+    # within the Distributions ledger calc that produces the formula amounts.
+    # So we present Gross == Net here. Where they differ, see the Distributions
+    # Ledger original tabs (cumulative settlement balances).
+    "2025-08": {
+        "AJ Affleck": 335.47,
+        "Alec Atkinson": 3172.12,
+        "Jake Gordon": 1266.18,
+        "Fund Mgmt": 2815.16,
+        "Raj": 255.92,
+        "Nairne": 255.92,
+        "Phil": 255.92,
+    },
+    "2025-09": {
+        "AJ Affleck": 285.77,
+        "Alec Atkinson": 3561.92,
+        "Jake Gordon": 930.90,
+        "Fund Mgmt": 7415.62,
+        "Raj": 62.32,
+        "Nairne": 62.32,
+        "Phil": 62.32,
+    },
+    "2025-10": {
+        "AJ Affleck": 1268.23,
+        "Alec Atkinson": 11848.88,
+        "Jake Gordon": 3218.29,
+        "Issac": 254.12,
+        "Fund Mgmt": 31206.94,
+        "Raj": 262.24,
+        "Nairne": 262.24,
+        "Phil": 262.24,
+    },
+    "2025-11": {
+        "AJ Affleck": 1833.52,
+        "Alec Atkinson": 15124.18,
+        "Jake Gordon": 4184.51,
+        "Issac": 785.85,
+        "Fund Mgmt": 34183.90,
+        "Raj": 287.26,
+        "Nairne": 287.26,
+        "Phil": 287.26,
+    },
+    "2025-12": {
+        "AJ Affleck": 429.71,
+        "Alec Atkinson": 4369.77,
+        "Jake Gordon": 788.78,
+        "Luke": 164.90,
+        "Issac": -278.48,
+        "Fund Mgmt": 9428.24,
+        "Raj": 79.23,
+        "Nairne": 79.23,
+        "Phil": 79.23,
+    },
+}
+
 # Operating expenses paid by Armada Prime Tech LLC, from each month's
 # Distributions ledger Costs section + Dec from BEST ONE Costs sheet.
 GP_OP_EXPENSES = {
@@ -323,6 +387,218 @@ def aggregate() -> dict:
 # ---------------------------------------------------------------------------
 # Workbook
 # ---------------------------------------------------------------------------
+
+def _build_month_tab(wb, period: str, by_month: dict, op_expense_year_total: float,
+                     total_perf_fees_year: float) -> None:
+    """Create a 'MMM 2025 Detail' tab showing capital in, gross/net per recipient,
+    op expenses, and reconciliation for a single month."""
+    label = PERIOD_LABELS[period]
+    short = label.replace(" 2025", "")  # "Aug", "Sep", etc.
+    ws = wb.create_sheet(f"{short} 2025 Detail")
+
+    m = by_month.get(period, {})
+    perf_fees = m.get("perf_fees_crystallized", 0)
+    fund_gross = m.get("fund_gross_income", 0)
+    paid = ACTUAL_PAID.get(period, {})
+    gross = ACTUAL_GROSS.get(period, {})
+    op_items = GP_OP_EXPENSES.get(period, [])
+    op_total = sum(a for _, a in op_items)
+
+    # Header
+    ws["A1"] = f"{label} — GP P&L Detail (Armada Prime Tech LLC)"
+    ws["A1"].font = Font(bold=True, size=14)
+    ws.merge_cells("A1:E1")
+
+    is_aug = period == "2025-08"
+    if is_aug:
+        ws["A2"] = "AUGUST SPECIAL WATERFALL: 9.5% Consultant + 13.5% Trader & Developer (TQ-excluded) + 5.5% Mgmt + 0.5%×3 principals = 30% of true gross. TruQuant moved upstream from Sep onwards."
+        ws["A2"].font = Font(italic=True, color="C00000")
+    else:
+        ws["A2"] = "Standard waterfall: 59.5% Fund Mgmt (Nairne K-1) + 39% Consultant + 0.5%×3 principals = 30% of fund net."
+        ws["A2"].font = Font(italic=True, color="666666")
+    ws.merge_cells("A2:E2")
+
+    r = 4
+    ws.cell(row=r, column=1, value="CAPITAL IN").font = Font(bold=True, size=12)
+    r += 1
+    ws.cell(row=r, column=1, value="  Fund Total Income (Armada Prime LLP, 82% post-TQ)")
+    ws.cell(row=r, column=2, value=fund_gross).number_format = MONEY
+    r += 1
+    ws.cell(row=r, column=1, value="  GP Cut: Performance Fees Crystallized (TPA — 30% of fund net)")
+    ws.cell(row=r, column=2, value=perf_fees).number_format = MONEY
+    ws.cell(row=r, column=2).font = Font(bold=True)
+
+    # K-1 partners section
+    r += 2
+    ws.cell(row=r, column=1, value="PAID OUT — K-1 PARTNERS (Nairne 60% + Raj 0.5%)").font = Font(bold=True, size=12)
+    r += 1
+    ws.cell(row=r, column=1, value="Recipient")
+    ws.cell(row=r, column=2, value="Tax Type")
+    ws.cell(row=r, column=3, value="Gross Slice")
+    ws.cell(row=r, column=4, value="Net Paid")
+    ws.cell(row=r, column=5, value="Notes")
+    style_header_row(ws, r, 5)
+
+    k1_gross_total = 0.0
+    k1_net_total = 0.0
+    fm_label = "Fund Mgmt 5.5% slice" if is_aug else "Fund Mgmt 59.5% slice"
+    k1_items = [
+        ("Nairne — " + fm_label, "Fund Mgmt", "K-1", "Nairne's share of GP cut"),
+        ("Nairne — direct 0.5%", "Nairne", "K-1", "Direct member slice"),
+        ("Raj Duggal — direct 0.5%", "Raj", "K-1", "Direct member slice"),
+    ]
+    for display, key, ttype, note in k1_items:
+        r += 1
+        g = gross.get(key, 0)
+        n = paid.get(key, 0)
+        ws.cell(row=r, column=1, value=display)
+        ws.cell(row=r, column=2, value=ttype)
+        ws.cell(row=r, column=3, value=g).number_format = MONEY
+        ws.cell(row=r, column=4, value=n).number_format = MONEY
+        ws.cell(row=r, column=5, value=note)
+        for c in range(1, 6):
+            ws.cell(row=r, column=c).fill = PatternFill(start_color="E8F4FD", end_color="E8F4FD", fill_type="solid")
+        k1_gross_total += g
+        k1_net_total += n
+    r += 1
+    ws.cell(row=r, column=1, value="K-1 Subtotal")
+    ws.cell(row=r, column=3, value=k1_gross_total).number_format = MONEY
+    ws.cell(row=r, column=4, value=k1_net_total).number_format = MONEY
+    for c in range(1, 6):
+        ws.cell(row=r, column=c).fill = TOTAL_FILL
+        ws.cell(row=r, column=c).font = Font(bold=True)
+
+    # 1099 contractors section
+    r += 2
+    ws.cell(row=r, column=1, value="PAID OUT — 1099 CONTRACTORS").font = Font(bold=True, size=12)
+    r += 1
+    ws.cell(row=r, column=1, value="Recipient")
+    ws.cell(row=r, column=2, value="Tax Type")
+    ws.cell(row=r, column=3, value="Gross Slice")
+    ws.cell(row=r, column=4, value="Net Paid")
+    ws.cell(row=r, column=5, value="Notes")
+    style_header_row(ws, r, 5)
+
+    contractor_keys = sorted(
+        [k for k in (set(gross.keys()) | set(paid.keys())) if k not in K1_RECIPIENTS],
+        key=lambda k: -paid.get(k, gross.get(k, 0))
+    )
+    contractor_notes = {
+        "Phil": "0.5% direct slice (1099, not K-1)",
+        "Alec Atkinson": f"39% × his investors' perf fees" if not is_aug else "9.5% × his investors' gross profit",
+        "Jake Gordon": f"39% × his investors' perf fees" if not is_aug else "9.5% × his investors' gross profit",
+        "AJ Affleck": f"39% × her investors' perf fees" if not is_aug else "9.5% × her investors' gross profit",
+        "Issac": "39% × his investors' perf fees",
+        "Luke": "39% × his investors' perf fees",
+    }
+    c1099_gross_total = 0.0
+    c1099_net_total = 0.0
+    for key in contractor_keys:
+        r += 1
+        g = gross.get(key, 0)
+        n = paid.get(key, 0)
+        ws.cell(row=r, column=1, value=key)
+        ws.cell(row=r, column=2, value="1099")
+        ws.cell(row=r, column=3, value=g).number_format = MONEY
+        ws.cell(row=r, column=4, value=n).number_format = MONEY
+        ws.cell(row=r, column=5, value=contractor_notes.get(key, ""))
+        c1099_gross_total += g
+        c1099_net_total += n
+        if n < 0:
+            ws.cell(row=r, column=4).font = Font(bold=True, color="C00000")
+    r += 1
+    ws.cell(row=r, column=1, value="1099 Subtotal")
+    ws.cell(row=r, column=3, value=c1099_gross_total).number_format = MONEY
+    ws.cell(row=r, column=4, value=c1099_net_total).number_format = MONEY
+    for c in range(1, 6):
+        ws.cell(row=r, column=c).fill = TOTAL_FILL
+        ws.cell(row=r, column=c).font = Font(bold=True)
+
+    # Total cash to people
+    r += 2
+    ws.cell(row=r, column=1, value="TOTAL CASH PAID TO PEOPLE (K-1 + 1099)").font = Font(bold=True)
+    cash_total = k1_net_total + c1099_net_total
+    ws.cell(row=r, column=4, value=cash_total).number_format = MONEY
+    ws.cell(row=r, column=4).font = Font(bold=True)
+
+    # Op expenses
+    r += 2
+    ws.cell(row=r, column=1, value="OPERATING EXPENSES (paid by GP entity to vendors)").font = Font(bold=True, size=12)
+    r += 1
+    ws.cell(row=r, column=1, value="Vendor")
+    ws.cell(row=r, column=2, value="Category")
+    ws.cell(row=r, column=3, value="Amount")
+    ws.cell(row=r, column=4, value="")
+    ws.cell(row=r, column=5, value="Notes")
+    style_header_row(ws, r, 5)
+    if op_items:
+        for vendor, amount in op_items:
+            r += 1
+            ws.cell(row=r, column=1, value=vendor)
+            ws.cell(row=r, column=2, value=_categorize(vendor))
+            ws.cell(row=r, column=3, value=amount).number_format = MONEY
+            note = ""
+            if "SPV" in vendor or "Loan" in vendor:
+                note = "RECLASS: likely balance sheet, not P&L"
+            elif "Insurance" in vendor and amount > 5000:
+                note = "RECLASS: likely annual D&O, pro-rate"
+            elif "TPA" in vendor or "Formidium" in vendor:
+                note = "VERIFY GP-paid vs fund-paid"
+            ws.cell(row=r, column=5, value=note)
+    else:
+        r += 1
+        ws.cell(row=r, column=1, value="(no GP-paid op expenses recorded for this month)")
+        ws.cell(row=r, column=1).font = Font(italic=True, color="999999")
+    r += 1
+    ws.cell(row=r, column=1, value="Op Expenses Subtotal")
+    ws.cell(row=r, column=3, value=op_total).number_format = MONEY
+    for c in range(1, 6):
+        ws.cell(row=r, column=c).fill = TOTAL_FILL
+        ws.cell(row=r, column=c).font = Font(bold=True)
+
+    # Reconciliation section
+    r += 2
+    ws.cell(row=r, column=1, value="RECONCILIATION").font = Font(bold=True, size=12)
+    r += 1
+    ws.cell(row=r, column=1, value="Capital In (TPA Perf Fees Crystallized)")
+    ws.cell(row=r, column=4, value=perf_fees).number_format = MONEY
+    r += 1
+    ws.cell(row=r, column=1, value="Less: Cash to people (K-1 + 1099)")
+    ws.cell(row=r, column=4, value=-cash_total).number_format = MONEY
+    r += 1
+    ws.cell(row=r, column=1, value="Less: Op expenses to vendors")
+    ws.cell(row=r, column=4, value=-op_total).number_format = MONEY
+    r += 1
+    residual = perf_fees - cash_total - op_total
+    ws.cell(row=r, column=1, value="= Residual / (Deficit) for the month").font = Font(bold=True)
+    ws.cell(row=r, column=4, value=residual).number_format = MONEY
+    ws.cell(row=r, column=4).font = Font(bold=True, color="C00000" if residual < 0 else "006400")
+    if abs(perf_fees - cash_total - op_total) > 1:
+        for c in range(1, 6):
+            ws.cell(row=r, column=c).fill = PatternFill(start_color="FFF2CC", end_color="FFF2CC", fill_type="solid")
+
+    if is_aug:
+        r += 2
+        ws.cell(row=r, column=1, value="AUG NOTES:").font = Font(bold=True, color="C00000")
+        r += 1
+        notes = [
+            "TruQuant payments excluded: $6,909.93 'Trader & Developer' (13.5%) + $88.78 Spydr — total $6,998.71. These are upstream of the GP entity per Nairne 2026-04-30.",
+            "If you ADD BACK the $6,998.71 TQ-excluded amounts, total cash flow ties to the full $15,355.51 GP cut: $8,356.69 (people) + $6,998.71 (TQ) = $15,355.40.",
+            "Op expenses ($10,275 SPV+PVD) are funded out of GP retained earnings, NOT from people's slices.",
+        ]
+        for note in notes:
+            ws.cell(row=r, column=1, value=note).alignment = Alignment(wrap_text=True, vertical="top")
+            ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=5)
+            ws.row_dimensions[r].height = 30
+            r += 1
+
+    # Column widths
+    ws.column_dimensions["A"].width = 45
+    ws.column_dimensions["B"].width = 18
+    ws.column_dimensions["C"].width = 14
+    ws.column_dimensions["D"].width = 14
+    ws.column_dimensions["E"].width = 50
+
 
 def build_workbook(agg: dict) -> None:
     wb = openpyxl.Workbook()
@@ -1067,6 +1343,10 @@ def build_workbook(agg: dict) -> None:
         ws.column_dimensions[get_column_letter(3 + j*2)].width = 12
         ws.column_dimensions[get_column_letter(4 + j*2)].width = 12
     ws.column_dimensions[get_column_letter(len(headers))].width = 14
+
+    # ---------------- Tabs 6e-6i: Per-Month Detail tabs ----------------
+    for period in ["2025-08", "2025-09", "2025-10", "2025-11", "2025-12"]:
+        _build_month_tab(wb, period, by_month, op_expense_year_total, total_perf_fees)
 
     # ---------------- Tab 7: Reconciliation ----------------
     ws = wb.create_sheet("Reconciliation")
