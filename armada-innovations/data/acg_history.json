@@ -1,0 +1,277 @@
+{
+  "fund": "Armada Capital Group LLP",
+  "gp_entity": "Armada Innovations LLC",
+  "members": [
+    {"name": "Nairne Farner",   "short": "Nairne", "share": 0.60,    "role": "Managing Member",  "k1_entity": "Armada Innovations LLC"},
+    {"name": "Alec Atkinson",   "short": "Alec",   "share": 0.395,   "role": "Capital Relations","k1_entity": "Armada Innovations LLC"},
+    {"name": "Chris",           "short": "Chris",  "share": 0.005,   "role": "Member",            "k1_entity": "Armada Innovations LLC"}
+  ],
+  "last_updated": "2026-05-01",
+  "months": [
+    {
+      "period": "2026-03",
+      "period_label": "Mar 2026",
+      "as_of": "2026-03-31",
+      "balance_sheet": {
+        "total_assets": 528499.10,
+        "assets": {
+          "cash": -135.90,
+          "commitments_receivable": -8000000.00,
+          "investments_at_cost": 8528608.00,
+          "investments_at_fmv": 8528608.00,
+          "unrealized_appreciation": 0.00,
+          "accounts_receivable": 0.00
+        },
+        "total_liabilities": 0.00,
+        "liabilities": {
+          "accounts_payable": 0.00,
+          "line_of_credit": 0.00,
+          "accrued_expenses": 0.00
+        },
+        "total_equity": -528499.10,
+        "equity": {
+          "current_period_income": -32219.10,
+          "contributions": -500000.00,
+          "distributions": 3720.00
+        }
+      },
+      "income_statement": {
+        "total_revenue": -32400.00,
+        "revenue": {
+          "realized_gain_long_term": -3720.00,
+          "unrealized_gain_loss": -28680.00,
+          "other_investment_income": 0.00,
+          "non_investment_income": 0.00
+        },
+        "total_expense": 180.90,
+        "expense": {
+          "bank_fees": 180.90,
+          "audit_fee": 0.00,
+          "tax": 0.00,
+          "loan_fees": 0.00,
+          "interest_non_investment": 0.00,
+          "professional_fees": 0.00,
+          "administration": 0.00,
+          "organizational_costs": 0.00,
+          "management_fees": 0.00
+        },
+        "net_income": -32219.10
+      },
+      "ytd": {
+        "total_revenue": -32400.00,
+        "total_expense": 207.90,
+        "net_income": -32192.10,
+        "bank_fees": 207.90
+      },
+      "positions": [
+        {"deal": "Armada Innovations",  "currency": "USD", "cost": 508650.00,    "unrealized": 0.00, "fmv": 508650.00},
+        {"deal": "Undeployed Capital",  "currency": "USD", "cost": 8019958.00,   "unrealized": 0.00, "fmv": 8019958.00},
+        {"deal": "Fund Operations (Armada)", "currency": "USD", "cost": 0.00,    "unrealized": 0.00, "fmv": 0.00}
+      ],
+      "investors": [
+        {
+          "tranche": "March 2026",
+          "vehicle": "Armada Capital Group LLP - Limited Partners",
+          "investor": "Bliss Investments LLC",
+          "commitment": 500000.00,
+          "beginning_capital": -27.00,
+          "contributions": 500000.00,
+          "distributions": 0.00,
+          "net_income": -180.90,
+          "realized_gl": 0.00,
+          "unrealized_gl": 8680.00,
+          "ending_capital": 508472.10
+        },
+        {
+          "tranche": "Inception",
+          "vehicle": "Armada Capital Group LLP - General Partners",
+          "investor": "Armada Innovations LLC",
+          "commitment": 0.00,
+          "beginning_capital": 0.00,
+          "contributions": 0.00,
+          "distributions": -3720.00,
+          "net_income": 0.00,
+          "realized_gl": 3720.00,
+          "unrealized_gl": 0.00,
+          "ending_capital": 0.00
+        },
+        {
+          "tranche": "April 2026 (received in advance)",
+          "vehicle": "Armada Capital Group LLP - Limited Partners",
+          "investor": "JJNA, LLC",
+          "commitment": 8000000.00,
+          "beginning_capital": 0.00,
+          "contributions": 0.00,
+          "distributions": 0.00,
+          "net_income": 0.00,
+          "realized_gl": 0.00,
+          "unrealized_gl": 20000.00,
+          "ending_capital": 0.00
+        }
+      ],
+      "cash_activity": [
+        {"date": "2026-03-01", "memo": "March 2026 Contributions",                          "amount": 500000.00,  "type": "call_general"},
+        {"date": "2026-03-05", "memo": "Bank fees",                                           "amount": -15.00,    "type": "expense"},
+        {"date": "2026-03-05", "memo": "Contribution received in advance - JJNA, LLC",        "amount": 8000000.00,"type": "advance_contribution"},
+        {"date": "2026-03-06", "memo": "Purchase - Armada Innovations (Undeployed Capital)", "amount": -7999958.00,"type": "investment_purchase"},
+        {"date": "2026-03-23", "memo": "Bank fees",                                           "amount": -150.90,   "type": "expense"},
+        {"date": "2026-03-31", "memo": "Bank fees",                                           "amount": -15.00,    "type": "expense"},
+        {"date": "2026-03-31", "memo": "March 2026 Return GP (Innovations distribution)",     "amount": 3720.00,   "type": "gp_distribution"},
+        {"date": "2026-03-31", "memo": "March 2026 Return LP - Innovations tranche reinvest", "amount": 8680.00,   "type": "lp_reinvest"},
+        {"date": "2026-03-31", "memo": "March 2026 Return LP - Undeployed Capital reinvest",  "amount": 20000.00,  "type": "lp_reinvest"}
+      ],
+      "gp_distribution": {
+        "from_fund": 3720.00,
+        "operating_expenses": 0.00,
+        "net_distributable": 3720.00,
+        "by_member": [
+          {"name": "Nairne", "share": 0.60,    "amount": 2232.00},
+          {"name": "Alec",   "share": 0.395,   "amount": 1469.40},
+          {"name": "Chris",  "share": 0.005,   "amount": 18.60}
+        ],
+        "source_trail": "TB sheet 30020 — 'March 2026 Return GP' JE dated 2026-03-31; offset to 40080 - Realized gains/losses long term. Confirms PCAS Armada Innovations LLC partner statement: Net P/L $3,720, Distribution ($3,720), Ending Balance $0."
+      },
+      "reconciliation": {
+        "cash_per_bank": -135.90,
+        "cash_per_tb": -135.90,
+        "diff": 0.00,
+        "soi_total_cost": 8528608.00,
+        "tb_investments_at_cost": 8528608.00,
+        "soi_diff": 0.00,
+        "ye_balance_check": "Balance sheet total assets $528,499.10 = total equity $528,499.10 (sign-flipped). Net income MTD ($32,219.10) ties to TB Current Period Income line.",
+        "notes": "Agrees to 3/31/26 statement — no reconciling items per TB sheet."
+      }
+    },
+    {
+      "period": "2026-04",
+      "period_label": "Apr 2026 (preliminary)",
+      "as_of": "2026-04-30",
+      "balance_sheet": {
+        "total_assets": 9014594.90,
+        "assets": {
+          "cash": -135.90,
+          "commitments_receivable": 0.00,
+          "investments_at_cost": 9014730.80,
+          "investments_at_fmv": 9014730.80,
+          "unrealized_appreciation": 0.00,
+          "accounts_receivable": 0.00
+        },
+        "total_liabilities": 87502.12,
+        "liabilities": {
+          "accounts_payable": 0.00,
+          "line_of_credit": 0.00,
+          "accrued_expenses": 87502.12
+        },
+        "total_equity": -8927092.78,
+        "equity": {
+          "current_period_income": -398620.78,
+          "contributions": -8500000.00,
+          "distributions": 123306.23
+        }
+      },
+      "income_statement": {
+        "total_revenue": -486122.90,
+        "revenue": {
+          "realized_gain_long_term": -119586.23,
+          "unrealized_gain_loss": -279034.55,
+          "other_investment_income": 0.00,
+          "non_investment_income": -87502.12
+        },
+        "total_expense": 87502.12,
+        "expense": {
+          "bank_fees": 0.00,
+          "audit_fee": 0.00,
+          "tax": 0.00,
+          "loan_fees": 0.00,
+          "interest_non_investment": 0.00,
+          "professional_fees": 0.00,
+          "administration": 0.00,
+          "organizational_costs": 0.00,
+          "management_fees": 87502.12
+        },
+        "net_income": -398620.78
+      },
+      "ytd": {
+        "total_revenue": -518522.90,
+        "total_expense": 87710.02,
+        "net_income": -430812.88,
+        "bank_fees": 207.90
+      },
+      "positions": [
+        {"deal": "Armada Innovations",  "currency": "USD", "cost": 525108.19,    "unrealized": 0.00, "fmv": 525108.19},
+        {"deal": "Undeployed Capital",  "currency": "USD", "cost": 8489622.61,   "unrealized": 0.00, "fmv": 8489622.61},
+        {"deal": "Fund Operations (Armada)", "currency": "USD", "cost": 0.00,    "unrealized": 0.00, "fmv": 0.00}
+      ],
+      "investors": [
+        {
+          "tranche": "March 2026",
+          "vehicle": "Armada Capital Group LLP - Limited Partners",
+          "investor": "Bliss Investments LLC",
+          "commitment": 500000.00,
+          "beginning_capital": 508472.10,
+          "contributions": 0.00,
+          "distributions": 0.00,
+          "net_income": 0.00,
+          "realized_gl": 0.00,
+          "unrealized_gl": 16636.19,
+          "ending_capital": 525108.29
+        },
+        {
+          "tranche": "Inception",
+          "vehicle": "Armada Capital Group LLP - General Partners",
+          "investor": "Armada Innovations LLC",
+          "commitment": 0.00,
+          "beginning_capital": 0.00,
+          "contributions": 0.00,
+          "distributions": -119586.23,
+          "net_income": 0.00,
+          "realized_gl": 119586.23,
+          "unrealized_gl": 0.00,
+          "ending_capital": 0.00
+        },
+        {
+          "tranche": "April 2026",
+          "vehicle": "Armada Capital Group LLP - Limited Partners",
+          "investor": "JJNA, LLC",
+          "commitment": 8000000.00,
+          "beginning_capital": 20000.00,
+          "contributions": 8000000.00,
+          "distributions": 0.00,
+          "net_income": 0.00,
+          "realized_gl": 0.00,
+          "unrealized_gl": 262398.36,
+          "ending_capital": 8282398.36
+        }
+      ],
+      "cash_activity": [
+        {"date": "2026-04-01", "memo": "April 2026 Capital Call - JJNA, LLC (formal close)",   "amount": 8000000.00, "type": "call_general"},
+        {"date": "2026-04-30", "memo": "April 2026 Gross Profit (5.70%)",                       "amount": 486122.90,  "type": "gross_profit"},
+        {"date": "2026-04-30", "memo": "April 2026 TruQuant Performance Fee (18%)",             "amount": -87502.12,  "type": "trader_fee"},
+        {"date": "2026-04-30", "memo": "April 2026 LP Allocation - Bliss",                       "amount": 16636.19,   "type": "lp_reinvest"},
+        {"date": "2026-04-30", "memo": "April 2026 LP Allocation - JJNA",                        "amount": 262398.36,  "type": "lp_reinvest"},
+        {"date": "2026-04-30", "memo": "April 2026 Return GP (Innovations distribution)",        "amount": 119586.23,  "type": "gp_distribution"}
+      ],
+      "gp_distribution": {
+        "from_fund": 119586.23,
+        "operating_expenses": 0.00,
+        "net_distributable": 119586.23,
+        "by_member": [
+          {"name": "Nairne", "share": 0.60,    "amount": 71751.74},
+          {"name": "Alec",   "share": 0.395,   "amount": 47236.56},
+          {"name": "Chris",  "share": 0.005,   "amount": 597.93}
+        ],
+        "source_trail": "PRELIMINARY — computed from 5.70% gross fund return on $8,528,472 LP base (Bliss $508,472 + JJNA $20,000 carryforward + JJNA $8M April call). Waterfall: 18% TruQuant ($87,502.12) / 57.4% LPs ($279,034.55) / 24.6% GP ($119,586.23). LPs split pro-rata: Bliss 96.22%, JJNA 3.78%. Awaiting formal April TPA package for final tie-out."
+      },
+      "reconciliation": {
+        "cash_per_bank": -135.90,
+        "cash_per_tb": -135.90,
+        "diff": 0.00,
+        "soi_total_cost": 9014730.80,
+        "tb_investments_at_cost": 9014730.80,
+        "soi_diff": 0.00,
+        "ye_balance_check": "PRELIMINARY — gross profit $486,122.90 = TruQuant fee $87,502.12 + Net fund return $398,620.78 (LP $279,034.55 + GP $119,586.23). Tie-out pending April TPA.",
+        "notes": "Preliminary self-computed allocation — final figures pending April 2026 TPA package from administrator."
+      }
+    }
+  ]
+}

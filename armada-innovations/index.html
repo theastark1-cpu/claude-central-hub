@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Armada Innovations LLC — GP Distribution Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0e17;--surface:#111827;--surface2:#1a2236;--surface3:#222d45;
+  --border:#2a3550;--text:#e2e8f0;--text-dim:#8494b0;--text-muted:#5a6a85;
+  --accent:#8b5cf6;--green:#10b981;--green-dim:rgba(16,185,129,0.12);
+  --red:#ef4444;--red-dim:rgba(239,68,68,0.12);--amber:#f59e0b;
+  --amber-dim:rgba(245,158,11,0.12);--purple:#8b5cf6;--cyan:#06b6d4;--blue:#3b82f6;
+}
+html{font-size:15px}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden}
+.noise{position:fixed;top:0;left:0;width:100%;height:100%;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:9999}
+.glow-orb{position:fixed;width:600px;height:600px;border-radius:50%;pointer-events:none;z-index:0}
+.glow-orb.one{top:-200px;right:-100px;background:radial-gradient(circle,rgba(139,92,246,0.07) 0%,transparent 70%)}
+.glow-orb.two{bottom:-300px;left:-200px;background:radial-gradient(circle,rgba(59,130,246,0.05) 0%,transparent 70%)}
+
+header{padding:2rem 2.5rem 1.5rem;border-bottom:1px solid var(--border);position:relative;z-index:1;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:1rem}
+.logo-block h1{font-family:'Playfair Display',serif;font-weight:800;font-size:1.8rem;letter-spacing:-0.02em;background:linear-gradient(135deg,#e2e8f0 0%,#94a3b8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo-block .sub{font-size:0.8rem;color:var(--text-muted);letter-spacing:0.15em;text-transform:uppercase;margin-top:0.25rem}
+.header-right{display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap}
+.period-badge{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.5rem 1rem;font-family:'JetBrains Mono',monospace;font-size:0.85rem;color:var(--accent);display:flex;align-items:center;gap:0.5rem}
+.period-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite}
+.nav-link{color:var(--text-dim);font-size:0.78rem;letter-spacing:0.05em;text-decoration:none;padding:0.5rem 0.85rem;border:1px solid var(--border);border-radius:8px;background:var(--surface);transition:all 0.2s}
+.nav-link:hover{color:var(--accent);border-color:var(--accent)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+.dashboard{padding:1.5rem 2.5rem 3rem;position:relative;z-index:1;max-width:1500px;margin:0 auto}
+
+.month-selector{display:flex;gap:0.4rem;margin-bottom:1.25rem;flex-wrap:wrap;padding:0.6rem;background:var(--surface);border:1px solid var(--border);border-radius:12px}
+.month-chip{padding:0.45rem 0.9rem;font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--text-dim);background:var(--surface2);border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:all 0.2s;letter-spacing:0.02em}
+.month-chip:hover{color:var(--text);border-color:var(--accent)}
+.month-chip.active{color:#fff;background:var(--accent);border-color:var(--accent)}
+
+.tabs{display:flex;gap:0.25rem;margin-bottom:1.5rem;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:0.65rem 1.25rem;font-size:0.8rem;font-weight:500;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;letter-spacing:0.03em;white-space:nowrap}
+.tab:hover{color:var(--text-dim)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.15rem 1.35rem;position:relative;overflow:hidden;transition:border-color 0.3s,transform 0.2s}
+.kpi:hover{border-color:var(--accent);transform:translateY(-2px)}
+.kpi .label{font-size:0.65rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-muted);margin-bottom:0.4rem}
+.kpi .value{font-family:'JetBrains Mono',monospace;font-size:1.45rem;font-weight:600;letter-spacing:-0.02em}
+.kpi .detail{font-size:0.72rem;color:var(--text-dim);margin-top:0.3rem}
+.kpi .stripe{position:absolute;top:0;left:0;right:0;height:3px}
+.kpi.purple .stripe{background:linear-gradient(90deg,var(--purple),#a78bfa)}
+.kpi.blue .stripe{background:linear-gradient(90deg,var(--blue),#60a5fa)}
+.kpi.green .stripe{background:linear-gradient(90deg,var(--green),#34d399)}
+.kpi.amber .stripe{background:linear-gradient(90deg,var(--amber),#fbbf24)}
+.kpi.cyan .stripe{background:linear-gradient(90deg,var(--cyan),#22d3ee)}
+.kpi.red .stripe{background:linear-gradient(90deg,var(--red),#f87171)}
+
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5rem;margin-bottom:1.5rem}
+@media(max-width:1100px){.grid-2,.grid-3{grid-template-columns:1fr}}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem;position:relative}
+.card h2{font-size:0.72rem;text-transform:uppercase;letter-spacing:0.14em;color:var(--text-muted);margin-bottom:1.15rem;display:flex;align-items:center;gap:0.5rem}
+.card h2 .icon{font-size:0.9rem}
+
+.data-table{width:100%;border-collapse:collapse;font-size:0.85rem}
+.data-table th{text-align:left;padding:0.55rem 0.7rem;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);border-bottom:1px solid var(--border);font-weight:500}
+.data-table td{padding:0.6rem 0.7rem;border-bottom:1px solid rgba(42,53,80,0.4)}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:rgba(139,92,246,0.04)}
+.data-table .mono{font-family:'JetBrains Mono',monospace;font-size:0.8rem}
+.data-table .right{text-align:right}
+.data-table .total-row td{font-weight:600;border-top:2px solid var(--border);color:var(--text)}
+
+.chart-wrap{position:relative;height:280px;margin-top:0.5rem}
+.chart-wrap.short{height:200px}
+
+.bar-row{display:flex;align-items:center;gap:0.65rem;margin-bottom:0.65rem}
+.bar-label{width:110px;font-size:0.78rem;color:var(--text-dim);text-align:right;flex-shrink:0}
+.bar-track{flex:1;height:26px;background:var(--surface3);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width 1s cubic-bezier(0.22,1,0.36,1);position:relative;display:flex;align-items:center;padding-left:0.6rem;color:#fff;font-family:'JetBrains Mono',monospace;font-size:0.75rem}
+.bar-val{font-family:'JetBrains Mono',monospace;font-size:0.8rem;width:110px;text-align:right;flex-shrink:0;color:var(--text)}
+
+.member-pill{display:inline-block;padding:0.18rem 0.55rem;border-radius:5px;font-size:0.66rem;font-weight:600;letter-spacing:0.04em;text-transform:uppercase}
+.member-pill.nairne{background:rgba(139,92,246,0.18);color:#c4b5fd}
+.member-pill.alec{background:rgba(59,130,246,0.18);color:#93c5fd}
+.member-pill.chris{background:rgba(245,158,11,0.18);color:#fcd34d}
+
+.source-card{background:var(--surface2);border:1px dashed var(--border);border-radius:10px;padding:1.1rem 1.25rem;font-size:0.82rem;color:var(--text-dim);line-height:1.55}
+.source-card strong{color:var(--text);font-weight:600}
+
+footer{text-align:center;padding:2rem;font-size:0.7rem;color:var(--text-muted);letter-spacing:0.05em}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.kpi,.card{animation:fadeUp 0.6s ease both}
+</style>
+</head>
+<body>
+
+<!-- PASSWORD GATE -->
+<div id="lockScreen" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0e17;z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column">
+  <div style="text-align:center;max-width:380px;padding:2rem">
+    <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:1.6rem;background:linear-gradient(135deg,#e2e8f0,#94a3b8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:0.4rem">Armada Innovations LLC</div>
+    <div style="font-size:0.72rem;color:#5a6a85;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:2.5rem">GP Distribution Dashboard — Authorized Access Only</div>
+    <input id="pwInput" type="password" placeholder="Enter password" autofocus
+      style="width:100%;padding:0.85rem 1rem;background:#111827;border:1px solid #2a3550;border-radius:8px;color:#e2e8f0;font-family:'DM Sans',sans-serif;font-size:0.95rem;outline:none;margin-bottom:0.75rem;text-align:center;letter-spacing:0.1em"
+      onkeydown="if(event.key==='Enter')checkPw()">
+    <button onclick="checkPw()"
+      style="width:100%;padding:0.75rem;background:#8b5cf6;border:none;border-radius:8px;color:#fff;font-family:'DM Sans',sans-serif;font-size:0.85rem;font-weight:600;cursor:pointer;letter-spacing:0.04em"
+      onmouseover="this.style.background='#7c3aed'" onmouseout="this.style.background='#8b5cf6'">Access Dashboard</button>
+    <div id="pwError" style="color:#ef4444;font-size:0.78rem;margin-top:0.75rem;display:none">Incorrect password</div>
+  </div>
+</div>
+<script>
+// Password: "innovations-2026"
+const PW_HASH = 'fc04b3db2644ca66e388690396636eef7160bf59a61710d7af1c9393fe336384';
+function checkPw(){
+  const input = document.getElementById('pwInput').value;
+  const hash = CryptoJS.SHA256(input).toString();
+  if(hash === PW_HASH){
+    document.getElementById('lockScreen').style.display='none';
+    sessionStorage.setItem('ai_auth','1');
+    if(window.bootDashboard) window.bootDashboard();
+  } else {
+    const err = document.getElementById('pwError');
+    err.style.display='block';
+    document.getElementById('pwInput').value='';
+    document.getElementById('pwInput').focus();
+    setTimeout(()=>err.style.display='none',2000);
+  }
+}
+if(sessionStorage.getItem('ai_auth')==='1'){
+  document.getElementById('lockScreen').style.display='none';
+}
+</script>
+
+<div class="noise"></div>
+<div class="glow-orb one"></div>
+<div class="glow-orb two"></div>
+
+<header>
+  <div class="logo-block">
+    <h1>Armada Innovations LLC</h1>
+    <div class="sub">GP Distribution Dashboard · Armada Capital Group LLP</div>
+  </div>
+  <div class="header-right">
+    <div class="period-badge" id="periodBadge">Loading…</div>
+    <a class="nav-link" href="acg-tpa.html">ACG LLP TPA →</a>
+  </div>
+</header>
+
+<div class="dashboard">
+
+  <div class="month-selector" id="monthSelector"></div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="overview">Overview</div>
+    <div class="tab" data-tab="members">Members</div>
+    <div class="tab" data-tab="monthly">Monthly Detail</div>
+    <div class="tab" data-tab="source">Source Fund</div>
+  </div>
+
+  <!-- OVERVIEW -->
+  <div id="tab-overview" class="tab-content active">
+    <div class="kpi-row" id="overviewKpis"></div>
+    <div class="grid-2">
+      <div class="card">
+        <h2><span class="icon">📈</span> Monthly Distribution Trend</h2>
+        <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+      </div>
+      <div class="card">
+        <h2><span class="icon">🥧</span> Member Split (ITD)</h2>
+        <div class="chart-wrap"><canvas id="splitChart"></canvas></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2><span class="icon">📋</span> Member Distributions Summary</h2>
+      <table class="data-table" id="memberSummary"></table>
+    </div>
+  </div>
+
+  <!-- MEMBERS -->
+  <div id="tab-members" class="tab-content">
+    <div class="card">
+      <h2><span class="icon">👥</span> Members of Armada Innovations LLC</h2>
+      <table class="data-table" id="memberTable"></table>
+    </div>
+  </div>
+
+  <!-- MONTHLY -->
+  <div id="tab-monthly" class="tab-content">
+    <div class="kpi-row" id="monthlyKpis"></div>
+    <div class="card" style="margin-bottom:1.5rem">
+      <h2><span class="icon">💧</span> Distribution Waterfall — <span id="monthLabel"></span></h2>
+      <div id="waterfall"></div>
+    </div>
+    <div class="card">
+      <h2><span class="icon">🔍</span> Source Trail</h2>
+      <div class="source-card" id="sourceTrail"></div>
+    </div>
+  </div>
+
+  <!-- SOURCE FUND -->
+  <div id="tab-source" class="tab-content">
+    <div class="kpi-row" id="sourceKpis"></div>
+    <div class="grid-2">
+      <div class="card">
+        <h2><span class="icon">💼</span> Investment Positions</h2>
+        <table class="data-table" id="positionsTable"></table>
+      </div>
+      <div class="card">
+        <h2><span class="icon">🤝</span> LP Capital Activity</h2>
+        <table class="data-table" id="investorsTable"></table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>Armada Innovations LLC · GP of Armada Capital Group LLP · Source: TPA package · Internal only</footer>
+
+<script>
+let HISTORY = null;
+let CURRENT_MONTH_IDX = 0;
+
+const fmt$ = (n, dec=0) => (n<0?'-':'') + '$' + Math.abs(Number(n)||0).toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+const fmt$c = n => fmt$(n, 2);
+const fmtPct = n => (Number(n)*100).toFixed(2) + '%';
+
+async function loadHistory(){
+  const res = await fetch('data/acg_history.json');
+  HISTORY = await res.json();
+}
+
+function setupTabs(){
+  document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      document.getElementById('tab-' + t.dataset.tab).classList.add('active');
+    });
+  });
+}
+
+function buildMonthSelector(){
+  const sel = document.getElementById('monthSelector');
+  sel.innerHTML = '';
+  HISTORY.months.forEach((m, i) => {
+    const c = document.createElement('div');
+    c.className = 'month-chip' + (i===CURRENT_MONTH_IDX ? ' active' : '');
+    c.textContent = m.period_label;
+    c.addEventListener('click', () => { CURRENT_MONTH_IDX = i; renderAll(); });
+    sel.appendChild(c);
+  });
+}
+
+function currentMonth(){ return HISTORY.months[CURRENT_MONTH_IDX]; }
+
+function itdTotals(){
+  let total = 0;
+  const byMember = {};
+  HISTORY.members.forEach(m => byMember[m.short] = 0);
+  HISTORY.months.forEach(m => {
+    total += m.gp_distribution.from_fund;
+    m.gp_distribution.by_member.forEach(b => byMember[b.name] += b.amount);
+  });
+  return { total, byMember };
+}
+
+function renderOverviewKpis(){
+  const itd = itdTotals();
+  const m = currentMonth();
+  const kpis = [
+    {label:'ITD Distribution', value: fmt$c(itd.total), detail: HISTORY.months.length + ' month(s) of activity', cls:'purple'},
+    {label:'Current Month',    value: fmt$c(m.gp_distribution.from_fund), detail: m.period_label, cls:'blue'},
+    {label:'Nairne ITD (60%)', value: fmt$c(itd.byMember['Nairne']), detail: 'Managing Member', cls:'green'},
+    {label:'Alec ITD (39.5%)', value: fmt$c(itd.byMember['Alec']),   detail: 'Capital Relations', cls:'cyan'},
+    {label:'Chris ITD (0.5%)', value: fmt$c(itd.byMember['Chris']),  detail: 'Member', cls:'amber'},
+  ];
+  document.getElementById('overviewKpis').innerHTML = kpis.map(k => `
+    <div class="kpi ${k.cls}"><div class="stripe"></div>
+      <div class="label">${k.label}</div>
+      <div class="value">${k.value}</div>
+      <div class="detail">${k.detail}</div>
+    </div>`).join('');
+}
+
+function renderTrendChart(){
+  const ctx = document.getElementById('trendChart');
+  if(window._trend) window._trend.destroy();
+  const labels = HISTORY.months.map(m => m.period_label);
+  const data = HISTORY.months.map(m => m.gp_distribution.from_fund);
+  window._trend = new Chart(ctx, {
+    type:'bar',
+    data:{labels, datasets:[{label:'Distribution from ACG LLP', data, backgroundColor:'rgba(139,92,246,0.55)', borderColor:'#8b5cf6', borderWidth:1.5, borderRadius:6}]},
+    options:{responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>fmt$c(c.parsed.y)}}},
+      scales:{y:{ticks:{color:'#8494b0', callback:v=>fmt$(v)}, grid:{color:'rgba(42,53,80,0.4)'}},
+              x:{ticks:{color:'#8494b0'}, grid:{display:false}}}}
+  });
+}
+
+function renderSplitChart(){
+  const itd = itdTotals();
+  const ctx = document.getElementById('splitChart');
+  if(window._split) window._split.destroy();
+  const labels = HISTORY.members.map(m => m.short + ' (' + (m.share*100).toFixed(1) + '%)');
+  const data = HISTORY.members.map(m => itd.byMember[m.short] || 0);
+  window._split = new Chart(ctx, {
+    type:'doughnut',
+    data:{labels, datasets:[{data, backgroundColor:['#8b5cf6','#3b82f6','#f59e0b'], borderColor:'#0a0e17', borderWidth:3}]},
+    options:{responsive:true, maintainAspectRatio:false, cutout:'62%',
+      plugins:{legend:{position:'bottom', labels:{color:'#e2e8f0', padding:14, font:{size:12}}},
+               tooltip:{callbacks:{label:c=>c.label + ': ' + fmt$c(c.parsed)}}}}
+  });
+}
+
+function renderMemberSummary(){
+  const itd = itdTotals();
+  const m = currentMonth();
+  const tbl = document.getElementById('memberSummary');
+  let html = '<thead><tr><th>Member</th><th>Share</th><th class="right">Current Month</th><th class="right">ITD</th><th class="right">% of ITD</th></tr></thead><tbody>';
+  HISTORY.members.forEach(mem => {
+    const cur = (m.gp_distribution.by_member.find(b => b.name === mem.short) || {}).amount || 0;
+    const totalItd = itd.byMember[mem.short] || 0;
+    const pct = itd.total ? (totalItd / itd.total) : 0;
+    html += `<tr>
+      <td><span class="member-pill ${mem.short.toLowerCase()}">${mem.short}</span> ${mem.name}</td>
+      <td class="mono">${(mem.share*100).toFixed(1)}%</td>
+      <td class="right mono">${fmt$c(cur)}</td>
+      <td class="right mono">${fmt$c(totalItd)}</td>
+      <td class="right mono">${fmtPct(pct)}</td>
+    </tr>`;
+  });
+  html += `<tr class="total-row"><td>Total</td><td class="mono">100.0%</td>
+    <td class="right mono">${fmt$c(m.gp_distribution.from_fund)}</td>
+    <td class="right mono">${fmt$c(itd.total)}</td>
+    <td class="right mono">100.00%</td></tr></tbody>`;
+  tbl.innerHTML = html;
+}
+
+function renderMembers(){
+  const itd = itdTotals();
+  const tbl = document.getElementById('memberTable');
+  let html = '<thead><tr><th>Member</th><th>Role</th><th>Share</th><th>K-1 Entity</th><th class="right">ITD Cut</th></tr></thead><tbody>';
+  HISTORY.members.forEach(m => {
+    html += `<tr>
+      <td><span class="member-pill ${m.short.toLowerCase()}">${m.short}</span> ${m.name}</td>
+      <td>${m.role}</td>
+      <td class="mono">${(m.share*100).toFixed(1)}%</td>
+      <td>${m.k1_entity}</td>
+      <td class="right mono">${fmt$c(itd.byMember[m.short]||0)}</td>
+    </tr>`;
+  });
+  html += `<tr class="total-row"><td>Total</td><td></td><td class="mono">100.0%</td><td></td><td class="right mono">${fmt$c(itd.total)}</td></tr></tbody>`;
+  tbl.innerHTML = html;
+}
+
+function renderMonthly(){
+  const m = currentMonth();
+  document.getElementById('monthLabel').textContent = m.period_label;
+
+  const kpis = [
+    {label:'Distribution from ACG LLP', value: fmt$c(m.gp_distribution.from_fund), detail: m.period_label, cls:'purple'},
+    {label:'LLC Operating Expenses',    value: fmt$c(m.gp_distribution.operating_expenses), detail:'Direct LLC-level costs', cls:'red'},
+    {label:'Net Distributable',         value: fmt$c(m.gp_distribution.net_distributable), detail:'Distributed to members', cls:'green'},
+  ];
+  document.getElementById('monthlyKpis').innerHTML = kpis.map(k => `
+    <div class="kpi ${k.cls}"><div class="stripe"></div>
+      <div class="label">${k.label}</div><div class="value">${k.value}</div><div class="detail">${k.detail}</div>
+    </div>`).join('');
+
+  const total = m.gp_distribution.net_distributable;
+  const colors = {Nairne:'linear-gradient(90deg,#8b5cf6,#a78bfa)', Alec:'linear-gradient(90deg,#3b82f6,#60a5fa)', Chris:'linear-gradient(90deg,#f59e0b,#fbbf24)'};
+  let wf = '';
+  m.gp_distribution.by_member.forEach(b => {
+    const pct = total ? (b.amount/total*100) : 0;
+    wf += `<div class="bar-row">
+      <div class="bar-label">${b.name} (${(b.share*100).toFixed(1)}%)</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${colors[b.name]}">${pct.toFixed(1)}%</div></div>
+      <div class="bar-val">${fmt$c(b.amount)}</div>
+    </div>`;
+  });
+  wf += `<div class="bar-row" style="margin-top:0.85rem;padding-top:0.85rem;border-top:1px dashed var(--border)">
+    <div class="bar-label" style="color:var(--text);font-weight:600">Total</div>
+    <div class="bar-track" style="background:transparent"></div>
+    <div class="bar-val" style="color:var(--text);font-weight:600">${fmt$c(total)}</div>
+  </div>`;
+  document.getElementById('waterfall').innerHTML = wf;
+
+  document.getElementById('sourceTrail').innerHTML = m.gp_distribution.source_trail.replace(/(TB sheet [^,;]+|JE [^,;]+|PCAS [^.]+)/g, '<strong>$1</strong>');
+}
+
+function renderSource(){
+  const m = currentMonth();
+  const bs = m.balance_sheet;
+  const inc = m.income_statement;
+  const totalCommit = m.investors.reduce((s,i)=>s+i.commitment,0);
+  const totalEnding = m.investors.reduce((s,i)=>s+i.ending_capital,0);
+
+  const kpis = [
+    {label:'Total Assets',         value: fmt$c(bs.total_assets),         detail:'ACG LLP balance sheet',  cls:'blue'},
+    {label:'Investments at FMV',   value: fmt$c(bs.assets.investments_at_fmv), detail:'Cost = FMV (no markup)', cls:'cyan'},
+    {label:'LP Commitments Total', value: fmt$c(totalCommit),             detail: m.investors.length + ' investors', cls:'purple'},
+    {label:'Net Income MTD',       value: fmt$c(inc.net_income),          detail:'Sign: TB Cr = negative', cls: inc.net_income < 0 ? 'red' : 'green'},
+  ];
+  document.getElementById('sourceKpis').innerHTML = kpis.map(k => `
+    <div class="kpi ${k.cls}"><div class="stripe"></div>
+      <div class="label">${k.label}</div><div class="value">${k.value}</div><div class="detail">${k.detail}</div>
+    </div>`).join('');
+
+  let pos = '<thead><tr><th>Position</th><th>Currency</th><th class="right">Cost</th><th class="right">Unrealized</th><th class="right">FMV</th></tr></thead><tbody>';
+  let totalCost=0, totalUnreal=0, totalFmv=0;
+  m.positions.forEach(p => {
+    pos += `<tr>
+      <td>${p.deal}</td>
+      <td class="mono">${p.currency}</td>
+      <td class="right mono">${fmt$c(p.cost)}</td>
+      <td class="right mono">${fmt$c(p.unrealized)}</td>
+      <td class="right mono">${fmt$c(p.fmv)}</td>
+    </tr>`;
+    totalCost+=p.cost; totalUnreal+=p.unrealized; totalFmv+=p.fmv;
+  });
+  pos += `<tr class="total-row"><td>Total</td><td></td><td class="right mono">${fmt$c(totalCost)}</td><td class="right mono">${fmt$c(totalUnreal)}</td><td class="right mono">${fmt$c(totalFmv)}</td></tr></tbody>`;
+  document.getElementById('positionsTable').innerHTML = pos;
+
+  let inv = '<thead><tr><th>Investor</th><th>Vehicle</th><th class="right">Commitment</th><th class="right">Contributions</th><th class="right">Ending Capital</th></tr></thead><tbody>';
+  let cTot=0, contTot=0, eTot=0;
+  m.investors.forEach(i => {
+    const isGP = i.vehicle.includes('General Partners');
+    inv += `<tr>
+      <td>${i.investor}${isGP ? ' <span class="member-pill nairne" style="font-size:0.58rem">GP</span>' : ''}</td>
+      <td style="font-size:0.74rem;color:var(--text-dim)">${i.vehicle.replace('Armada Capital Group LLP - ','')} · ${i.tranche}</td>
+      <td class="right mono">${fmt$c(i.commitment)}</td>
+      <td class="right mono">${fmt$c(i.contributions)}</td>
+      <td class="right mono">${fmt$c(i.ending_capital)}</td>
+    </tr>`;
+    cTot+=i.commitment; contTot+=i.contributions; eTot+=i.ending_capital;
+  });
+  inv += `<tr class="total-row"><td>Total</td><td></td><td class="right mono">${fmt$c(cTot)}</td><td class="right mono">${fmt$c(contTot)}</td><td class="right mono">${fmt$c(eTot)}</td></tr></tbody>`;
+  document.getElementById('investorsTable').innerHTML = inv;
+}
+
+function renderAll(){
+  document.getElementById('periodBadge').textContent = currentMonth().period_label;
+  document.querySelectorAll('#monthSelector .month-chip').forEach((c,i) => c.classList.toggle('active', i===CURRENT_MONTH_IDX));
+  renderOverviewKpis();
+  renderTrendChart();
+  renderSplitChart();
+  renderMemberSummary();
+  renderMembers();
+  renderMonthly();
+  renderSource();
+}
+
+window.bootDashboard = async function(){
+  if (HISTORY) return;
+  await loadHistory();
+  CURRENT_MONTH_IDX = Math.max(0, HISTORY.months.length - 1);
+  setupTabs();
+  buildMonthSelector();
+  renderAll();
+};
+
+if(sessionStorage.getItem('ai_auth')==='1'){
+  window.bootDashboard();
+}
+</script>
+</body>
+</html>

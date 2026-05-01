@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Armada Capital Group LLP — TPA Reporting Package</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0e17;--surface:#111827;--surface2:#1a2236;--surface3:#222d45;
+  --border:#2a3550;--text:#e2e8f0;--text-dim:#8494b0;--text-muted:#5a6a85;
+  --accent:#3b82f6;--green:#10b981;--green-dim:rgba(16,185,129,0.12);
+  --red:#ef4444;--red-dim:rgba(239,68,68,0.12);--amber:#f59e0b;
+  --amber-dim:rgba(245,158,11,0.12);--purple:#8b5cf6;--cyan:#06b6d4;
+}
+html{font-size:15px}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden}
+.noise{position:fixed;top:0;left:0;width:100%;height:100%;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:9999}
+.glow-orb{position:fixed;width:600px;height:600px;border-radius:50%;pointer-events:none;z-index:0}
+.glow-orb.one{top:-200px;right:-100px;background:radial-gradient(circle,rgba(59,130,246,0.06) 0%,transparent 70%)}
+.glow-orb.two{bottom:-300px;left:-200px;background:radial-gradient(circle,rgba(139,92,246,0.04) 0%,transparent 70%)}
+
+header{padding:2rem 2.5rem 1.5rem;border-bottom:1px solid var(--border);position:relative;z-index:1;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:1rem}
+.logo-block h1{font-family:'Playfair Display',serif;font-weight:800;font-size:1.8rem;letter-spacing:-0.02em;background:linear-gradient(135deg,#e2e8f0 0%,#94a3b8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo-block .sub{font-size:0.8rem;color:var(--text-muted);letter-spacing:0.15em;text-transform:uppercase;margin-top:0.25rem}
+.header-right{display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap}
+.period-badge{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.5rem 1rem;font-family:'JetBrains Mono',monospace;font-size:0.85rem;color:var(--accent);display:flex;align-items:center;gap:0.5rem}
+.period-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite}
+.nav-link{color:var(--text-dim);font-size:0.78rem;letter-spacing:0.05em;text-decoration:none;padding:0.5rem 0.85rem;border:1px solid var(--border);border-radius:8px;background:var(--surface);transition:all 0.2s}
+.nav-link:hover{color:var(--accent);border-color:var(--accent)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+.dashboard{padding:1.5rem 2.5rem 3rem;position:relative;z-index:1;max-width:1600px;margin:0 auto}
+
+.month-selector{display:flex;gap:0.4rem;margin-bottom:1.25rem;flex-wrap:wrap;padding:0.6rem;background:var(--surface);border:1px solid var(--border);border-radius:12px}
+.month-chip{padding:0.45rem 0.9rem;font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--text-dim);background:var(--surface2);border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:all 0.2s;letter-spacing:0.02em}
+.month-chip:hover{color:var(--text);border-color:var(--accent)}
+.month-chip.active{color:#fff;background:var(--accent);border-color:var(--accent)}
+
+.tabs{display:flex;gap:0.25rem;margin-bottom:1.5rem;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:0.65rem 1.25rem;font-size:0.8rem;font-weight:500;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;letter-spacing:0.03em;white-space:nowrap}
+.tab:hover{color:var(--text-dim)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.15rem 1.35rem;position:relative;overflow:hidden;transition:border-color 0.3s,transform 0.2s}
+.kpi:hover{border-color:var(--accent);transform:translateY(-2px)}
+.kpi .label{font-size:0.65rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-muted);margin-bottom:0.4rem}
+.kpi .value{font-family:'JetBrains Mono',monospace;font-size:1.4rem;font-weight:600;letter-spacing:-0.02em}
+.kpi .detail{font-size:0.72rem;color:var(--text-dim);margin-top:0.3rem}
+.kpi .stripe{position:absolute;top:0;left:0;right:0;height:3px}
+.kpi.blue .stripe{background:linear-gradient(90deg,var(--accent),#60a5fa)}
+.kpi.green .stripe{background:linear-gradient(90deg,var(--green),#34d399)}
+.kpi.amber .stripe{background:linear-gradient(90deg,var(--amber),#fbbf24)}
+.kpi.purple .stripe{background:linear-gradient(90deg,var(--purple),#a78bfa)}
+.kpi.red .stripe{background:linear-gradient(90deg,var(--red),#f87171)}
+.kpi.cyan .stripe{background:linear-gradient(90deg,var(--cyan),#22d3ee)}
+
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem}
+@media(max-width:1100px){.grid-2{grid-template-columns:1fr}}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem;position:relative}
+.card h2{font-size:0.72rem;text-transform:uppercase;letter-spacing:0.14em;color:var(--text-muted);margin-bottom:1.15rem;display:flex;align-items:center;gap:0.5rem}
+.card h2 .icon{font-size:0.9rem}
+
+.data-table{width:100%;border-collapse:collapse;font-size:0.82rem}
+.data-table th{text-align:left;padding:0.5rem 0.65rem;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);border-bottom:1px solid var(--border);font-weight:500}
+.data-table td{padding:0.55rem 0.65rem;border-bottom:1px solid rgba(42,53,80,0.4)}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:rgba(59,130,246,0.04)}
+.data-table .mono{font-family:'JetBrains Mono',monospace;font-size:0.78rem}
+.data-table .right{text-align:right}
+.data-table .total-row td{font-weight:600;border-top:2px solid var(--border);color:var(--text)}
+.data-table .indent{padding-left:1.4rem;color:var(--text-dim)}
+.data-table .group-row td{background:rgba(59,130,246,0.04);font-weight:600}
+
+.recon-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem}
+.recon-box{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1.15rem}
+.recon-box .r-label{font-size:0.65rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-muted);margin-bottom:0.5rem}
+.recon-box .r-val{font-family:'JetBrains Mono',monospace;font-size:1.25rem;font-weight:600}
+.recon-box.ok{border-color:var(--green-dim)}
+.recon-box.warn{border-color:var(--red)}
+
+.note{background:var(--surface2);border:1px dashed var(--border);border-radius:8px;padding:0.85rem 1rem;font-size:0.8rem;color:var(--text-dim);line-height:1.55;margin-top:1rem}
+
+footer{text-align:center;padding:2rem;font-size:0.7rem;color:var(--text-muted);letter-spacing:0.05em}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.kpi,.card{animation:fadeUp 0.6s ease both}
+</style>
+</head>
+<body>
+
+<!-- PASSWORD GATE -->
+<div id="lockScreen" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0e17;z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column">
+  <div style="text-align:center;max-width:380px;padding:2rem">
+    <div style="font-family:'Playfair Display',serif;font-weight:800;font-size:1.6rem;background:linear-gradient(135deg,#e2e8f0,#94a3b8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:0.4rem">Armada Capital Group LLP</div>
+    <div style="font-size:0.72rem;color:#5a6a85;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:2.5rem">TPA Reports — Authorized Access Only</div>
+    <input id="pwInput" type="password" placeholder="Enter password" autofocus
+      style="width:100%;padding:0.85rem 1rem;background:#111827;border:1px solid #2a3550;border-radius:8px;color:#e2e8f0;font-family:'DM Sans',sans-serif;font-size:0.95rem;outline:none;margin-bottom:0.75rem;text-align:center;letter-spacing:0.1em"
+      onkeydown="if(event.key==='Enter')checkPw()">
+    <button onclick="checkPw()"
+      style="width:100%;padding:0.75rem;background:#3b82f6;border:none;border-radius:8px;color:#fff;font-family:'DM Sans',sans-serif;font-size:0.85rem;font-weight:600;cursor:pointer;letter-spacing:0.04em"
+      onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">Access Dashboard</button>
+    <div id="pwError" style="color:#ef4444;font-size:0.78rem;margin-top:0.75rem;display:none">Incorrect password</div>
+  </div>
+</div>
+<script>
+// Password: "innovations-2026"
+const PW_HASH = 'fc04b3db2644ca66e388690396636eef7160bf59a61710d7af1c9393fe336384';
+function checkPw(){
+  const input = document.getElementById('pwInput').value;
+  const hash = CryptoJS.SHA256(input).toString();
+  if(hash === PW_HASH){
+    document.getElementById('lockScreen').style.display='none';
+    sessionStorage.setItem('ai_auth','1');
+    if(window.bootDashboard) window.bootDashboard();
+  } else {
+    const err = document.getElementById('pwError');
+    err.style.display='block';
+    document.getElementById('pwInput').value='';
+    document.getElementById('pwInput').focus();
+    setTimeout(()=>err.style.display='none',2000);
+  }
+}
+if(sessionStorage.getItem('ai_auth')==='1'){
+  document.getElementById('lockScreen').style.display='none';
+}
+</script>
+
+<div class="noise"></div>
+<div class="glow-orb one"></div>
+<div class="glow-orb two"></div>
+
+<header>
+  <div class="logo-block">
+    <h1>Armada Capital Group LLP</h1>
+    <div class="sub">TPA Reporting Package Dashboard</div>
+  </div>
+  <div class="header-right">
+    <div class="period-badge" id="periodBadge">Loading…</div>
+    <a class="nav-link" href="index.html">← Innovations GP View</a>
+  </div>
+</header>
+
+<div class="dashboard">
+
+  <div class="month-selector" id="monthSelector"></div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="overview">Overview</div>
+    <div class="tab" data-tab="balance">Balance Sheet</div>
+    <div class="tab" data-tab="income">Income Statement</div>
+    <div class="tab" data-tab="capital">Capital Activity</div>
+    <div class="tab" data-tab="investors">Investors</div>
+    <div class="tab" data-tab="positions">Positions</div>
+    <div class="tab" data-tab="recon">Reconciliation</div>
+  </div>
+
+  <!-- OVERVIEW -->
+  <div id="tab-overview" class="tab-content active">
+    <div class="kpi-row" id="overviewKpis"></div>
+    <div class="grid-2">
+      <div class="card">
+        <h2><span class="icon">📈</span> Total Assets Trend</h2>
+        <div style="position:relative;height:240px"><canvas id="assetsTrend"></canvas></div>
+        <h2 style="margin-top:1.5rem"><span class="icon">💰</span> Net Income Trend</h2>
+        <div style="position:relative;height:200px"><canvas id="netIncomeTrend"></canvas></div>
+      </div>
+      <div class="card">
+        <h2><span class="icon">🤝</span> Capital Snapshot</h2>
+        <table class="data-table" id="capSnapshot"></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- BALANCE SHEET -->
+  <div id="tab-balance" class="tab-content">
+    <div class="card">
+      <h2><span class="icon">📊</span> Balance Sheet — <span id="bsLabel"></span></h2>
+      <table class="data-table" id="bsTable"></table>
+    </div>
+  </div>
+
+  <!-- INCOME STATEMENT -->
+  <div id="tab-income" class="tab-content">
+    <div class="card">
+      <h2><span class="icon">📑</span> Income Statement — <span id="isLabel"></span></h2>
+      <table class="data-table" id="isTable"></table>
+      <div class="note"><strong>Sign convention:</strong> Revenue is shown as Cr (negative). Expenses are Dr (positive). Net Income negative = profit per TPA convention.</div>
+    </div>
+  </div>
+
+  <!-- CAPITAL ACTIVITY -->
+  <div id="tab-capital" class="tab-content">
+    <div class="kpi-row" id="capKpis"></div>
+    <div class="card">
+      <h2><span class="icon">💵</span> Cash Activity (chronological)</h2>
+      <table class="data-table" id="cashTable"></table>
+    </div>
+  </div>
+
+  <!-- INVESTORS -->
+  <div id="tab-investors" class="tab-content">
+    <div class="card">
+      <h2><span class="icon">🤝</span> Partner Capital Rollforward (PCAP)</h2>
+      <table class="data-table" id="invTable"></table>
+    </div>
+  </div>
+
+  <!-- POSITIONS -->
+  <div id="tab-positions" class="tab-content">
+    <div class="card">
+      <h2><span class="icon">💼</span> Schedule of Investments (SOI)</h2>
+      <table class="data-table" id="posTable"></table>
+    </div>
+  </div>
+
+  <!-- RECONCILIATION -->
+  <div id="tab-recon" class="tab-content">
+    <div class="card">
+      <h2><span class="icon">🔍</span> Reconciliation Tie-Outs</h2>
+      <div class="recon-grid" id="reconGrid"></div>
+      <div class="note" id="reconNotes"></div>
+    </div>
+  </div>
+
+</div>
+
+<footer>Armada Capital Group LLP · TPA Reporting · Source: monthly TPA package · Internal only</footer>
+
+<script>
+let HISTORY = null;
+let CURRENT_MONTH_IDX = 0;
+
+const fmt$ = (n, dec=0) => (n<0?'-':'') + '$' + Math.abs(Number(n)||0).toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+const fmt$c = n => fmt$(n, 2);
+
+async function loadHistory(){
+  const res = await fetch('data/acg_history.json');
+  HISTORY = await res.json();
+}
+
+function setupTabs(){
+  document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      document.getElementById('tab-' + t.dataset.tab).classList.add('active');
+    });
+  });
+}
+
+function buildMonthSelector(){
+  const sel = document.getElementById('monthSelector');
+  sel.innerHTML = '';
+  HISTORY.months.forEach((m, i) => {
+    const c = document.createElement('div');
+    c.className = 'month-chip' + (i===CURRENT_MONTH_IDX ? ' active' : '');
+    c.textContent = m.period_label;
+    c.addEventListener('click', () => { CURRENT_MONTH_IDX = i; renderAll(); });
+    sel.appendChild(c);
+  });
+}
+
+function currentMonth(){ return HISTORY.months[CURRENT_MONTH_IDX]; }
+
+function renderOverviewKpis(){
+  const m = currentMonth();
+  const totalCommit = m.investors.reduce((s,i)=>s+i.commitment,0);
+  const totalEnding = m.investors.reduce((s,i)=>s+i.ending_capital,0);
+  const kpis = [
+    {label:'Total Assets',     value: fmt$c(m.balance_sheet.total_assets),                detail:'Balance Sheet',                cls:'blue'},
+    {label:'Investments at FMV', value: fmt$c(m.balance_sheet.assets.investments_at_fmv), detail: m.positions.length + ' position(s)', cls:'cyan'},
+    {label:'LP Commitments',   value: fmt$c(totalCommit),                                  detail: m.investors.length + ' investor(s)', cls:'purple'},
+    {label:'Ending Capital',   value: fmt$c(totalEnding),                                  detail:'Sum across LPs + GP',          cls:'green'},
+    {label:'Net Income',       value: fmt$c(m.income_statement.net_income),                detail: m.period_label + ' MTD',       cls: m.income_statement.net_income < 0 ? 'red' : 'green'},
+    {label:'YTD Bank Fees',    value: fmt$c(m.ytd.bank_fees),                              detail:'Operating expense',            cls:'amber'},
+  ];
+  document.getElementById('overviewKpis').innerHTML = kpis.map(k => `
+    <div class="kpi ${k.cls}"><div class="stripe"></div>
+      <div class="label">${k.label}</div><div class="value">${k.value}</div><div class="detail">${k.detail}</div>
+    </div>`).join('');
+}
+
+function renderAssetsTrend(){
+  const ctx = document.getElementById('assetsTrend');
+  if(window._a) window._a.destroy();
+  const labels = HISTORY.months.map(m => m.period_label);
+  const data = HISTORY.months.map(m => m.balance_sheet.total_assets);
+  window._a = new Chart(ctx, {
+    type:'line',
+    data:{labels, datasets:[{label:'Total Assets', data, borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,0.15)', fill:true, tension:0.3, pointBackgroundColor:'#3b82f6'}]},
+    options:{responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>fmt$c(c.parsed.y)}}},
+      scales:{y:{ticks:{color:'#8494b0', callback:v=>fmt$(v)}, grid:{color:'rgba(42,53,80,0.4)'}},
+              x:{ticks:{color:'#8494b0'}, grid:{display:false}}}}
+  });
+}
+
+function renderNetIncomeTrend(){
+  const ctx = document.getElementById('netIncomeTrend');
+  if(window._n) window._n.destroy();
+  const labels = HISTORY.months.map(m => m.period_label);
+  const data = HISTORY.months.map(m => -m.income_statement.net_income);
+  window._n = new Chart(ctx, {
+    type:'bar',
+    data:{labels, datasets:[{label:'Net Income (sign-flipped)', data, backgroundColor:'rgba(16,185,129,0.45)', borderColor:'#10b981', borderWidth:1.5, borderRadius:5}]},
+    options:{responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>fmt$c(c.parsed.y)}}},
+      scales:{y:{ticks:{color:'#8494b0', callback:v=>fmt$(v)}, grid:{color:'rgba(42,53,80,0.4)'}},
+              x:{ticks:{color:'#8494b0'}, grid:{display:false}}}}
+  });
+}
+
+function renderCapSnapshot(){
+  const m = currentMonth();
+  const totalCommit = m.investors.reduce((s,i)=>s+i.commitment,0);
+  const totalContrib = m.investors.reduce((s,i)=>s+i.contributions,0);
+  const totalEnding = m.investors.reduce((s,i)=>s+i.ending_capital,0);
+  const html = `<thead><tr><th>Metric</th><th class="right">Value</th></tr></thead><tbody>
+    <tr><td>Total LP Commitments</td><td class="right mono">${fmt$c(totalCommit)}</td></tr>
+    <tr><td>Total Contributions (lifetime)</td><td class="right mono">${fmt$c(totalContrib)}</td></tr>
+    <tr><td>Total Ending Capital</td><td class="right mono">${fmt$c(totalEnding)}</td></tr>
+    <tr><td>Total Investments at Cost</td><td class="right mono">${fmt$c(m.balance_sheet.assets.investments_at_cost)}</td></tr>
+    <tr><td>Cash Position</td><td class="right mono">${fmt$c(m.balance_sheet.assets.cash)}</td></tr>
+    <tr><td>Commitments Receivable</td><td class="right mono">${fmt$c(m.balance_sheet.assets.commitments_receivable)}</td></tr>
+    <tr class="total-row"><td>Total Assets</td><td class="right mono">${fmt$c(m.balance_sheet.total_assets)}</td></tr>
+  </tbody>`;
+  document.getElementById('capSnapshot').innerHTML = html;
+}
+
+function renderBalanceSheet(){
+  const m = currentMonth();
+  document.getElementById('bsLabel').textContent = m.period_label;
+  const bs = m.balance_sheet;
+  let html = '<thead><tr><th>Line</th><th class="right">Balance</th></tr></thead><tbody>';
+  html += `<tr class="group-row"><td>ASSETS</td><td></td></tr>`;
+  html += `<tr><td class="indent">Cash</td><td class="right mono">${fmt$c(bs.assets.cash)}</td></tr>`;
+  html += `<tr><td class="indent">Accounts Receivable</td><td class="right mono">${fmt$c(bs.assets.accounts_receivable)}</td></tr>`;
+  html += `<tr><td class="indent">Commitments Receivable</td><td class="right mono">${fmt$c(bs.assets.commitments_receivable)}</td></tr>`;
+  html += `<tr><td class="indent">Investments at Cost</td><td class="right mono">${fmt$c(bs.assets.investments_at_cost)}</td></tr>`;
+  html += `<tr><td class="indent">Unrealized Appreciation</td><td class="right mono">${fmt$c(bs.assets.unrealized_appreciation)}</td></tr>`;
+  html += `<tr class="total-row"><td>Total Assets</td><td class="right mono">${fmt$c(bs.total_assets)}</td></tr>`;
+  html += `<tr class="group-row"><td>LIABILITIES</td><td></td></tr>`;
+  html += `<tr><td class="indent">Accounts Payable</td><td class="right mono">${fmt$c(bs.liabilities.accounts_payable)}</td></tr>`;
+  html += `<tr><td class="indent">Line of Credit</td><td class="right mono">${fmt$c(bs.liabilities.line_of_credit)}</td></tr>`;
+  html += `<tr><td class="indent">Accrued Expenses</td><td class="right mono">${fmt$c(bs.liabilities.accrued_expenses)}</td></tr>`;
+  html += `<tr class="total-row"><td>Total Liabilities</td><td class="right mono">${fmt$c(bs.total_liabilities)}</td></tr>`;
+  html += `<tr class="group-row"><td>EQUITY</td><td></td></tr>`;
+  html += `<tr><td class="indent">Current Period Income</td><td class="right mono">${fmt$c(bs.equity.current_period_income)}</td></tr>`;
+  html += `<tr><td class="indent">Partners' Capital: Contributions</td><td class="right mono">${fmt$c(bs.equity.contributions)}</td></tr>`;
+  html += `<tr><td class="indent">Partners' Capital: Distributions</td><td class="right mono">${fmt$c(bs.equity.distributions)}</td></tr>`;
+  html += `<tr class="total-row"><td>Total Equity</td><td class="right mono">${fmt$c(bs.total_equity)}</td></tr>`;
+  html += `<tr class="total-row"><td>Total Liabilities &amp; Equity</td><td class="right mono">${fmt$c(bs.total_liabilities + bs.total_equity)}</td></tr>`;
+  html += '</tbody>';
+  document.getElementById('bsTable').innerHTML = html;
+}
+
+function renderIncomeStatement(){
+  const m = currentMonth();
+  document.getElementById('isLabel').textContent = m.period_label;
+  const inc = m.income_statement;
+  let html = '<thead><tr><th>Line</th><th class="right">MTD</th><th class="right">YTD</th></tr></thead><tbody>';
+  const rev = inc.revenue;
+  const ytd = m.ytd;
+  html += `<tr class="group-row"><td>REVENUE</td><td></td><td></td></tr>`;
+  html += `<tr><td class="indent">Other Investment Income</td><td class="right mono">${fmt$c(rev.other_investment_income)}</td><td class="right mono">—</td></tr>`;
+  html += `<tr><td class="indent">Non-investment Income</td><td class="right mono">${fmt$c(rev.non_investment_income)}</td><td class="right mono">—</td></tr>`;
+  html += `<tr><td class="indent">Realized Gain (long term)</td><td class="right mono">${fmt$c(rev.realized_gain_long_term)}</td><td class="right mono">—</td></tr>`;
+  html += `<tr><td class="indent">Unrealized Gain/Loss</td><td class="right mono">${fmt$c(rev.unrealized_gain_loss)}</td><td class="right mono">—</td></tr>`;
+  html += `<tr class="total-row"><td>Total Revenue</td><td class="right mono">${fmt$c(inc.total_revenue)}</td><td class="right mono">${fmt$c(ytd.total_revenue)}</td></tr>`;
+  html += `<tr class="group-row"><td>EXPENSES</td><td></td><td></td></tr>`;
+  for (const [k,v] of Object.entries(inc.expense)){
+    if (v === 0 && k !== 'bank_fees') continue;
+    const label = k.replace(/_/g,' ').replace(/\b\w/g, c=>c.toUpperCase());
+    html += `<tr><td class="indent">${label}</td><td class="right mono">${fmt$c(v)}</td><td class="right mono">${k === 'bank_fees' ? fmt$c(ytd.bank_fees) : '—'}</td></tr>`;
+  }
+  html += `<tr class="total-row"><td>Total Expenses</td><td class="right mono">${fmt$c(inc.total_expense)}</td><td class="right mono">${fmt$c(ytd.total_expense)}</td></tr>`;
+  html += `<tr class="total-row"><td>Net Income</td><td class="right mono">${fmt$c(inc.net_income)}</td><td class="right mono">${fmt$c(ytd.net_income)}</td></tr>`;
+  html += '</tbody>';
+  document.getElementById('isTable').innerHTML = html;
+}
+
+function renderCapital(){
+  const m = currentMonth();
+  const totalContrib = m.investors.reduce((s,i)=>s+i.contributions,0);
+  const totalDist    = m.investors.reduce((s,i)=>s+i.distributions,0);
+  const totalEnding  = m.investors.reduce((s,i)=>s+i.ending_capital,0);
+  const kpis = [
+    {label:'MTD Contributions', value: fmt$c(totalContrib), detail:'New capital called',  cls:'green'},
+    {label:'MTD Distributions', value: fmt$c(totalDist),    detail:'GP + LP distributions', cls:'amber'},
+    {label:'Ending LP+GP Capital', value: fmt$c(totalEnding), detail:'Sum from PCAP',     cls:'blue'},
+  ];
+  document.getElementById('capKpis').innerHTML = kpis.map(k => `
+    <div class="kpi ${k.cls}"><div class="stripe"></div>
+      <div class="label">${k.label}</div><div class="value">${k.value}</div><div class="detail">${k.detail}</div>
+    </div>`).join('');
+
+  let html = '<thead><tr><th>Date</th><th>Memo</th><th>Type</th><th class="right">Amount</th></tr></thead><tbody>';
+  m.cash_activity.forEach(c => {
+    html += `<tr>
+      <td class="mono">${c.date}</td>
+      <td>${c.memo}</td>
+      <td style="font-size:0.7rem;color:var(--text-dim)">${c.type}</td>
+      <td class="right mono">${fmt$c(c.amount)}</td>
+    </tr>`;
+  });
+  const total = m.cash_activity.reduce((s,c)=>s+c.amount,0);
+  html += `<tr class="total-row"><td colspan="3">Net Cash Activity</td><td class="right mono">${fmt$c(total)}</td></tr></tbody>`;
+  document.getElementById('cashTable').innerHTML = html;
+}
+
+function renderInvestors(){
+  const m = currentMonth();
+  let html = '<thead><tr><th>Investor</th><th>Vehicle</th><th>Tranche</th><th class="right">Commitment</th><th class="right">Beg. Cap</th><th class="right">Contrib.</th><th class="right">Distrib.</th><th class="right">Realized G/L</th><th class="right">Unrealized G/L</th><th class="right">Net Inc</th><th class="right">Ending Cap</th></tr></thead><tbody>';
+  let totals = {commitment:0, beginning_capital:0, contributions:0, distributions:0, realized_gl:0, unrealized_gl:0, net_income:0, ending_capital:0};
+  m.investors.forEach(i => {
+    Object.keys(totals).forEach(k => totals[k] += i[k] || 0);
+    const isGP = i.vehicle.includes('General Partners');
+    html += `<tr>
+      <td>${i.investor}${isGP ? ' <span style="font-size:0.6rem;color:var(--purple);font-weight:600">[GP]</span>' : ''}</td>
+      <td style="font-size:0.72rem;color:var(--text-dim)">${i.vehicle.replace('Armada Capital Group LLP - ','')}</td>
+      <td style="font-size:0.72rem">${i.tranche}</td>
+      <td class="right mono">${fmt$c(i.commitment)}</td>
+      <td class="right mono">${fmt$c(i.beginning_capital)}</td>
+      <td class="right mono">${fmt$c(i.contributions)}</td>
+      <td class="right mono">${fmt$c(i.distributions)}</td>
+      <td class="right mono">${fmt$c(i.realized_gl)}</td>
+      <td class="right mono">${fmt$c(i.unrealized_gl)}</td>
+      <td class="right mono">${fmt$c(i.net_income)}</td>
+      <td class="right mono">${fmt$c(i.ending_capital)}</td>
+    </tr>`;
+  });
+  html += `<tr class="total-row"><td colspan="3">Grand Total</td>
+    <td class="right mono">${fmt$c(totals.commitment)}</td>
+    <td class="right mono">${fmt$c(totals.beginning_capital)}</td>
+    <td class="right mono">${fmt$c(totals.contributions)}</td>
+    <td class="right mono">${fmt$c(totals.distributions)}</td>
+    <td class="right mono">${fmt$c(totals.realized_gl)}</td>
+    <td class="right mono">${fmt$c(totals.unrealized_gl)}</td>
+    <td class="right mono">${fmt$c(totals.net_income)}</td>
+    <td class="right mono">${fmt$c(totals.ending_capital)}</td></tr></tbody>`;
+  document.getElementById('invTable').innerHTML = html;
+}
+
+function renderPositions(){
+  const m = currentMonth();
+  let html = '<thead><tr><th>Position</th><th>Currency</th><th class="right">Cost</th><th class="right">Unrealized</th><th class="right">FMV</th></tr></thead><tbody>';
+  let tc=0, tu=0, tf=0;
+  m.positions.forEach(p => {
+    html += `<tr>
+      <td>${p.deal}</td>
+      <td class="mono">${p.currency}</td>
+      <td class="right mono">${fmt$c(p.cost)}</td>
+      <td class="right mono">${fmt$c(p.unrealized)}</td>
+      <td class="right mono">${fmt$c(p.fmv)}</td>
+    </tr>`;
+    tc+=p.cost; tu+=p.unrealized; tf+=p.fmv;
+  });
+  html += `<tr class="total-row"><td colspan="2">Grand Total</td>
+    <td class="right mono">${fmt$c(tc)}</td>
+    <td class="right mono">${fmt$c(tu)}</td>
+    <td class="right mono">${fmt$c(tf)}</td></tr></tbody>`;
+  document.getElementById('posTable').innerHTML = html;
+}
+
+function renderRecon(){
+  const m = currentMonth();
+  const r = m.reconciliation;
+  const cashOk = r.diff === 0;
+  const soiOk  = r.soi_diff === 0;
+  const html = `
+    <div class="recon-box ${cashOk?'ok':'warn'}">
+      <div class="r-label">Cash: Bank vs TB</div>
+      <div class="r-val">${fmt$c(r.cash_per_bank)}</div>
+      <div style="font-size:0.72rem;color:var(--text-dim);margin-top:0.4rem">Diff: ${fmt$c(r.diff)} ${cashOk?'· ✓ tied':'· ✗ open item'}</div>
+    </div>
+    <div class="recon-box ${soiOk?'ok':'warn'}">
+      <div class="r-label">SOI vs TB Investments</div>
+      <div class="r-val">${fmt$c(r.soi_total_cost)}</div>
+      <div style="font-size:0.72rem;color:var(--text-dim);margin-top:0.4rem">TB: ${fmt$c(r.tb_investments_at_cost)} · Diff: ${fmt$c(r.soi_diff)}</div>
+    </div>
+    <div class="recon-box ok">
+      <div class="r-label">Balance Sheet Tie</div>
+      <div class="r-val" style="font-size:0.8rem;font-family:'DM Sans'">${r.ye_balance_check}</div>
+    </div>
+  `;
+  document.getElementById('reconGrid').innerHTML = html;
+  document.getElementById('reconNotes').innerHTML = '<strong>Notes:</strong> ' + r.notes;
+}
+
+function renderAll(){
+  document.getElementById('periodBadge').textContent = currentMonth().period_label;
+  document.querySelectorAll('#monthSelector .month-chip').forEach((c,i) => c.classList.toggle('active', i===CURRENT_MONTH_IDX));
+  renderOverviewKpis();
+  renderAssetsTrend();
+  renderNetIncomeTrend();
+  renderCapSnapshot();
+  renderBalanceSheet();
+  renderIncomeStatement();
+  renderCapital();
+  renderInvestors();
+  renderPositions();
+  renderRecon();
+}
+
+window.bootDashboard = async function(){
+  if (HISTORY) return;
+  await loadHistory();
+  CURRENT_MONTH_IDX = Math.max(0, HISTORY.months.length - 1);
+  setupTabs();
+  buildMonthSelector();
+  renderAll();
+};
+
+if(sessionStorage.getItem('ai_auth')==='1'){
+  window.bootDashboard();
+}
+</script>
+</body>
+</html>
