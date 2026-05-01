@@ -147,37 +147,37 @@
       "period_label": "Apr 2026 (preliminary)",
       "as_of": "2026-04-30",
       "balance_sheet": {
-        "total_assets": 8828025.01,
+        "total_assets": 8807961.30,
         "assets": {
           "cash": -135.90,
           "commitments_receivable": 0.00,
-          "investments_at_cost": 8828160.91,
-          "investments_at_fmv": 8828160.91,
+          "investments_at_cost": 8808097.20,
+          "investments_at_fmv": 8808097.20,
           "unrealized_appreciation": 0.00,
           "accounts_receivable": 0.00
         },
-        "total_liabilities": 87707.32,
+        "total_liabilities": 87502.12,
         "liabilities": {
           "accounts_payable": 0.00,
           "line_of_credit": 0.00,
-          "accrued_expenses": 87707.32
+          "accrued_expenses": 87502.12
         },
-        "total_equity": -8740317.69,
+        "total_equity": -8720459.18,
         "equity": {
-          "current_period_income": -399555.58,
-          "contributions": -8520000.00,
-          "distributions": 119866.67
+          "current_period_income": -398620.78,
+          "contributions": -8500000.00,
+          "distributions": 119586.23
         }
       },
       "income_statement": {
-        "total_revenue": -487262.90,
+        "total_revenue": -486122.90,
         "revenue": {
-          "realized_gain_long_term": -119866.67,
-          "unrealized_gain_loss": -279688.91,
+          "realized_gain_long_term": -119586.23,
+          "unrealized_gain_loss": -279034.55,
           "other_investment_income": 0.00,
-          "non_investment_income": -87707.32
+          "non_investment_income": -87502.12
         },
-        "total_expense": 87707.32,
+        "total_expense": 87502.12,
         "expense": {
           "bank_fees": 0.00,
           "audit_fee": 0.00,
@@ -187,18 +187,18 @@
           "professional_fees": 0.00,
           "administration": 0.00,
           "organizational_costs": 0.00,
-          "management_fees": 87707.32
+          "management_fees": 87502.12
         },
-        "net_income": -399555.58
+        "net_income": -398620.78
       },
       "ytd": {
-        "total_revenue": -519662.90,
-        "total_expense": 87915.22,
-        "net_income": -431747.68,
+        "total_revenue": -518522.90,
+        "total_expense": 87710.02,
+        "net_income": -430812.88,
         "bank_fees": 207.90
       },
       "positions": [
-        {"deal": "Armada Innovations (Trading Sleeve)", "currency": "USD", "cost": 8828160.91, "unrealized": 0.00, "fmv": 8828160.91}
+        {"deal": "Armada Innovations (Trading Sleeve)", "currency": "USD", "cost": 8808097.20, "unrealized": 0.00, "fmv": 8808097.20}
       ],
       "investors": [
         {
@@ -221,9 +221,9 @@
           "commitment": 0.00,
           "beginning_capital": 0.00,
           "contributions": 0.00,
-          "distributions": -119866.67,
+          "distributions": -119586.23,
           "net_income": 0.00,
-          "realized_gl": 119866.67,
+          "realized_gl": 119586.23,
           "unrealized_gl": 0.00,
           "ending_capital": 0.00
         },
@@ -231,45 +231,44 @@
           "tranche": "April 2026",
           "vehicle": "Armada Capital Group LLP - Limited Partners",
           "investor": "JJNA, LLC",
-          "commitment": 8020000.00,
-          "beginning_capital": 40000.00,
+          "commitment": 8000000.00,
+          "beginning_capital": 20000.00,
           "contributions": 8000000.00,
           "distributions": 0.00,
           "net_income": 0.00,
           "realized_gl": 0.00,
-          "unrealized_gl": 263052.72,
-          "ending_capital": 8303052.72
+          "unrealized_gl": 262398.36,
+          "ending_capital": 8282398.36
         }
       ],
       "cash_activity": [
         {"date": "2026-04-01", "memo": "April 2026 Capital Call - JJNA, LLC (formal close)",          "amount": 8000000.00, "type": "call_general"},
-        {"date": "2026-04-30", "memo": "April 2026 JJNA accrual adjustment (per end-of-month stmt)",  "amount": 20000.00,   "type": "lp_reinvest"},
-        {"date": "2026-04-30", "memo": "April 2026 Gross Profit (5.70%)",                              "amount": 487262.90,  "type": "gross_profit"},
-        {"date": "2026-04-30", "memo": "April 2026 TruQuant Performance Fee (18%)",                    "amount": -87707.32,  "type": "trader_fee"},
+        {"date": "2026-04-30", "memo": "April 2026 Gross Profit (5.70%)",                              "amount": 486122.90,  "type": "gross_profit"},
+        {"date": "2026-04-30", "memo": "April 2026 TruQuant Performance Fee (18%)",                    "amount": -87502.12,  "type": "trader_fee"},
         {"date": "2026-04-30", "memo": "April 2026 LP Allocation - Bliss",                              "amount": 16636.19,   "type": "lp_reinvest"},
-        {"date": "2026-04-30", "memo": "April 2026 LP Allocation - JJNA",                               "amount": 263052.72,  "type": "lp_reinvest"},
-        {"date": "2026-04-30", "memo": "April 2026 Return GP (Innovations distribution)",               "amount": 119866.67,  "type": "gp_distribution"}
+        {"date": "2026-04-30", "memo": "April 2026 LP Allocation - JJNA",                               "amount": 262398.36,  "type": "lp_reinvest"},
+        {"date": "2026-04-30", "memo": "April 2026 Return GP (Innovations distribution)",               "amount": 119586.23,  "type": "gp_distribution"}
       ],
       "gp_distribution": {
-        "from_fund": 119866.67,
+        "from_fund": 119586.23,
         "operating_expenses": 0.00,
-        "net_distributable": 119866.67,
+        "net_distributable": 119586.23,
         "by_member": [
-          {"name": "Nairne", "share": 0.60,    "amount": 71920.00},
-          {"name": "Alec",   "share": 0.395,   "amount": 47347.34},
-          {"name": "Chris",  "share": 0.005,   "amount": 599.33}
+          {"name": "Nairne", "share": 0.60,    "amount": 71751.74},
+          {"name": "Alec",   "share": 0.395,   "amount": 47236.56},
+          {"name": "Chris",  "share": 0.005,   "amount": 597.93}
         ],
-        "source_trail": "PRELIMINARY — computed from 5.70% gross fund return on $8,548,472 LP base (Bliss $508,472 + JJNA $40,000 carryforward [Mar $20K + additional $20K per April end-of-month statement, pending upload] + JJNA $8M April call). Waterfall: 18% TruQuant ($87,707.32) / 57.4% LPs ($279,688.91) / 24.6% GP ($119,866.67). LPs split pro-rata: Bliss 5.948%, JJNA 94.052%. With JJNA's tranche formally closed in April, all working capital sits in the Armada Innovations trading sleeve — no Undeployed Capital position (May investors haven't funded yet). Awaiting formal April TPA package for final tie-out."
+        "source_trail": "PRELIMINARY — computed from 5.70% gross fund return on $8,528,472 LP base (Bliss $508,472 + JJNA $20,000 March accrual carryforward per PCAS + JJNA $8M April call). Waterfall: 18% TruQuant ($87,502.12) / 57.4% LPs ($279,034.55) / 24.6% GP ($119,586.23). LPs split pro-rata: Bliss 5.96%, JJNA 94.04%. With JJNA's tranche formally closed in April, all working capital sits in the Armada Innovations trading sleeve — no Undeployed Capital position (May investors haven't funded yet). Awaiting formal April TPA package for final tie-out."
       },
       "reconciliation": {
         "cash_per_bank": -135.90,
         "cash_per_tb": -135.90,
         "diff": 0.00,
-        "soi_total_cost": 8828160.91,
-        "tb_investments_at_cost": 8828160.91,
+        "soi_total_cost": 8808097.20,
+        "tb_investments_at_cost": 8808097.20,
         "soi_diff": 0.00,
-        "ye_balance_check": "PRELIMINARY — gross profit $487,262.90 = TruQuant fee $87,707.32 + Net fund return $399,555.58 (LP $279,688.91 + GP $119,866.67). Tie-out pending April TPA.",
-        "notes": "Preliminary self-computed allocation — final figures pending April 2026 TPA package and JJNA end-of-month statement showing the $20K accrual adjustment."
+        "ye_balance_check": "PRELIMINARY — gross profit $486,122.90 = TruQuant fee $87,502.12 + Net fund return $398,620.78 (LP $279,034.55 + GP $119,586.23). Tie-out pending April TPA.",
+        "notes": "Preliminary self-computed allocation — final figures pending April 2026 TPA package."
       }
     }
   ]
