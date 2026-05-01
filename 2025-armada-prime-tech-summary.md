@@ -70,7 +70,15 @@ In August 2025, the GP cut (30% of fund net) was split as: 9.5% Consultant + 13.
 | Dec 2025 | $27,100.00 |
 | **2025 Total** | **$91,225.00** |
 
-Itemized breakdown in the workbook's `GP Expenses` tab.
+Itemized breakdown in the workbook's `GP Expenses` and `Monthly Op Expenses` tabs (vendor × month matrix in the latter).
+
+## On Gross vs Net (Distributions Ledger Mechanics)
+
+Per Nairne 2026-04-30: the per-person amounts in this reconciliation are **already NET** — after weighted costs and per-person expense allocations. The `Monthly Per-Person` tab in the workbook shows monthly + running YTD per recipient.
+
+The Distributions Armada Tech 2025 ledger has a separate 'Gross vs Net' table inside each month's sheet that tracks **cumulative settlement balances** — i.e., it carries forward unpaid balances from prior months. That's why for example Raj's 'Gross' column in the Nov sheet shows $632.74 (vs his $287.26 monthly slice): it's settling outstanding amounts. Inside that calculation are also Coinbase/Wire/Crypto fees (~2.8%) and per-person 'Expense' allocations (Nairne Expense $1,848.20 in Nov, Alec Expense $1,828.31, etc.) which are nested INSIDE the Net amounts shown in this reconciliation.
+
+In short: don't try to back into a 'Gross' from this workbook — the formula amount per person ≈ what they were paid (the Net column), and the cost/fee layers are already absorbed.
 
 ## Open Items Before Sending to Accountant
 

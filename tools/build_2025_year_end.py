@@ -814,6 +814,260 @@ def build_workbook(agg: dict) -> None:
     autosize(ws)
     ws.column_dimensions["A"].width = 35
 
+    # ---------------- Tab 6c: Monthly Op Expenses (vendor × month matrix) ----------------
+    ws = wb.create_sheet("Monthly Op Expenses")
+    ws["A1"] = "Operating Expenses by Vendor & Month (Aug-Dec 2025)"
+    ws["A1"].font = Font(bold=True, size=14)
+    ws.merge_cells("A1:H1")
+    ws["A2"] = "Each vendor on its own row. Source: Costs sections of Distributions ledger (Aug-Nov) + BEST ONE Dec Costs."
+    ws["A2"].font = Font(italic=True, color="666666")
+    ws.merge_cells("A2:H2")
+
+    r = 4
+    months = ["2025-08", "2025-09", "2025-10", "2025-11", "2025-12"]
+    headers = ["Vendor / Line Item", "Category"] + [PERIOD_LABELS[p] for p in months] + ["2025 Total", "Notes"]
+    for i, h in enumerate(headers, 1):
+        ws.cell(row=r, column=i, value=h)
+    style_header_row(ws, r, len(headers))
+
+    # Build vendor × month matrix
+    vendor_matrix = {}  # vendor -> {period -> amount}
+    for period, items in GP_OP_EXPENSES.items():
+        for vendor, amount in items:
+            vendor_matrix.setdefault(vendor, {})[period] = amount
+
+    NOTES_BY_VENDOR = {
+        "506c SPV Loan": "RECLASS: likely balance sheet item (loan/capital), not P&L expense",
+        "Insurance": "RECLASS: likely annual D&O — pro-rate to ~$7,500 for Aug-Dec",
+        "TPA (Formidium)": "VERIFY: $600/mo also in fund-level admin (TPA books). May double-count.",
+        "TPA (second line)": "VERIFY: second TPA line in Dec — separate billing or duplicate?",
+        "Formidium (TPA)": "VERIFY: same as 'TPA (Formidium)' — TPA fee. Confirm GP-paid vs fund-paid.",
+        "PVD": "Vendor identification needed for 1099 obligation",
+        "Website": "Marketing/web build",
+        "Ad Spend": "Marketing — vendor breakdown needed",
+        "Chris": "Payroll/contractor — likely 1099 (already on consultant 1099 list?)",
+        "Alpha Verification": "Compliance/verification service",
+    }
+
+    # Sort: keep vendors that span multiple months grouped
+    vendors_sorted = sorted(vendor_matrix.keys(), key=lambda v: (-sum(vendor_matrix[v].values()), v))
+    col_totals = {p: 0.0 for p in months}
+    for vendor in vendors_sorted:
+        r += 1
+        ws.cell(row=r, column=1, value=vendor)
+        ws.cell(row=r, column=2, value=_categorize(vendor))
+        row_total = 0.0
+        for j, period in enumerate(months):
+            val = vendor_matrix[vendor].get(period, 0.0)
+            cell = ws.cell(row=r, column=3 + j, value=val if val else None)
+            if val:
+                cell.number_format = MONEY
+                row_total += val
+                col_totals[period] += val
+        ws.cell(row=r, column=3 + len(months), value=row_total).number_format = MONEY
+        ws.cell(row=r, column=3 + len(months)).font = Font(bold=True)
+        ws.cell(row=r, column=4 + len(months), value=NOTES_BY_VENDOR.get(vendor, ""))
+        ws.cell(row=r, column=4 + len(months)).alignment = Alignment(wrap_text=True)
+
+    r += 1
+    ws.cell(row=r, column=1, value="MONTHLY TOTAL")
+    grand_total = 0.0
+    for j, period in enumerate(months):
+        ws.cell(row=r, column=3 + j, value=col_totals[period]).number_format = MONEY
+        grand_total += col_totals[period]
+    ws.cell(row=r, column=3 + len(months), value=grand_total).number_format = MONEY
+    for c in range(1, 4 + len(months) + 1):
+        ws.cell(row=r, column=c).fill = TOTAL_FILL
+        ws.cell(row=r, column=c).font = TOTAL_FONT
+
+    # Adjusted-after-reclass row
+    r += 2
+    ws.cell(row=r, column=1, value="Likely-adjusted (after accountant reclass)").font = Font(bold=True, color="006400")
+    r += 1
+    ws.cell(row=r, column=1, value="  Less: 506c SPV Loans (balance sheet)")
+    ws.cell(row=r, column=3 + len(months), value=-29275).number_format = MONEY
+    r += 1
+    ws.cell(row=r, column=1, value="  Less: Insurance proration ($18k → $7,500 for 5 mo)")
+    ws.cell(row=r, column=3 + len(months), value=-10500).number_format = MONEY
+    r += 1
+    ws.cell(row=r, column=1, value="ADJUSTED 2025 OP EXPENSES")
+    adjusted = grand_total - 29275 - 10500
+    ws.cell(row=r, column=3 + len(months), value=adjusted).number_format = MONEY
+    for c in range(1, 4 + len(months) + 1):
+        ws.cell(row=r, column=c).fill = PatternFill(start_color="D5F5E3", end_color="D5F5E3", fill_type="solid")
+        ws.cell(row=r, column=c).font = Font(bold=True)
+
+    autosize(ws)
+    ws.column_dimensions["A"].width = 25
+    ws.column_dimensions["B"].width = 22
+    for j in range(len(months)):
+        ws.column_dimensions[get_column_letter(3 + j)].width = 13
+    ws.column_dimensions[get_column_letter(3 + len(months))].width = 14
+    ws.column_dimensions[get_column_letter(4 + len(months))].width = 60
+
+    # ---------------- Tab 6d: Monthly Per-Person (with running YTD) ----------------
+    ws = wb.create_sheet("Monthly Per-Person")
+    ws["A1"] = "Per-Person Cash Distributions by Month, with Running YTD"
+    ws["A1"].font = Font(bold=True, size=14)
+    ws.merge_cells("A1:M1")
+    ws["A2"] = "Each person: top row = monthly amount paid; bottom row = running YTD total. K-1 partners (Nairne, Raj) shaded blue. Per Nairne 2026-04-30: payouts shown ARE net (after costs + weighted costs). TruQuant excluded."
+    ws["A2"].font = Font(italic=True, color="666666")
+    ws.merge_cells("A2:M2")
+
+    r = 4
+    # Header: Person | Type | Aug | YTD | Sep | YTD | Oct | YTD | Nov | YTD | Dec | YTD | YE Total
+    headers = ["Person / Recipient", "Tax Type"]
+    for p in months:
+        headers.append(PERIOD_LABELS[p])
+        headers.append("YTD")
+    headers.append("YE 2025 Total")
+    for i, h in enumerate(headers, 1):
+        ws.cell(row=r, column=i, value=h)
+    style_header_row(ws, r, len(headers))
+
+    # Recipients ordered: K-1 first, then 1099 by amount
+    k1_recipients = [
+        ("Nairne — Fund Mgmt 59.5% (Aug: 5.5%)", "Fund Mgmt", "K-1"),
+        ("Nairne — direct 0.5%", "Nairne", "K-1"),
+        ("Raj Duggal — direct 0.5%", "Raj", "K-1"),
+    ]
+    contractor_recipients = sorted(
+        [(k, k, "1099") for k in actual_year_totals if k not in K1_RECIPIENTS],
+        key=lambda x: -actual_year_totals[x[1]]
+    )
+    all_recipients = k1_recipients + contractor_recipients
+
+    # Sub-totals for K-1 vs 1099
+    k1_monthly_totals = {p: 0.0 for p in months}
+    contractor_monthly_totals = {p: 0.0 for p in months}
+
+    for label, key, ttype in all_recipients:
+        r += 1
+        ws.cell(row=r, column=1, value=label)
+        ws.cell(row=r, column=2, value=ttype)
+        if ttype == "K-1":
+            for c in range(1, len(headers) + 1):
+                ws.cell(row=r, column=c).fill = PatternFill(start_color="E8F4FD", end_color="E8F4FD", fill_type="solid")
+        ytd = 0.0
+        ye_total = 0.0
+        for j, period in enumerate(months):
+            val = ACTUAL_PAID.get(period, {}).get(key, 0.0)
+            ytd += val
+            ye_total += val
+            if ttype == "K-1":
+                k1_monthly_totals[period] += val
+            else:
+                contractor_monthly_totals[period] += val
+            month_col = 3 + j * 2
+            ytd_col = 4 + j * 2
+            cell = ws.cell(row=r, column=month_col, value=val if val else None)
+            if val:
+                cell.number_format = MONEY
+            cell_ytd = ws.cell(row=r, column=ytd_col, value=ytd)
+            cell_ytd.number_format = MONEY
+            cell_ytd.font = Font(italic=True, color="666666")
+        ws.cell(row=r, column=len(headers), value=ye_total).number_format = MONEY
+        ws.cell(row=r, column=len(headers)).font = Font(bold=True)
+
+    # Sub-total row: K-1 total per month
+    r += 1
+    ws.cell(row=r, column=1, value="K-1 SUBTOTAL (Nairne + Raj)")
+    ws.cell(row=r, column=2, value="K-1")
+    k1_ytd = 0.0
+    k1_year = 0.0
+    for j, period in enumerate(months):
+        v = k1_monthly_totals[period]
+        k1_ytd += v
+        k1_year += v
+        ws.cell(row=r, column=3 + j*2, value=v).number_format = MONEY
+        ws.cell(row=r, column=4 + j*2, value=k1_ytd).number_format = MONEY
+    ws.cell(row=r, column=len(headers), value=k1_year).number_format = MONEY
+    for c in range(1, len(headers) + 1):
+        ws.cell(row=r, column=c).fill = TOTAL_FILL
+        ws.cell(row=r, column=c).font = TOTAL_FONT
+
+    # Sub-total row: 1099 total per month
+    r += 1
+    ws.cell(row=r, column=1, value="1099 SUBTOTAL (Phil + consultants)")
+    ws.cell(row=r, column=2, value="1099")
+    c1099_ytd = 0.0
+    c1099_year = 0.0
+    for j, period in enumerate(months):
+        v = contractor_monthly_totals[period]
+        c1099_ytd += v
+        c1099_year += v
+        ws.cell(row=r, column=3 + j*2, value=v).number_format = MONEY
+        ws.cell(row=r, column=4 + j*2, value=c1099_ytd).number_format = MONEY
+    ws.cell(row=r, column=len(headers), value=c1099_year).number_format = MONEY
+    for c in range(1, len(headers) + 1):
+        ws.cell(row=r, column=c).fill = TOTAL_FILL
+        ws.cell(row=r, column=c).font = TOTAL_FONT
+
+    # Grand total
+    r += 1
+    ws.cell(row=r, column=1, value="GRAND TOTAL (K-1 + 1099)")
+    ws.cell(row=r, column=2, value="")
+    grand_ytd = 0.0
+    grand_year = 0.0
+    for j, period in enumerate(months):
+        v = k1_monthly_totals[period] + contractor_monthly_totals[period]
+        grand_ytd += v
+        grand_year += v
+        ws.cell(row=r, column=3 + j*2, value=v).number_format = MONEY
+        ws.cell(row=r, column=4 + j*2, value=grand_ytd).number_format = MONEY
+    ws.cell(row=r, column=len(headers), value=grand_year).number_format = MONEY
+    for c in range(1, len(headers) + 1):
+        ws.cell(row=r, column=c).fill = PatternFill(start_color="FFE6CC", end_color="FFE6CC", fill_type="solid")
+        ws.cell(row=r, column=c).font = Font(bold=True)
+
+    # TPA gross row for context
+    r += 1
+    ws.cell(row=r, column=1, value="TPA Perf Fees Crystallized (Gross GP Income)")
+    for j, period in enumerate(months):
+        v = by_month.get(period, {}).get("perf_fees_crystallized", 0)
+        ws.cell(row=r, column=3 + j*2, value=v).number_format = MONEY
+    ws.cell(row=r, column=len(headers), value=total_perf_fees).number_format = MONEY
+    for c in range(1, len(headers) + 1):
+        ws.cell(row=r, column=c).font = Font(italic=True)
+
+    # Op expenses row
+    r += 1
+    ws.cell(row=r, column=1, value="Op Expenses (paid from GP retained)")
+    for j, period in enumerate(months):
+        items = GP_OP_EXPENSES.get(period, [])
+        v = sum(a for _, a in items)
+        ws.cell(row=r, column=3 + j*2, value=v if v else None)
+        if v:
+            ws.cell(row=r, column=3 + j*2).number_format = MONEY
+    ws.cell(row=r, column=len(headers), value=op_expense_year_total).number_format = MONEY
+    for c in range(1, len(headers) + 1):
+        ws.cell(row=r, column=c).font = Font(italic=True)
+
+    # Notes section
+    r += 2
+    ws.cell(row=r, column=1, value="NOTES").font = Font(bold=True, color="C00000")
+    notes = [
+        "Payouts shown are NET — already after weighted costs (per Nairne 2026-04-30). The Distributions ledger's separate 'Gross vs Net' table tracks cumulative settlement balances (carries forward unpaid amounts) and a layer of Coinbase/wire/Crypto fees (~2.8%) plus per-person 'Expense' allocations (Nairne Expense, Alec Expense, etc.) — those are nested inside the Net amounts you see here.",
+        "TruQuant payments are excluded entirely (per Nairne 2026-04-30). The Aug TruQuant amounts ($6,909.93 Trader & Developer + $88.78 Spydr) and Sep Spydr $82.08 are NOT in any of the rows above.",
+        "Aug 2025 used a different waterfall (Fund Mgmt was 5.5% not 59.5%). From Sep onwards: standard 59.5% Mgmt + 39% Consultant + 0.5%×3 principals.",
+        "Issac shows -$278.48 in Dec — clawback against prior month overpayment.",
+        "Op Expenses row at the bottom is the GP-paid vendor expenses (not allocated to individuals on this tab — see Monthly Op Expenses tab for vendor breakdown).",
+    ]
+    r += 1
+    for note in notes:
+        ws.cell(row=r, column=1, value=note).alignment = Alignment(wrap_text=True, vertical="top")
+        ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=len(headers))
+        ws.row_dimensions[r].height = 35
+        r += 1
+
+    autosize(ws)
+    ws.column_dimensions["A"].width = 38
+    ws.column_dimensions["B"].width = 9
+    for j in range(len(months)):
+        ws.column_dimensions[get_column_letter(3 + j*2)].width = 12
+        ws.column_dimensions[get_column_letter(4 + j*2)].width = 12
+    ws.column_dimensions[get_column_letter(len(headers))].width = 14
+
     # ---------------- Tab 7: Reconciliation ----------------
     ws = wb.create_sheet("Reconciliation")
     ws["A1"] = "Reconciliation: TPA-derived vs Internal Sources"
@@ -962,7 +1216,15 @@ def build_markdown(agg: dict) -> None:
         lines.append(f"| {PERIOD_LABELS[period]} | ${total:,.2f} |")
     lines.append(f"| **2025 Total** | **${op_expense_year:,.2f}** |")
     lines.append("")
-    lines.append("Itemized breakdown in the workbook's `GP Expenses` tab.")
+    lines.append("Itemized breakdown in the workbook's `GP Expenses` and `Monthly Op Expenses` tabs (vendor × month matrix in the latter).")
+    lines.append("")
+    lines.append("## On Gross vs Net (Distributions Ledger Mechanics)")
+    lines.append("")
+    lines.append("Per Nairne 2026-04-30: the per-person amounts in this reconciliation are **already NET** — after weighted costs and per-person expense allocations. The `Monthly Per-Person` tab in the workbook shows monthly + running YTD per recipient.")
+    lines.append("")
+    lines.append("The Distributions Armada Tech 2025 ledger has a separate 'Gross vs Net' table inside each month's sheet that tracks **cumulative settlement balances** — i.e., it carries forward unpaid balances from prior months. That's why for example Raj's 'Gross' column in the Nov sheet shows $632.74 (vs his $287.26 monthly slice): it's settling outstanding amounts. Inside that calculation are also Coinbase/Wire/Crypto fees (~2.8%) and per-person 'Expense' allocations (Nairne Expense $1,848.20 in Nov, Alec Expense $1,828.31, etc.) which are nested INSIDE the Net amounts shown in this reconciliation.")
+    lines.append("")
+    lines.append("In short: don't try to back into a 'Gross' from this workbook — the formula amount per person ≈ what they were paid (the Net column), and the cost/fee layers are already absorbed.")
     lines.append("")
     lines.append("## Open Items Before Sending to Accountant")
     lines.append("")
