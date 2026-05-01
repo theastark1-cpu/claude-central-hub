@@ -215,6 +215,13 @@ tr:hover td { background:var(--surface-2); }
 .sf-step-card.sf-in_transit { border-color:var(--warning); }
 .sf-step-card.sf-pending { border-color:var(--text-muted); }
 .sf-step-row:last-child .sf-step-vline { bottom:50%; }
+.sf-progress-section { margin-top:12px; padding-top:12px; border-top:1px solid var(--border); }
+.sf-progress-bar { height:6px; background:var(--surface-3); border-radius:3px; overflow:hidden; margin-bottom:10px; }
+.sf-progress-fill { height:100%; background:linear-gradient(90deg, var(--success), var(--accent)); transition:width 0.3s; }
+.sf-progress-row { display:flex; gap:20px; flex-wrap:wrap; }
+.sf-progress-item { display:flex; flex-direction:column; gap:2px; }
+.sf-progress-label { font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; }
+.sf-progress-val { font-size:13px; font-weight:600; font-family:'JetBrains Mono',monospace; }
 .sf-branch-actions { display:flex; gap:4px; margin-left:8px; flex-shrink:0; }
 .sf-branch-actions .btn { font-size:11px; padding:4px 8px; }
 .sf-empty { padding:24px; text-align:center; color:var(--text-muted); }
@@ -1491,6 +1498,11 @@ function renderSubflows(chain) {
     const sfSteps = (sf.steps || []).sort((a,b) => a.step_order - b.step_order);
     const sfFees = (sf.fee||0) + sfSteps.reduce((s,st) => s+(st.fee||0), 0);
     const stepCount = sfSteps.length;
+    // Progress: sum amount_sent from completed steps
+    const sentCompleted = sfSteps.filter(st => st.status === 'completed').reduce((s, st) => s + (st.amount_sent||0), 0);
+    const sentInTransit = sfSteps.filter(st => st.status === 'in_transit').reduce((s, st) => s + (st.amount_sent||0), 0);
+    const remainingToSend = Math.max(0, sf.amount - sentCompleted);
+    const completedPct = sf.amount > 0 ? Math.min(100, (sentCompleted / sf.amount) * 100) : 0;
 
     // Header card for this sub-flow
     html += `<div class="sf-branch">
@@ -1519,6 +1531,17 @@ function renderSubflows(chain) {
             <span class="cap-badge cap-${sf.capital_type||chain.capital_type}">${(sf.capital_type||chain.capital_type).replace('_',' ')}</span>
             ${sf.notes ? `<span style="font-size:10px;color:var(--text-dim);">${sf.notes}</span>` : ''}
           </div>
+          ${stepCount > 0 ? `
+          <div class="sf-progress-section" onclick="event.stopPropagation();">
+            <div class="sf-progress-bar"><div class="sf-progress-fill" style="width:${completedPct}%;"></div></div>
+            <div class="sf-progress-row">
+              <div class="sf-progress-item"><span class="sf-progress-label">Total</span><span class="sf-progress-val" style="color:var(--accent);">${fmt(sf.amount)}</span></div>
+              <div class="sf-progress-item"><span class="sf-progress-label">Sent</span><span class="sf-progress-val" style="color:var(--success);">${fmt(sentCompleted)}</span></div>
+              ${sentInTransit > 0 ? `<div class="sf-progress-item"><span class="sf-progress-label">In Transit</span><span class="sf-progress-val" style="color:var(--warning);">${fmt(sentInTransit)}</span></div>` : ''}
+              <div class="sf-progress-item"><span class="sf-progress-label">Remaining</span><span class="sf-progress-val" style="color:${remainingToSend>0.01?'var(--warning)':'var(--success)'};">${fmt(remainingToSend)}</span></div>
+              <div class="sf-progress-item"><span class="sf-progress-label">Progress</span><span class="sf-progress-val">${completedPct.toFixed(1)}%</span></div>
+            </div>
+          </div>` : ''}
         </div>
 
         <!-- Step pipeline within this sub-flow -->
