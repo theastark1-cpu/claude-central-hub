@@ -542,16 +542,19 @@ function renderBalance(){
     {name:'Crypto', val:bs.assets.crypto, color:'#8b5cf6'},
     {name:'Cash', val:bs.assets.cash, color:'#10b981'},
     {name:'Loan to ACG', val:bs.assets.loan_to_acg ?? 0, color:'#06b6d4'},
+    {name:'Cascade Receivable', val:bs.assets.cascade_receivable ?? 0, color:'#22d3ee'},
     {name:'Subs Receivable', val:bs.assets.subscription_receivable ?? 0, color:'#f59e0b'},
     {name:'Unrealized G/L', val:bs.assets.unrealized_gl_crypto ?? 0, color:'#ef4444'},
   ].filter(r => Math.abs(r.val) > 0.01);
   document.getElementById('assetMix').innerHTML = makeBars(assetRows, bs.total_assets, assetRows.map(r=>r.color));
 
-  document.getElementById('liabMix').innerHTML = makeBars([
+  const liabRows = [
     {name:'Subs in Advance', val:bs.liabilities.subscriptions_advance, color:'#f59e0b'},
     {name:'Perf Fees Payable', val:bs.liabilities.perf_fees_payable, color:'#ef4444'},
+    {name:'Redemption Payable', val:bs.liabilities.redemption_payable ?? 0, color:'#8b5cf6'},
     {name:'Payable to GP', val:bs.liabilities.payable_to_gp, color:'#06b6d4'},
-  ].filter(r => Math.abs(r.val) > 0.01), bs.total_liabilities, ['#f59e0b','#ef4444','#06b6d4']);
+  ].filter(r => Math.abs(r.val) > 0.01);
+  document.getElementById('liabMix').innerHTML = makeBars(liabRows, bs.total_liabilities, liabRows.map(r=>r.color));
 
   const capRows = [
     {name:'Capital Additions', val:bs.capital.additions, color:'#3b82f6'},
@@ -573,12 +576,14 @@ function renderBalance(){
     ['Crypto', months.map(x => x.balance_sheet.assets.crypto)],
     ['Cash', months.map(x => x.balance_sheet.assets.cash)],
     ['Loan to ACG', months.map(x => x.balance_sheet.assets.loan_to_acg ?? 0)],
+    ['Cascade Receivable', months.map(x => x.balance_sheet.assets.cascade_receivable ?? 0)],
     ['Subscription Receivable', months.map(x => x.balance_sheet.assets.subscription_receivable ?? 0)],
     ['Unrealized G/L Crypto', months.map(x => x.balance_sheet.assets.unrealized_gl_crypto ?? 0)],
     ['total','Total Assets', months.map(x => x.balance_sheet.total_assets)],
     ['section','LIABILITIES'],
     ['Subs in Advance', months.map(x => x.balance_sheet.liabilities.subscriptions_advance)],
     ['Perf Fees Payable', months.map(x => x.balance_sheet.liabilities.perf_fees_payable)],
+    ['Redemption Payable', months.map(x => x.balance_sheet.liabilities.redemption_payable ?? 0)],
     ['Payable to GP', months.map(x => x.balance_sheet.liabilities.payable_to_gp)],
     ['total','Total Liabilities', months.map(x => x.balance_sheet.total_liabilities)],
     ['section','CAPITAL'],

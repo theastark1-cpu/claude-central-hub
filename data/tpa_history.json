@@ -6207,18 +6207,20 @@
           "cash": 100163.63,
           "loan_to_acg": 22687.74,
           "subscription_receivable": 0.0,
+          "cascade_receivable": 74059.77,
           "unrealized_gl_crypto": -44.99
         },
-        "total_liabilities": 1576726.5,
+        "total_liabilities": 1576696.3,
         "liabilities": {
           "payable_to_gp": 2065.0,
           "perf_fees_payable": 74064.06,
-          "subscriptions_advance": 1502641.16
+          "subscriptions_advance": 1502641.16,
+          "redemption_payable": -2073.92
         },
-        "total_capital": 12051131.75,
+        "total_capital": 12051161.95,
         "capital": {
           "additions": 12902425.95,
-          "redemptions": -2114879.34,
+          "redemptions": -2114849.14,
           "retained_earnings": 1263585.14
         }
       },
@@ -6283,8 +6285,8 @@
         {
           "investor_no": "14-Class B-1029-1",
           "name": "Philip Okala",
-          "begin_ownership": 0.128988,
-          "end_ownership": 0.128988,
+          "begin_ownership": 0.128987,
+          "end_ownership": 0.128987,
           "begin_equity": 1517908.3,
           "gross_profit": 52197.71,
           "allocated_fee": -15659.31,
@@ -6325,21 +6327,21 @@
         {
           "investor_no": "14-Class B-1027-1",
           "name": "Fund Hub Investments LLC",
-          "begin_ownership": 0.073846,
-          "end_ownership": 0.073846,
+          "begin_ownership": 0.073848,
+          "end_ownership": 0.073848,
           "begin_equity": 891120.23,
           "gross_profit": 29883.38,
           "allocated_fee": -8965.01,
           "additions": 0.0,
-          "withdrawals": 22112.2,
+          "withdrawals": 22082.0,
           "transfers": 0.0,
-          "ending_balance": 889926.39,
+          "ending_balance": 889956.59,
           "shares_begin": 200.087986,
-          "shares_end": 195.123016,
-          "nav_per_share": 4560.8479,
-          "gross_mtd_ror": 0.034388,
-          "net_mtd_ror": 0.024072,
-          "ytd_ror": 0.085899,
+          "shares_end": 195.129797,
+          "nav_per_share": 4560.8442,
+          "gross_mtd_ror": 0.034387,
+          "net_mtd_ror": 0.024071,
+          "ytd_ror": 0.085898,
           "mgmt_fee": 0.0,
           "perf_fee": 8965.01
         },
@@ -7359,5 +7361,5 @@
       }
     }
   ],
-  "last_updated": "2026-04-27"
+  "last_updated": "2026-05-05"
 }

@@ -141,12 +141,15 @@ def parse_balance_sheet(rows: list[list[Any]]) -> dict:
     # v2 new asset lines
     loan_acg = _last_numeric(_find_contains(rows, "loan to armada capital") or [0])
     subs_recv = _last_numeric(_find_contains(rows, "subscription receivable") or [0])
+    cascade_recv = _last_numeric(_find_contains(rows, "receivable from cascade") or [0])
+    # _find_contains with "unrealized gain (loss)" matches both income-statement style and BS style; on BS this is the asset-side mark
     unrealized_gl = _last_numeric(_find_contains(rows, "unrealized gain (loss) on investment in cryptocurrencies") or [0])
     total_assets = _last_numeric(_find_row(rows, "Total Assets") or [])
 
     payable_gp = _last_numeric(_find_contains(rows, "payable to gp") or [0])
     perf_payable = _last_numeric(_find_contains(rows, "performance fees payable") or [0])
     subs_advance = _last_numeric(_find_contains(rows, "subscription received in advance") or [0])
+    redemption_payable = _last_numeric(_find_contains(rows, "redemption payable") or [0])
     total_liab = _last_numeric(_find_row(rows, "Total Liabilities") or [])
 
     capital_add = _last_numeric(_find_contains(rows, "capital addition") or [0])
@@ -162,6 +165,7 @@ def parse_balance_sheet(rows: list[list[Any]]) -> dict:
             "cash": _round(cash),
             "loan_to_acg": _round(loan_acg),
             "subscription_receivable": _round(subs_recv),
+            "cascade_receivable": _round(cascade_recv),
             "unrealized_gl_crypto": _round(unrealized_gl),
         },
         "total_liabilities": _round(total_liab),
@@ -169,6 +173,7 @@ def parse_balance_sheet(rows: list[list[Any]]) -> dict:
             "payable_to_gp": _round(payable_gp),
             "perf_fees_payable": _round(perf_payable),
             "subscriptions_advance": _round(subs_advance),
+            "redemption_payable": _round(redemption_payable),
         },
         "total_capital": _round(total_capital),
         "capital": {
