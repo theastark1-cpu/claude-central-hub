@@ -96,63 +96,60 @@ PERIOD_LABELS = {
 # From Sep onwards, TruQuant takes 18% UPSTREAM and the GP uses the standard
 # 59.5/39/0.5/0.5/0.5 split.
 ACTUAL_PAID = {
-    # Aug 2025 from Distributions xlsx — sheet "August" R2-R14
-    # TruQuant entries (Trader & Developer $6,909.93 and Spydr $88.78) are
-    # excluded per Nairne 2026-04-30 — TQ is not a GP expense / 1099 recipient.
+    # Updated 2026-05-05 from "/Users/nairne/Downloads/Updated Armada Prime Tech.xlsx"
+    # for Nairne and AJ Affleck ONLY. All other recipients retain their original
+    # values from the Distributions Armada Tech 2025 ledger pending user approval
+    # to update them.
+    # NOTE: Per the Updated file, Nairne is shown as a single combined cash
+    # distribution (no separate "Fund Mgmt" line) — so "Fund Mgmt" is set to 0
+    # for these months and Nairne's full cash distribution is in the "Nairne" key.
     "2025-08": {
-        "AJ Affleck": 335.47,
+        "AJ Affleck": 1743.04,         # UPDATED 2026-05-05 (was $335.47)
         "Alec Atkinson": 3172.12,
         "Jake Gordon": 1266.18,
-        "Fund Mgmt": 2815.16,
+        "Fund Mgmt": 0.00,             # UPDATED — combined into Nairne below
         "Raj": 255.92,
-        "Nairne": 255.92,
+        "Nairne": 1663.50,             # UPDATED (was Fund Mgmt $2,815.16 + direct $255.92 = $3,071.08)
         "Phil": 255.92,
     },
-    # Sep 2025 from Distributions xlsx — sheet "September" R6-R15
-    # Spydr/TruQuant entry ($82.08) excluded per Nairne 2026-04-30.
     "2025-09": {
-        "AJ Affleck": 285.77,
+        "AJ Affleck": 6068.58,         # UPDATED 2026-05-05 (was $285.77)
         "Alec Atkinson": 3561.92,
         "Jake Gordon": 930.90,
-        "Fund Mgmt": 7415.62,
+        "Fund Mgmt": 0.00,             # UPDATED — combined into Nairne below
         "Raj": 62.32,
-        "Nairne": 62.32,
+        "Nairne": 5845.12,             # UPDATED (was Fund Mgmt $7,415.62 + direct $62.32 = $7,477.94)
         "Phil": 62.32,
     },
-    # Oct 2025 from Distributions xlsx — sheet "Copy of October" R7-R18
     "2025-10": {
-        "AJ Affleck": 1268.23,
+        "AJ Affleck": 7500.60,         # UPDATED 2026-05-05 (was $1,268.23)
         "Alec Atkinson": 11848.88,
         "Jake Gordon": 3218.29,
         "Issac": 254.12,
-        "Fund Mgmt": 31206.94,
+        "Fund Mgmt": 0.00,             # UPDATED — combined into Nairne below
         "Raj": 262.24,
-        "Nairne": 262.24,
+        "Nairne": 6244.65,             # UPDATED (was Fund Mgmt $31,206.94 + direct $262.24 = $31,469.18)
         "Phil": 262.24,
     },
-    # Nov 2025 from Distributions xlsx — sheet "November" R7-R18
     "2025-11": {
-        "AJ Affleck": 1833.52,
+        "AJ Affleck": 16567.16,        # UPDATED 2026-05-05 (was $1,833.52)
         "Alec Atkinson": 15124.18,
         "Jake Gordon": 4184.51,
         "Issac": 785.85,
-        "Fund Mgmt": 34183.90,
+        "Fund Mgmt": 0.00,             # UPDATED — combined into Nairne below
         "Raj": 287.26,
-        "Nairne": 287.26,
+        "Nairne": 15531.01,            # UPDATED (was Fund Mgmt $34,183.90 + direct $287.26 = $34,471.16)
         "Phil": 287.26,
     },
-    # Dec 2025 from BEST ONE Dec 2025 Monthly Return — sheet "Consultants"
-    # (see Bash exploration earlier — Alec $4,369.77, Jake $788.78, AJ $429.71,
-    # Luke $164.90, Isaac -$278.48, Fund Mgmt $9,428.24, Raj/Nairne/Phil $79.23 ea)
     "2025-12": {
-        "AJ Affleck": 429.71,
+        "AJ Affleck": 5260.51,         # UPDATED 2026-05-05 (was $429.71)
         "Alec Atkinson": 4369.77,
         "Jake Gordon": 788.78,
         "Luke": 164.90,
         "Issac": -278.48,
-        "Fund Mgmt": 9428.24,
+        "Fund Mgmt": 0.00,             # UPDATED — combined into Nairne below
         "Raj": 79.23,
-        "Nairne": 79.23,
+        "Nairne": 4904.60,             # UPDATED (was Fund Mgmt $9,428.24 + direct $79.23 = $9,507.47)
         "Phil": 79.23,
     },
 }

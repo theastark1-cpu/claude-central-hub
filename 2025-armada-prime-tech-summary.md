@@ -7,26 +7,26 @@
 ## Bottom Line
 
 - **Gross income (perf fees from Armada Prime LLP):** **$153,023.03**
-- **1099 contractor expenses (cash paid per Distributions Ledger):** **$53,544.62**
+- **1099 contractor expenses (cash paid per Distributions Ledger):** **$86,531.81**
   - Alec Atkinson: $38,076.87
+  - AJ Affleck: $37,139.89
   - Jake Gordon: $10,388.66
-  - AJ Affleck: $4,152.70
   - Issac: $761.49
   - Luke: $164.90
 - **GP-paid operating expenses (Aug-Dec 2025):** $91,225.00 *(see GP Expenses tab; verify Insurance + TPA double-count + SPV loans reclass)*
-- **Partnership net income (allocated to K-1 partners):** **$8,253.41**
+- **Partnership net income (allocated to K-1 partners):** **$-24,733.78**
 
 **K-1 partner allocations** (Nairne 60% = Fund Mgmt 59.5% + direct 0.5%; Raj 0.5%; Phil 0.5%):
 
 - **Nairne** (98.36% ownership):
-  - Cash distributions: $85,996.83 (Fund Mgmt $85,049.86 + direct 0.5% $946.97)
-  - Allocated share of net income: $8,118.11
+  - Cash distributions: $34,188.88 (Fund Mgmt $0.00 + direct 0.5% $34,188.88)
+  - Allocated share of net income: $-24,328.31
 - **Raj Duggal** (0.82% ownership):
   - Cash distributions: $946.97
-  - Allocated share of net income: $67.65
+  - Allocated share of net income: $-202.74
 - **Phil** (0.82% ownership):
   - Cash distributions: $946.97
-  - Allocated share of net income: $67.65
+  - Allocated share of net income: $-202.74
 
 ## Monthly Roll-Up
 
@@ -45,16 +45,16 @@ These are the amounts actually disbursed per the internal `Distributions Armada 
 
 | Recipient | Aug | Sep | Oct | Nov | Dec | 2025 Total |
 |---|---:|---:|---:|---:|---:|---:|
-| Fund Mgmt | $2,815.16 | $7,415.62 | $31,206.94 | $34,183.90 | $9,428.24 | **$85,049.86** |
 | Alec Atkinson | $3,172.12 | $3,561.92 | $11,848.88 | $15,124.18 | $4,369.77 | **$38,076.87** |
+| AJ Affleck | $1,743.04 | $6,068.58 | $7,500.60 | $16,567.16 | $5,260.51 | **$37,139.89** |
+| Nairne | $1,663.50 | $5,845.12 | $6,244.65 | $15,531.01 | $4,904.60 | **$34,188.88** |
 | Jake Gordon | $1,266.18 | $930.90 | $3,218.29 | $4,184.51 | $788.78 | **$10,388.66** |
-| AJ Affleck | $335.47 | $285.77 | $1,268.23 | $1,833.52 | $429.71 | **$4,152.70** |
 | Raj | $255.92 | $62.32 | $262.24 | $287.26 | $79.23 | **$946.97** |
-| Nairne | $255.92 | $62.32 | $262.24 | $287.26 | $79.23 | **$946.97** |
 | Phil | $255.92 | $62.32 | $262.24 | $287.26 | $79.23 | **$946.97** |
 | Issac | $0.00 | $0.00 | $254.12 | $785.85 | $-278.48 | **$761.49** |
 | Luke | $0.00 | $0.00 | $0.00 | $0.00 | $164.90 | **$164.90** |
-| **MONTH TOTAL** | $8,356.69 | $12,381.17 | $48,583.18 | $56,973.74 | $15,140.61 | **$141,435.39** |
+| Fund Mgmt | $0.00 | $0.00 | $0.00 | $0.00 | $0.00 | **$0.00** |
+| **MONTH TOTAL** | $8,356.68 | $16,531.16 | $29,591.02 | $52,767.23 | $15,368.54 | **$122,614.63** |
 | TPA Perf Fees (Owed) | $15,355.51 | $12,474.75 | $51,906.99 | $57,074.09 | $16,211.69 | $153,023.03 |
 
 ### August Anomaly — DIFFERENT WATERFALL
@@ -92,7 +92,7 @@ In short: don't try to back into a 'Gross' from this workbook — the formula am
    - **TPA fees** (Dec $600 + $4,500 = $5,100; Nov $600): confirm GP-paid vs fund-paid (fund books already have $600/mo admin).
    - **PVD, Badtwin, Ad Spend, Website**: vendor names + 1099 obligations need confirmation.
 4. **Per-recipient SSN/address** — required for all 1099 forms (placeholder cells in workbook).
-5. **Cash-vs-accrual basis** — Total cash paid ($141,435.39) vs Total owed per TPA ($153,023.03) = $11,587.64 difference. The delta includes ~$6,999 of August TruQuant-tagged amounts that are excluded per the 'TQ is not a GP expense' policy. Confirm GP's tax basis (cash vs accrual) with accountant.
+5. **Cash-vs-accrual basis** — Total cash paid ($122,614.63) vs Total owed per TPA ($153,023.03) = $30,408.40 difference. The delta includes ~$6,999 of August TruQuant-tagged amounts that are excluded per the 'TQ is not a GP expense' policy. Confirm GP's tax basis (cash vs accrual) with accountant.
 
 ## Methodology
 
