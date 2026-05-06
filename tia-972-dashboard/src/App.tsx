@@ -1,11 +1,20 @@
 import { useStrategyData } from "@/hooks/useStrategyData";
 import { useKeyboardNav } from "@/hooks/useKeyboardNav";
+import { Gate } from "@/components/Gate";
 import { Header } from "@/components/Header";
 import { MacroGrid } from "@/components/ZoneA/MacroGrid";
 import { TemporalArena } from "@/components/ZoneB/TemporalArena";
 import { Comparator } from "@/components/ZoneC/Comparator";
 
 export default function App() {
+  return (
+    <Gate>
+      <Dashboard />
+    </Gate>
+  );
+}
+
+function Dashboard() {
   const { data, error } = useStrategyData();
   useKeyboardNav(data);
 
