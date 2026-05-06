@@ -23,9 +23,9 @@
 | Line | GAAP-Basis | After Tax-Reclass |
 |---|---:|---:|
 | **Revenue** (Performance Fees from Armada Prime LLP) | $153,023.03 | $153,023.03 |
-| Direct Costs (1099 contractor commissions) | ($86,531.81) | ($86,531.81) |
+| Direct Costs (1099 contractor commissions) | ($86,754.81) | ($86,754.81) |
 | Operating Expenses | ($91,225.00) | ($51,450.00) |
-| **Net Income (Partnership)** | **$-24,733.78** | **$15,041.22** |
+| **Net Income (Partnership)** | **$-24,956.78** | **$14,818.22** |
 
 The GAAP→reclass swing is **$29,275 in 506c SPV Loans** (move to balance sheet) and **$10,500 in Insurance proration** (Dec $18K is annual D&O — only 5/12 hits 2025).
 
@@ -37,9 +37,9 @@ Per Nairne 2026-05-05 — **Phil corrected to K-1 partner** (was previously thou
 
 | Member | Ownership % | Cash Distributions Received | K-1 Allocated Net Income (Reclass-Basis) |
 |---|---:|---:|---:|
-| **Nairne** | 98.36% (60/61) | $34,188.88 | $14,794.64 |
-| **Raj Duggal** | 0.82% (0.5/61) | $946.97 | $123.29 |
-| **Phil** | 0.82% (0.5/61) | $946.97 | $123.29 |
+| **Nairne** | 98.36% (60/61) | $34,188.88 | $14,575.30 |
+| **Raj Duggal** | 0.82% (0.5/61) | $946.97 | $121.46 |
+| **Phil** | 0.82% (0.5/61) | $946.97 | $121.46 |
 
 Nairne's 60% = Fund Management 59.5% slice + direct 0.5%. The Fund Management slice is K-1 income to Nairne (NOT a separate entity expense / 1099).
 
@@ -54,8 +54,9 @@ Nairne's 60% = Fund Management 59.5% slice + direct 0.5%. The Fund Management sl
 | AJ Affleck | $37,139.89 |
 | Issac Morris | $761.49 |
 | Luke Affleck | $164.90 |
+| Nikki | $223.00 |
 | Chris (operating contractor) | $11,500.00 |
-| **Total 1099 Payments** | **$98,031.81** |
+| **Total 1099 Payments** | **$98,254.81** |
 
 **Phil is NOT on the 1099 list** — Phil is a K-1 partner. See K-1 Partners tab.
 

@@ -140,6 +140,7 @@ ACTUAL_PAID = {
         "Raj": 287.26,
         "Nairne": 15531.01,            # UPDATED (was Fund Mgmt $34,183.90 + direct $287.26 = $34,471.16)
         "Phil": 287.26,
+        "Nikki": 223.00,               # ADDED 2026-05-05 — new 1099 contractor (Nov only)
     },
     "2025-12": {
         "AJ Affleck": 5260.51,         # UPDATED 2026-05-05 (was $429.71)

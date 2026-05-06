@@ -322,6 +322,7 @@ def build_pnl_tab(wb, T):
         ("AJ Affleck", yt.get("AJ Affleck", 0)),
         ("Issac Morris", yt.get("Issac", 0)),
         ("Luke Affleck", yt.get("Luke", 0)),
+        ("Nikki", yt.get("Nikki", 0)),
     ]
     for name, amt in contractors:
         line(f"  {name}", amt, amt, "1099-NEC issued separately")
@@ -753,6 +754,7 @@ def build_1099_tab(wb, T):
         ("AJ Affleck", yt.get("AJ Affleck", 0), "Capital raiser commission"),
         ("Issac Morris", yt.get("Issac", 0), "Capital raiser commission"),
         ("Luke Affleck", yt.get("Luke", 0), "Capital raiser commission"),
+        ("Nikki (last name TBD)", yt.get("Nikki", 0), "Capital raiser commission (Nov 2025 only)"),
         ("Chris (last name TBD)", 11500.00, "Operating contractor labor (Nov $7,500 + Dec $4,000)"),
     ]
     total = 0
@@ -929,6 +931,7 @@ Nairne's 60% = Fund Management 59.5% slice + direct 0.5%. The Fund Management sl
 | AJ Affleck | ${T['year_totals'].get('AJ Affleck', 0):,.2f} |
 | Issac Morris | ${T['year_totals'].get('Issac', 0):,.2f} |
 | Luke Affleck | ${T['year_totals'].get('Luke', 0):,.2f} |
+| Nikki | ${T['year_totals'].get('Nikki', 0):,.2f} |
 | Chris (operating contractor) | $11,500.00 |
 | **Total 1099 Payments** | **${T['contractor_total'] + 11500:,.2f}** |
 
