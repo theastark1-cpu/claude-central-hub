@@ -14,7 +14,7 @@ export const useMarketData = (symbol: string | null) => {
       return;
     }
     setLoading(true);
-    fetch(`/data/market/${symbol}.json`)
+    fetch(`${import.meta.env.BASE_URL}data/market/${symbol}.json`)
       .then((r) => r.json())
       .then((d: MarketData) => {
         cache[symbol] = d;
