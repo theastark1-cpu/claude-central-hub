@@ -7,24 +7,26 @@
 ## Bottom Line
 
 - **Gross income (perf fees from Armada Prime LLP):** **$153,023.03**
-- **1099 contractor expenses (cash paid per Distributions Ledger):** **$54,491.59**
+- **1099 contractor expenses (cash paid per Distributions Ledger):** **$53,544.62**
   - Alec Atkinson: $38,076.87
   - Jake Gordon: $10,388.66
   - AJ Affleck: $4,152.70
   - Issac: $761.49
   - Luke: $164.90
-  - Phil (0.5% GP fixed): $946.97
 - **GP-paid operating expenses (Aug-Dec 2025):** $91,225.00 *(see GP Expenses tab; verify Insurance + TPA double-count + SPV loans reclass)*
-- **Partnership net income (allocated to K-1 partners):** **$7,306.44**
+- **Partnership net income (allocated to K-1 partners):** **$8,253.41**
 
-**K-1 partner allocations** (Nairne 60% ownership = Fund Mgmt 59.5% + direct 0.5%; Raj 0.5% ownership):
+**K-1 partner allocations** (Nairne 60% = Fund Mgmt 59.5% + direct 0.5%; Raj 0.5%; Phil 0.5%):
 
-- **Nairne** (99.17% ownership):
+- **Nairne** (98.36% ownership):
   - Cash distributions: $85,996.83 (Fund Mgmt $85,049.86 + direct 0.5% $946.97)
-  - Allocated share of net income: $7,246.06
-- **Raj Duggal** (0.83% ownership):
+  - Allocated share of net income: $8,118.11
+- **Raj Duggal** (0.82% ownership):
   - Cash distributions: $946.97
-  - Allocated share of net income: $60.38
+  - Allocated share of net income: $67.65
+- **Phil** (0.82% ownership):
+  - Cash distributions: $946.97
+  - Allocated share of net income: $67.65
 
 ## Monthly Roll-Up
 
@@ -83,7 +85,7 @@ In short: don't try to back into a 'Gross' from this workbook — the formula am
 ## Open Items Before Sending to Accountant
 
 1. **LLC operating agreement / capital accounts** — confirm with accountant the formal ownership % and net-income allocation for K-1s. The 60/0.5 derived from the Distributions ledger is operational, not legal.
-2. **Phil's last name + SSN/address** — for his $946.97 1099.
+2. **Phil's last name + SSN/address** — for his K-1 partner allocation.
 3. **Operating expense reclassification** — review the GP Expenses tab. Likely needs reclass:
    - **506c SPV Loans** ($4,275 Aug + $25,000 Oct = $29,275): these may be loans/capital, not expenses.
    - **Insurance $18k Dec**: confirm whether annual or already pro-rated.
@@ -96,7 +98,7 @@ In short: don't try to back into a 'Gross' from this workbook — the formula am
 
 - **Source of GP gross income:** TPA Reporting Package's `Performance Fees Crystallized` (per investor, in the Investor Capital Summary). Per the 2026-04-27 decision, TPA — not the internal Monthly Return — is authoritative for GP/consultant compensation.
 - **Investor → consultant mapping:** the IDS sheet from `BEST ONE of December 2025 Monthly Return.xlsx` (most complete 2025 mapping), augmented with the standard `CONSULTANT_OVERRIDES` from `tools/build_consultant_splits.py`.
-- **GP economic split (2025):** **Nairne 60%** (= Fund Mgmt 59.5% + direct 0.5%) / **Raj 0.5%** / Consultant 39% / **Phil 0.5%**. Per Nairne 2026-04-30: Fund Mgmt is Nairne's K-1 income, not a separate entity 1099. Nairne and Raj are K-1 partners; Phil and the consultants are 1099 contractors. Phil held the 0.5% slice all of 2025; Alec replaced him in April 2026.
+- **GP economic split (2025):** **Nairne 60%** (= Fund Mgmt 59.5% + direct 0.5%) / **Raj 0.5%** / **Phil 0.5%** / Consultant 39%. Per Nairne 2026-05-05: Fund Mgmt is Nairne's K-1 income, not a separate entity 1099. **Nairne, Raj, AND Phil are all K-1 partners**; the consultants are 1099 contractors. Phil held the 0.5% slice all of 2025; Alec replaced him in April 2026.
 - **TruQuant:** From September 2025 onwards, TruQuant takes 18% of true gross **upstream** of Armada Prime LLP and it never enters the GP's books. **In August 2025, however**, TruQuant was paid INSIDE the GP entity as 'Trader & Developer' (13.5%) and 'Spydr' (a small slice of the consultant pool) — these Aug payments DO appear in the 1099 list.
 - **Tax classification (per Nairne 2026-04-30):** Raj and Nairne are LLC members → K-1. Everyone else who received GP-pool payouts is a 1099 contractor.
 
