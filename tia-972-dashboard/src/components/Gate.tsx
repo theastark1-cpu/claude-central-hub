@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-const PW_HASH = "5d513e08dc028258f07b8ff7c5395bb8f2ee1bcccc971841a435c56facfc9a32";
+const PW_HASH = "687d4a28291ace6fe39dd464374c4098dfb84f8b1edf9b7c828e73319597bfbb";
 const STORAGE_KEY = "tia972_auth";
 
 const sha256 = async (s: string): Promise<string> => {
