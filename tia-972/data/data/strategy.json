@@ -1,0 +1,670 @@
+{
+  "framework": "TIA-9.72",
+  "title": "6-Year Walk Forward Validation",
+  "period": {
+    "start": "2020-01-01",
+    "end": "2025-01-01"
+  },
+  "pairs": [
+    {
+      "symbol": "EURUSDX",
+      "yahoo_ticker": "EURUSD=X",
+      "years": [
+        {
+          "year": 2020,
+          "net_profit_pct": 10.08,
+          "max_drawdown_pct": 3.35,
+          "biggest_grid_pips": 280.9,
+          "avg_dd_first_trade_pct": 0.43,
+          "avg_dd_sequence_pct": 2.93,
+          "max_levels": 2,
+          "trades": 35
+        },
+        {
+          "year": 2021,
+          "net_profit_pct": 6.4,
+          "max_drawdown_pct": 5.6,
+          "biggest_grid_pips": 519.0,
+          "avg_dd_first_trade_pct": 0.3,
+          "avg_dd_sequence_pct": 4.97,
+          "max_levels": 2,
+          "trades": 21
+        },
+        {
+          "year": 2022,
+          "net_profit_pct": 9.41,
+          "max_drawdown_pct": 6.76,
+          "biggest_grid_pips": 569.2,
+          "avg_dd_first_trade_pct": 0.44,
+          "avg_dd_sequence_pct": 4.78,
+          "max_levels": 2,
+          "trades": 29
+        },
+        {
+          "year": 2023,
+          "net_profit_pct": 9.32,
+          "max_drawdown_pct": 7.27,
+          "biggest_grid_pips": 637.6,
+          "avg_dd_first_trade_pct": 0.56,
+          "avg_dd_sequence_pct": 5.32,
+          "max_levels": 2,
+          "trades": 27
+        },
+        {
+          "year": 2024,
+          "net_profit_pct": 6.51,
+          "max_drawdown_pct": 4.53,
+          "biggest_grid_pips": 429.7,
+          "avg_dd_first_trade_pct": 0.83,
+          "avg_dd_sequence_pct": 4.45,
+          "max_levels": 2,
+          "trades": 21
+        },
+        {
+          "year": 2025,
+          "net_profit_pct": 9.63,
+          "max_drawdown_pct": 6.55,
+          "biggest_grid_pips": 638.01,
+          "avg_dd_first_trade_pct": 0.36,
+          "avg_dd_sequence_pct": 5.26,
+          "max_levels": 2,
+          "trades": 27
+        }
+      ]
+    },
+    {
+      "symbol": "NZDUSDX",
+      "yahoo_ticker": "NZDUSD=X",
+      "years": [
+        {
+          "year": 2020,
+          "net_profit_pct": 8.93,
+          "max_drawdown_pct": 3.41,
+          "biggest_grid_pips": 173.2,
+          "avg_dd_first_trade_pct": 0.38,
+          "avg_dd_sequence_pct": 2.35,
+          "max_levels": 3,
+          "trades": 30
+        },
+        {
+          "year": 2021,
+          "net_profit_pct": 18.81,
+          "max_drawdown_pct": 9.35,
+          "biggest_grid_pips": 505.2,
+          "avg_dd_first_trade_pct": 0.29,
+          "avg_dd_sequence_pct": 9.19,
+          "max_levels": 4,
+          "trades": 19
+        },
+        {
+          "year": 2022,
+          "net_profit_pct": 7.75,
+          "max_drawdown_pct": 3.23,
+          "biggest_grid_pips": 217.6,
+          "avg_dd_first_trade_pct": 0.29,
+          "avg_dd_sequence_pct": 3.23,
+          "max_levels": 2,
+          "trades": 35
+        },
+        {
+          "year": 2023,
+          "net_profit_pct": 5.1,
+          "max_drawdown_pct": 1.48,
+          "biggest_grid_pips": 73.1,
+          "avg_dd_first_trade_pct": 0.35,
+          "avg_dd_sequence_pct": 0.87,
+          "max_levels": 2,
+          "trades": 26
+        },
+        {
+          "year": 2024,
+          "net_profit_pct": 7.24,
+          "max_drawdown_pct": 4.5,
+          "biggest_grid_pips": 335.0,
+          "avg_dd_first_trade_pct": 0.3,
+          "avg_dd_sequence_pct": 3.7,
+          "max_levels": 2,
+          "trades": 25
+        },
+        {
+          "year": 2025,
+          "net_profit_pct": 14.07,
+          "max_drawdown_pct": 11.69,
+          "biggest_grid_pips": 479.8,
+          "avg_dd_first_trade_pct": 0.36,
+          "avg_dd_sequence_pct": 11.69,
+          "max_levels": 4,
+          "trades": 13
+        }
+      ]
+    },
+    {
+      "symbol": "EURCADX",
+      "yahoo_ticker": "EURCAD=X",
+      "years": [
+        {
+          "year": 2020,
+          "net_profit_pct": 11.7,
+          "max_drawdown_pct": 5.24,
+          "biggest_grid_pips": 303.8,
+          "avg_dd_first_trade_pct": 0.37,
+          "avg_dd_sequence_pct": 3.83,
+          "max_levels": 2,
+          "trades": 32
+        },
+        {
+          "year": 2021,
+          "net_profit_pct": 11.05,
+          "max_drawdown_pct": 6.56,
+          "biggest_grid_pips": 393.7,
+          "avg_dd_first_trade_pct": 0.58,
+          "avg_dd_sequence_pct": 5.06,
+          "max_levels": 3,
+          "trades": 26
+        },
+        {
+          "year": 2022,
+          "net_profit_pct": 12.22,
+          "max_drawdown_pct": 6.81,
+          "biggest_grid_pips": 504.8,
+          "avg_dd_first_trade_pct": 0.74,
+          "avg_dd_sequence_pct": 4.29,
+          "max_levels": 2,
+          "trades": 32
+        },
+        {
+          "year": 2023,
+          "net_profit_pct": 12.28,
+          "max_drawdown_pct": 5.28,
+          "biggest_grid_pips": 526.0,
+          "avg_dd_first_trade_pct": 0.53,
+          "avg_dd_sequence_pct": 4.18,
+          "max_levels": 2,
+          "trades": 31
+        },
+        {
+          "year": 2024,
+          "net_profit_pct": 8.44,
+          "max_drawdown_pct": 3.59,
+          "biggest_grid_pips": 280.8,
+          "avg_dd_first_trade_pct": 0.84,
+          "avg_dd_sequence_pct": 3.01,
+          "max_levels": 2,
+          "trades": 25
+        },
+        {
+          "year": 2025,
+          "net_profit_pct": 9.43,
+          "max_drawdown_pct": 4.5,
+          "biggest_grid_pips": 374.9,
+          "avg_dd_first_trade_pct": 0.72,
+          "avg_dd_sequence_pct": 3.9,
+          "max_levels": 2,
+          "trades": 26
+        }
+      ]
+    },
+    {
+      "symbol": "USDCADX",
+      "yahoo_ticker": "USDCAD=X",
+      "years": [
+        {
+          "year": 2020,
+          "net_profit_pct": 11.61,
+          "max_drawdown_pct": 6.29,
+          "biggest_grid_pips": 556.9,
+          "avg_dd_first_trade_pct": 0.35,
+          "avg_dd_sequence_pct": 3.26,
+          "max_levels": 2,
+          "trades": 31
+        },
+        {
+          "year": 2021,
+          "net_profit_pct": 10.71,
+          "max_drawdown_pct": 4.9,
+          "biggest_grid_pips": 265.4,
+          "avg_dd_first_trade_pct": 0.57,
+          "avg_dd_sequence_pct": 3.74,
+          "max_levels": 2,
+          "trades": 32
+        },
+        {
+          "year": 2022,
+          "net_profit_pct": 12.79,
+          "max_drawdown_pct": 8.83,
+          "biggest_grid_pips": 538.8,
+          "avg_dd_first_trade_pct": 0.45,
+          "avg_dd_sequence_pct": 4.64,
+          "max_levels": 2,
+          "trades": 37
+        },
+        {
+          "year": 2023,
+          "net_profit_pct": 12.06,
+          "max_drawdown_pct": 7.31,
+          "biggest_grid_pips": 496.9,
+          "avg_dd_first_trade_pct": 0.41,
+          "avg_dd_sequence_pct": 7.31,
+          "max_levels": 2,
+          "trades": 33
+        },
+        {
+          "year": 2024,
+          "net_profit_pct": 12.87,
+          "max_drawdown_pct": 7.83,
+          "biggest_grid_pips": 253.7,
+          "avg_dd_first_trade_pct": 0.76,
+          "avg_dd_sequence_pct": 2.73,
+          "max_levels": 3,
+          "trades": 37
+        },
+        {
+          "year": 2025,
+          "net_profit_pct": 9.93,
+          "max_drawdown_pct": 2.11,
+          "biggest_grid_pips": 163.4,
+          "avg_dd_first_trade_pct": 0.48,
+          "avg_dd_sequence_pct": 2.11,
+          "max_levels": 2,
+          "trades": 29
+        }
+      ]
+    },
+    {
+      "symbol": "AUDUSDX",
+      "yahoo_ticker": "AUDUSD=X",
+      "years": [
+        {
+          "year": 2020,
+          "net_profit_pct": 4.0,
+          "max_drawdown_pct": 3.33,
+          "biggest_grid_pips": null,
+          "avg_dd_first_trade_pct": 0.69,
+          "avg_dd_sequence_pct": null,
+          "max_levels": 1,
+          "trades": 16
+        },
+        {
+          "year": 2021,
+          "net_profit_pct": 4.24,
+          "max_drawdown_pct": 4.18,
+          "biggest_grid_pips": 347.1,
+          "avg_dd_first_trade_pct": 0.39,
+          "avg_dd_sequence_pct": 4.18,
+          "max_levels": 2,
+          "trades": 13
+        },
+        {
+          "year": 2022,
+          "net_profit_pct": 9.86,
+          "max_drawdown_pct": 3.77,
+          "biggest_grid_pips": 261.6,
+          "avg_dd_first_trade_pct": 0.49,
+          "avg_dd_sequence_pct": 3.14,
+          "max_levels": 2,
+          "trades": 34
+        },
+        {
+          "year": 2023,
+          "net_profit_pct": 5.98,
+          "max_drawdown_pct": 5.94,
+          "biggest_grid_pips": 419.0,
+          "avg_dd_first_trade_pct": 0.91,
+          "avg_dd_sequence_pct": 4.73,
+          "max_levels": 2,
+          "trades": 17
+        },
+        {
+          "year": 2024,
+          "net_profit_pct": 4.0,
+          "max_drawdown_pct": 1.68,
+          "biggest_grid_pips": null,
+          "avg_dd_first_trade_pct": 0.44,
+          "avg_dd_sequence_pct": null,
+          "max_levels": 1,
+          "trades": 16
+        },
+        {
+          "year": 2025,
+          "net_profit_pct": 3.75,
+          "max_drawdown_pct": 1.98,
+          "biggest_grid_pips": null,
+          "avg_dd_first_trade_pct": 0.39,
+          "avg_dd_sequence_pct": null,
+          "max_levels": 1,
+          "trades": 15
+        }
+      ]
+    },
+    {
+      "symbol": "AUDCADX",
+      "yahoo_ticker": "AUDCAD=X",
+      "years": [
+        {
+          "year": 2020,
+          "net_profit_pct": 7.0,
+          "max_drawdown_pct": 4.28,
+          "biggest_grid_pips": null,
+          "avg_dd_first_trade_pct": 0.52,
+          "avg_dd_sequence_pct": null,
+          "max_levels": 1,
+          "trades": 28
+        },
+        {
+          "year": 2021,
+          "net_profit_pct": 5.07,
+          "max_drawdown_pct": 3.99,
+          "biggest_grid_pips": 226.0,
+          "avg_dd_first_trade_pct": 0.44,
+          "avg_dd_sequence_pct": 2.63,
+          "max_levels": 2,
+          "trades": 24
+        },
+        {
+          "year": 2022,
+          "net_profit_pct": 4.3,
+          "max_drawdown_pct": 3.17,
+          "biggest_grid_pips": 264.6,
+          "avg_dd_first_trade_pct": 0.33,
+          "avg_dd_sequence_pct": 3.17,
+          "max_levels": 2,
+          "trades": 19
+        },
+        {
+          "year": 2023,
+          "net_profit_pct": 5.09,
+          "max_drawdown_pct": 2.49,
+          "biggest_grid_pips": 216.5,
+          "avg_dd_first_trade_pct": 0.5,
+          "avg_dd_sequence_pct": 2.33,
+          "max_levels": 2,
+          "trades": 22
+        },
+        {
+          "year": 2024,
+          "net_profit_pct": 6.25,
+          "max_drawdown_pct": 1.21,
+          "biggest_grid_pips": null,
+          "avg_dd_first_trade_pct": 0.36,
+          "avg_dd_sequence_pct": null,
+          "max_levels": 1,
+          "trades": 25
+        },
+        {
+          "year": 2025,
+          "net_profit_pct": 4.5,
+          "max_drawdown_pct": 2.28,
+          "biggest_grid_pips": null,
+          "avg_dd_first_trade_pct": 0.34,
+          "avg_dd_sequence_pct": null,
+          "max_levels": 1,
+          "trades": 18
+        }
+      ]
+    },
+    {
+      "symbol": "GBPCADX",
+      "yahoo_ticker": "GBPCAD=X",
+      "years": [
+        {
+          "year": 2020,
+          "net_profit_pct": 15.53,
+          "max_drawdown_pct": 13.69,
+          "biggest_grid_pips": 1173.4,
+          "avg_dd_first_trade_pct": 0.46,
+          "avg_dd_sequence_pct": 10.15,
+          "max_levels": 2,
+          "trades": 17
+        },
+        {
+          "year": 2021,
+          "net_profit_pct": 4.8,
+          "max_drawdown_pct": 2.41,
+          "biggest_grid_pips": null,
+          "avg_dd_first_trade_pct": 0.66,
+          "avg_dd_sequence_pct": null,
+          "max_levels": 1,
+          "trades": 16
+        },
+        {
+          "year": 2022,
+          "net_profit_pct": 5.1,
+          "max_drawdown_pct": 4.3,
+          "biggest_grid_pips": null,
+          "avg_dd_first_trade_pct": 0.54,
+          "avg_dd_sequence_pct": null,
+          "max_levels": 1,
+          "trades": 17
+        },
+        {
+          "year": 2023,
+          "net_profit_pct": 7.1,
+          "max_drawdown_pct": 3.13,
+          "biggest_grid_pips": 226.2,
+          "avg_dd_first_trade_pct": 0.39,
+          "avg_dd_sequence_pct": 3.13,
+          "max_levels": 2,
+          "trades": 20
+        },
+        {
+          "year": 2024,
+          "net_profit_pct": 11.73,
+          "max_drawdown_pct": 5.28,
+          "biggest_grid_pips": 363.8,
+          "avg_dd_first_trade_pct": 0.44,
+          "avg_dd_sequence_pct": 4.32,
+          "max_levels": 2,
+          "trades": 21
+        },
+        {
+          "year": 2025,
+          "net_profit_pct": 8.88,
+          "max_drawdown_pct": 5.33,
+          "biggest_grid_pips": 320.3,
+          "avg_dd_first_trade_pct": 0.55,
+          "avg_dd_sequence_pct": 5.33,
+          "max_levels": 2,
+          "trades": 26
+        }
+      ]
+    },
+    {
+      "symbol": "NZDCADX",
+      "yahoo_ticker": "NZDCAD=X",
+      "years": [
+        {
+          "year": 2020,
+          "net_profit_pct": 7.0,
+          "max_drawdown_pct": 6.53,
+          "biggest_grid_pips": 427.0,
+          "avg_dd_first_trade_pct": 1.47,
+          "avg_dd_sequence_pct": 3.93,
+          "max_levels": 2,
+          "trades": 13
+        },
+        {
+          "year": 2021,
+          "net_profit_pct": 6.78,
+          "max_drawdown_pct": 2.56,
+          "biggest_grid_pips": 209.6,
+          "avg_dd_first_trade_pct": 0.74,
+          "avg_dd_sequence_pct": 2.2,
+          "max_levels": 2,
+          "trades": 14
+        },
+        {
+          "year": 2022,
+          "net_profit_pct": 4.95,
+          "max_drawdown_pct": 2.81,
+          "biggest_grid_pips": null,
+          "avg_dd_first_trade_pct": 0.69,
+          "avg_dd_sequence_pct": null,
+          "max_levels": 1,
+          "trades": 11
+        },
+        {
+          "year": 2023,
+          "net_profit_pct": 4.23,
+          "max_drawdown_pct": 3.2,
+          "biggest_grid_pips": 135.0,
+          "avg_dd_first_trade_pct": 0.77,
+          "avg_dd_sequence_pct": 1.97,
+          "max_levels": 2,
+          "trades": 10
+        },
+        {
+          "year": 2024,
+          "net_profit_pct": 1.8,
+          "max_drawdown_pct": 0.69,
+          "biggest_grid_pips": null,
+          "avg_dd_first_trade_pct": 0.31,
+          "avg_dd_sequence_pct": null,
+          "max_levels": 1,
+          "trades": 4
+        },
+        {
+          "year": 2025,
+          "net_profit_pct": 4.05,
+          "max_drawdown_pct": 1.03,
+          "biggest_grid_pips": null,
+          "avg_dd_first_trade_pct": 0.35,
+          "avg_dd_sequence_pct": null,
+          "max_levels": 1,
+          "trades": 10
+        }
+      ]
+    },
+    {
+      "symbol": "GBPUSDX",
+      "yahoo_ticker": "GBPUSD=X",
+      "years": [
+        {
+          "year": 2020,
+          "net_profit_pct": 16.02,
+          "max_drawdown_pct": 8.13,
+          "biggest_grid_pips": 807.4,
+          "avg_dd_first_trade_pct": 0.26,
+          "avg_dd_sequence_pct": 3.28,
+          "max_levels": 2,
+          "trades": 50
+        },
+        {
+          "year": 2021,
+          "net_profit_pct": 13.18,
+          "max_drawdown_pct": 5.95,
+          "biggest_grid_pips": 330.6,
+          "avg_dd_first_trade_pct": 0.17,
+          "avg_dd_sequence_pct": 5.57,
+          "max_levels": 3,
+          "trades": 39
+        },
+        {
+          "year": 2022,
+          "net_profit_pct": 6.78,
+          "max_drawdown_pct": 2.19,
+          "biggest_grid_pips": 208.8,
+          "avg_dd_first_trade_pct": 0.33,
+          "avg_dd_sequence_pct": 2.19,
+          "max_levels": 2,
+          "trades": 52
+        },
+        {
+          "year": 2023,
+          "net_profit_pct": 11.68,
+          "max_drawdown_pct": 10.38,
+          "biggest_grid_pips": 484.0,
+          "avg_dd_first_trade_pct": 0.2,
+          "avg_dd_sequence_pct": 10.38,
+          "max_levels": 3,
+          "trades": 45
+        },
+        {
+          "year": 2024,
+          "net_profit_pct": 6.42,
+          "max_drawdown_pct": 4.13,
+          "biggest_grid_pips": 234.2,
+          "avg_dd_first_trade_pct": 0.15,
+          "avg_dd_sequence_pct": 2.88,
+          "max_levels": 2,
+          "trades": 46
+        },
+        {
+          "year": 2025,
+          "net_profit_pct": 9.03,
+          "max_drawdown_pct": 5.19,
+          "biggest_grid_pips": 459.2,
+          "avg_dd_first_trade_pct": 0.2,
+          "avg_dd_sequence_pct": 4.32,
+          "max_levels": 2,
+          "trades": 41
+        }
+      ]
+    },
+    {
+      "symbol": "AUDNZDX",
+      "yahoo_ticker": "AUDNZD=X",
+      "years": [
+        {
+          "year": 2020,
+          "net_profit_pct": 12.57,
+          "max_drawdown_pct": 7.34,
+          "biggest_grid_pips": 253.6,
+          "avg_dd_first_trade_pct": 0.17,
+          "avg_dd_sequence_pct": 3.1,
+          "max_levels": 3,
+          "trades": 47
+        },
+        {
+          "year": 2021,
+          "net_profit_pct": 9.06,
+          "max_drawdown_pct": 6.7,
+          "biggest_grid_pips": 279.0,
+          "avg_dd_first_trade_pct": 0.3,
+          "avg_dd_sequence_pct": 3.22,
+          "max_levels": 3,
+          "trades": 28
+        },
+        {
+          "year": 2022,
+          "net_profit_pct": 10.42,
+          "max_drawdown_pct": 3.25,
+          "biggest_grid_pips": 206.4,
+          "avg_dd_first_trade_pct": 0.21,
+          "avg_dd_sequence_pct": 2.74,
+          "max_levels": 2,
+          "trades": 40
+        },
+        {
+          "year": 2023,
+          "net_profit_pct": 13.53,
+          "max_drawdown_pct": 9.53,
+          "biggest_grid_pips": 429.4,
+          "avg_dd_first_trade_pct": 0.44,
+          "avg_dd_sequence_pct": 3.56,
+          "max_levels": 3,
+          "trades": 26
+        },
+        {
+          "year": 2024,
+          "net_profit_pct": 8.72,
+          "max_drawdown_pct": 5.02,
+          "biggest_grid_pips": 331.6,
+          "avg_dd_first_trade_pct": 0.21,
+          "avg_dd_sequence_pct": 2.74,
+          "max_levels": 2,
+          "trades": 28
+        },
+        {
+          "year": 2025,
+          "net_profit_pct": 7.47,
+          "max_drawdown_pct": 3.46,
+          "biggest_grid_pips": 157.2,
+          "avg_dd_first_trade_pct": 0.14,
+          "avg_dd_sequence_pct": 2.78,
+          "max_levels": 3,
+          "trades": 27
+        }
+      ]
+    }
+  ]
+}

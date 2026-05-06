@@ -4,6 +4,8 @@ Immersive single-page dashboard for the **TIA-9.72** systematic forex grid-tradi
 framework's 6-year walk-forward validation (2020–2025), overlaid against actual
 historical price action for the same 10 pairs.
 
+**Live**: https://theastark1-cpu.github.io/claude-central-hub/tia-972/
+
 Bloomberg-Terminal-meets-pitch-deck: dark mode, monospace numerics, three-zone
 layout, 3D-tilt cards, regime-detection overlays, drawdown replay, keyboard nav.
 
@@ -55,7 +57,6 @@ tia-972-dashboard/
 │       ├── stats.ts            # mean, stdev, sparkline, risk tier
 │       ├── format.ts           # pct/pips formatting
 │       ├── realityGap.ts       # strategy-vs-market per-year score
-│       ├── validationScore.ts  # 0–100 robustness blend
 │       └── regimeDetection.ts  # ATR + Bollinger → trending/ranging/vol bands
 ├── index.html, vite.config.ts, tsconfig.json
 └── tailwind.config.js, postcss.config.js
@@ -63,17 +64,19 @@ tia-972-dashboard/
 
 ## Three zones
 
-- **Zone A · Macro Grid** — 10 pair cards. Each shows 6-year cumulative,
-  average annual, peak DD, validation score, equity sparkline. Tier colour
-  (green / yellow / red) = avg max DD bucket. Mouse-tilt 3D effect; hover
-  expands to a year-by-year DD/return table. Click a DD% to replay that year.
+- **Zone A · Macro Grid** — 10 pair cards sorted by 6-year cumulative return.
+  Each shows cumulative, average annual, peak DD, total trades, equity
+  sparkline. Tier colour (green / yellow / red) = avg max DD bucket. Mouse-tilt
+  3D effect; hover expands to a year-by-year DD/return table. Click a DD% to
+  replay that year.
 - **Zone B · Temporal Arena** — left panel: stacked AreaChart of all 10 pairs'
   annual net profit, with a year scrubber. Right panel: real daily close for
   the selected pair, with regime bands (trending / ranging / high-vol /
   low-vol) and DD-intensity shading.
-- **Zone C · Comparator** — Strategy radar vs. Market radar side-by-side, the
-  validation score in the middle, and a per-year reality-gap table flagging
-  every fold as **Alpha Generated**, **In-Line**, or **Regime Mismatch**.
+- **Zone C · Comparator** — Strategy radar vs. Market radar side-by-side, a
+  6-year cumulative return readout in the middle, and a per-year reality-gap
+  table flagging every fold as **Alpha Generated**, **In-Line**, or
+  **Regime Mismatch**.
 
 ## Interactions
 
@@ -95,7 +98,7 @@ tia-972-dashboard/
 ## Methodology
 
 See [methodology.md](methodology.md) for the math behind risk tiers, regime
-detection, the Reality Gap score, and the 0–100 Validation Score.
+detection, and the Reality Gap score.
 
 ## Pairs covered
 

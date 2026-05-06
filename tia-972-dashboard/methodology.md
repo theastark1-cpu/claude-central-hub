@@ -44,19 +44,6 @@ Flags:
 
 `gap_score = clamp(strategy_return − 0.5 × market_vol, −10, +10)` — positive means strategy outperformed what the realized vol would justify.
 
-## Validation Score (0–100, per pair)
-
-Weighted blend across the 6 walk-forward folds:
-
-- **Profit consistency** (40%): `1 − stdev(returns) / mean(returns)`, clamped to [0, 1]. Penalizes years that swung wildly relative to the average.
-- **DD discipline** (30%): `1 − max(max_drawdown_pct) / 15`. The framework imposes a 15% per-asset risk cap; pairs that approached it are penalized.
-- **Trade-frequency stability** (15%): `1 − stdev(trades) / mean(trades)`, clamped.
-- **Profitability** (15%): `min(mean(returns) / 10, 1)` — pairs averaging 10%/yr or better get full credit.
-
-Score = `100 × (0.40·consistency + 0.30·dd_discipline + 0.15·trade_stability + 0.15·profitability)`.
-
-Expected calibration: EURUSDX ≈ 85+, NZDCADX ≈ 40–55 (high variance, several "None" grid years).
-
 ## Drawdown Replay caveat
 
 Yearly aggregates only — we don't have per-trade entry/exit timestamps.

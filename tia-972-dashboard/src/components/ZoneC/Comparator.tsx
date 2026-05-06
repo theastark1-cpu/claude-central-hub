@@ -8,8 +8,10 @@ import { Section } from "@/components/shared/Section";
 import { useDashboard } from "@/store/dashboard";
 import { useMarketData } from "@/hooks/useMarketData";
 import { yearlyMarketStats } from "@/utils/realityGap";
-import { validationScore, scoreColor, scoreLabel } from "@/utils/validationScore";
-import { avgAnnualReturn, peakMaxDD, totalTrades, mean, clamp } from "@/utils/stats";
+import {
+  avgAnnualReturn, peakMaxDD, totalTrades, cumulativeReturnPct,
+  mean, clamp,
+} from "@/utils/stats";
 import { fmtPct, fmtPctNoSign, prettySymbol } from "@/utils/format";
 
 export const Comparator = ({ data }: { data: StrategyData }) => {
@@ -22,13 +24,12 @@ export const Comparator = ({ data }: { data: StrategyData }) => {
     [pair, market],
   );
 
-  const score = validationScore(pair);
-  const scoreC = scoreColor(score);
-
   const avgRet = avgAnnualReturn(pair.years);
   const peak = peakMaxDD(pair.years);
   const trades = totalTrades(pair.years);
   const avgTradesYr = trades / pair.years.length;
+  const cumRet = cumulativeReturnPct(pair.years);
+  const ratio = peak > 0 ? avgRet / peak : 0;
   const gridResilience = mean(
     pair.years.map((y) => (y.biggest_grid_pips ? Math.min(y.biggest_grid_pips / 1000, 1) * 100 : 30)),
   );
@@ -89,14 +90,16 @@ export const Comparator = ({ data }: { data: StrategyData }) => {
         </div>
 
         <div className="col-span-12 lg:col-span-4 rounded-xl border border-border bg-panel p-5 flex flex-col items-center justify-center text-center">
-          <div className="text-[10px] uppercase tracking-[0.18em] text-muted">Validation Score</div>
+          <div className="text-[10px] uppercase tracking-[0.18em] text-muted">6-Year Cumulative</div>
           <div
-            className="mono text-7xl font-semibold mt-2"
-            style={{ color: scoreC, textShadow: `0 0 30px ${scoreC}40` }}
+            className="mono text-7xl font-semibold mt-2 text-profit"
+            style={{ textShadow: `0 0 30px #00d08440` }}
           >
-            {score}
+            {fmtPct(cumRet, 1)}
           </div>
-          <div className="text-sm mono mt-1" style={{ color: scoreC }}>{scoreLabel(score)}</div>
+          <div className="text-sm mono mt-1 text-muted">
+            {fmtPct(avgRet, 2)} avg/yr · {trades} trades
+          </div>
           <div className="grid grid-cols-3 gap-3 mt-6 w-full">
             <FlagCount label="Alpha" v={flagCounts.alpha} c="#00d084" />
             <FlagCount label="In-line" v={flagCounts.inline} c="#576574" />
@@ -104,8 +107,8 @@ export const Comparator = ({ data }: { data: StrategyData }) => {
           </div>
           <div className="mt-6 grid grid-cols-2 gap-3 w-full text-[11px] mono">
             <div className="rounded-md border border-border p-3">
-              <div className="text-muted text-[10px] uppercase tracking-wider">Strat avg/yr</div>
-              <div className="text-profit text-base mt-1">{fmtPct(avgRet, 2)}</div>
+              <div className="text-muted text-[10px] uppercase tracking-wider">Return / DD</div>
+              <div className="text-fg text-base mt-1">{ratio.toFixed(2)}×</div>
             </div>
             <div className="rounded-md border border-border p-3">
               <div className="text-muted text-[10px] uppercase tracking-wider">Realized vol</div>

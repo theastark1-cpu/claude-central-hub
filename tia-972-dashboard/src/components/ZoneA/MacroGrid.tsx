@@ -1,17 +1,17 @@
 import type { StrategyData } from "@/types";
 import { Section } from "@/components/shared/Section";
 import { PairCard } from "./PairCard";
-import { validationScore } from "@/utils/validationScore";
+import { cumulativeReturnPct } from "@/utils/stats";
 
 export const MacroGrid = ({ data }: { data: StrategyData }) => {
   const sorted = [...data.pairs].sort(
-    (a, b) => validationScore(b) - validationScore(a),
+    (a, b) => cumulativeReturnPct(b.years) - cumulativeReturnPct(a.years),
   );
   return (
     <Section
       eyebrow="Zone A · Macro Grid"
       title="Ten pairs, six folds, one risk envelope"
-      subtitle="Sorted by validation score (best → worst). Each card: 6-year cumulative, average annual, peak drawdown, equity sparkline. Tier color = avg max drawdown bucket. Hover for year-by-year. Click a DD% to replay that year."
+      subtitle="Sorted by 6-year cumulative return. Each card: cumulative, average annual, peak drawdown, total trades, equity sparkline. Tier color = avg max drawdown bucket. Hover for year-by-year. Click a DD% to replay that year."
       right={
         <div className="flex items-center gap-3 text-[11px] text-muted">
           <Legend swatch="#00d084" label="<5% avg DD" />

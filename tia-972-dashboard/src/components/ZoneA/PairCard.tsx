@@ -14,7 +14,6 @@ import {
   totalTrades,
   orderedYears,
 } from "@/utils/stats";
-import { validationScore, scoreColor, scoreLabel } from "@/utils/validationScore";
 import { fmtPctNoSign, fmtPct, prettySymbol } from "@/utils/format";
 
 interface Props { pair: Pair }
@@ -33,8 +32,6 @@ export const PairCard = ({ pair }: Props) => {
   const peak = peakMaxDD(pair.years);
   const avgDD = avgMaxDD(pair.years);
   const trades = totalTrades(pair.years);
-  const score = validationScore(pair);
-  const scoreC = scoreColor(score);
 
   const sw = 220, sh = 56;
   const sp = sparklinePath(pair.years, sw, sh);
@@ -56,19 +53,10 @@ export const PairCard = ({ pair }: Props) => {
           <div className="mono text-xs text-muted tracking-widest">{prettySymbol(pair.symbol)}</div>
           <div className="text-lg font-semibold mt-1">{pair.symbol.replace(/X$/, "")}</div>
         </div>
-        <div className="flex items-center gap-2">
-          <span
-            className="inline-flex items-center mono text-[10px] px-2 py-0.5 rounded-full"
-            style={{ backgroundColor: `${scoreC}1f`, color: scoreC }}
-            title={`Validation Score: ${scoreLabel(score)}`}
-          >
-            {score}
-          </span>
-          <span
-            className="w-2 h-2 rounded-full"
-            style={{ backgroundColor: c, boxShadow: `0 0 10px ${c}` }}
-          />
-        </div>
+        <span
+          className="w-2 h-2 rounded-full"
+          style={{ backgroundColor: c, boxShadow: `0 0 10px ${c}` }}
+        />
       </div>
 
       <div className="grid grid-cols-3 gap-3 mb-4">
