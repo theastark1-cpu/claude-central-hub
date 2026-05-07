@@ -94,11 +94,30 @@ Total partner economic interest = 31.25% of pre-distribution gross. Normalized p
 - Per-recipient amounts are NET (already after weighted costs / Coinbase fees)
 
 ### Member Structure (Per Nairne 2026-05-07)
-- **Nairne**: K-1 partner. Receives 50%×Fund Mgmt 59.5% + 0.5% direct = **30.25% economic interest**. Normalized ownership: 96.80%.
-- **AJ Affleck**: 1099 CONTRACTOR (NOT a partner). Receives 50%×Fund Mgmt 59.5% + her 39%-pool share. Total $37,139.89 in 2025.
-- **Raj Duggal**: K-1 partner. 0.5% direct. Normalized ownership: 1.60%.
-- **Phil**: K-1 partner. 0.5% direct. Normalized ownership: 1.60%. (Phil held the slice all of 2025; Alec replaced him in April 2026.)
-- Total K-1 partner economic interest: 31.25%
+
+**Two separate concepts** in this LLC:
+
+**1. LLC Ownership / Voting (90/5/5)** — governs decision-making, NOT income allocation:
+- Nairne: 90%
+- Raj: 5%
+- Phil: 5%
+
+**2. Income Distribution (commission structure)** — governs K-1 income allocation AND cash distributions:
+- 59.5% Management → split 50/50 between Nairne (K-1 partner) and AJ Affleck (1099 contractor)
+- 39% Capital-raiser pool → split among contractors based on which investors brought capital (1099 to Alec, Jake, AJ, Issac, Luke, Nikki)
+- 0.5% direct → Nairne (K-1 partner)
+- 0.5% direct → Raj (K-1 partner)
+- 0.5% direct → Phil (K-1 partner)
+
+**K-1 partners and their income share** (= the parts of the commission structure flowing to partners):
+- **Nairne**: 50%×59.5% + 0.5% = **30.25%** of pre-distribution gross. Normalized: 96.80% of partner share.
+- **Raj Duggal**: 0.5%. Normalized: 1.60% of partner share.
+- **Phil**: 0.5%. Normalized: 1.60% of partner share. (Phil held the slice all of 2025; Alec replaced him in April 2026.)
+- **Total partner share**: 31.25% of pre-distribution gross.
+
+**1099 contractors** (NOT partners — receive contractor income, not K-1):
+- AJ Affleck: 50%×59.5% Mgmt + her 39%-pool share = $37,139.89 in 2025
+- Alec, Jake, Issac, Luke, Nikki, Chris (operating)
 
 ### Accounting Method
 - **ACCRUAL basis** elected for tax minimization (recognize Aug-Dec deductions in 2025 even if some cash settled in early 2026).

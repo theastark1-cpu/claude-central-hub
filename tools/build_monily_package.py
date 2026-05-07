@@ -101,10 +101,21 @@ def compute_year_totals():
 
     net_income = revenue - contractor_total - op_total
 
-    # NEW K-1 ownership %: Nairne 30.25/31.25, Raj 0.5/31.25, Phil 0.5/31.25
-    nairne_pct = 30.25 / 31.25  # 96.80%
-    raj_pct = 0.5 / 31.25       # 1.60%
-    phil_pct = 0.5 / 31.25      # 1.60%
+    # K-1 INCOME ALLOCATION (per Nairne 2026-05-07 clarification):
+    # The commission/operating structure governs how partnership INCOME is allocated:
+    #   59.5% Management (Nairne 50% + AJ 50%)
+    #   39%   Contractor pool (Alec, Jake, AJ, etc.) — non-partners
+    #   0.5%  Nairne (direct slice)
+    #   0.5%  Raj
+    #   0.5%  Phil
+    # Of this, partners (Nairne, Raj, Phil) receive in TOTAL: 30.25 + 0.5 + 0.5 = 31.25% of pre-distribution gross.
+    # Normalized partner ownership for K-1: Nairne 30.25/31.25 = 96.80%, Raj/Phil 1.60% each.
+    #
+    # SEPARATELY: the LLC Operating Agreement specifies 90/5/5 voting/decision-making rights —
+    # this governs CONTROL, not income allocation. (Common in LLCs to have these decoupled.)
+    nairne_pct = 30.25 / 31.25   # 96.80% of partner share
+    raj_pct = 0.5 / 31.25        # 1.60%
+    phil_pct = 0.5 / 31.25       # 1.60%
 
     return {
         "year_totals": year_totals,
@@ -241,16 +252,16 @@ def build_cover_tab(wb, T):
         r += 1
     r += 1
 
-    r = write_section(ws, r, "K-1 PARTNERS (3 partners) — Per Nairne 2026-05-07: Fund Mgmt 59.5% split 50/50 between Nairne (K-1) and AJ (1099)", ncols=4)
-    headers = ["Partner", "Ownership %", "Cash Distributions ($)", "Allocated K-1 Income ($)"]
+    r = write_section(ws, r, "K-1 PARTNERS — Income Allocation (per commission structure, NOT 90/5/5 voting rights)", ncols=4)
+    headers = ["Partner", "Income Share % (commission)", "Cash Distributions ($)", "K-1 Box 1 Income ($)"]
     for i, h in enumerate(headers, 1):
         ws.cell(row=r, column=i, value=h)
     set_header_row(ws, r, 4)
     r += 1
     k1_rows = [
-        (f"Nairne (50%×Fund Mgmt 59.5% + direct 0.5% = 30.25% of perf fees)", T["nairne_pct"], T["nairne_cash"], T["net_income"] * T["nairne_pct"]),
-        ("Raj Duggal (direct 0.5%)", T["raj_pct"], T["raj_cash"], T["net_income"] * T["raj_pct"]),
-        ("Phil (direct 0.5%)", T["phil_pct"], T["phil_cash"], T["net_income"] * T["phil_pct"]),
+        ("Nairne (50%×Mgmt 59.5% + 0.5% direct = 30.25% economic)", T["nairne_pct"], T["nairne_cash"], T["net_income"] * T["nairne_pct"]),
+        ("Raj Duggal (0.5% direct)", T["raj_pct"], T["raj_cash"], T["net_income"] * T["raj_pct"]),
+        ("Phil (0.5% direct)", T["phil_pct"], T["phil_cash"], T["net_income"] * T["phil_pct"]),
     ]
     for partner, pct, cash, allocated in k1_rows:
         ws.cell(row=r, column=1, value=partner)
@@ -260,7 +271,9 @@ def build_cover_tab(wb, T):
         for c in range(1, 5):
             ws.cell(row=r, column=c).fill = K1_FILL
         r += 1
-    r += 1
+    ws.cell(row=r, column=1, value="(LLC voting/decision-making is 90/5/5 — separate from income allocation above)").font = Font(italic=True, color="666666")
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=4)
+    r += 2
 
     r = write_section(ws, r, "TAB GUIDE", ncols=4)
     tab_guide = [
@@ -686,28 +699,28 @@ def build_k1_tab(wb, T):
     ws = wb.create_sheet("6. K-1 Partners")
     r = title_block(ws, "K-1 Partner Schedule", ncols=6)
 
-    ws.cell(row=r, column=1, value="Per Nairne 2026-05-07: 3 K-1 partners. Fund Mgmt 59.5% slice is split 50/50 — half to AJ Affleck (1099 contractor) and half to Nairne (K-1). Plus direct 0.5% slices to Nairne, Raj, and Phil. Total partner economic interest = 31.25% of pre-distribution gross.").font = Font(italic=True, color="C00000")
+    ws.cell(row=r, column=1, value="Per Nairne 2026-05-07: K-1 income is allocated by the COMMISSION/INCOME STRUCTURE (not by 90/5/5 LLC voting rights). Income flows: 59.5% Management (split 50/50 between Nairne K-1 and AJ 1099) + 39% to capital-raiser contractors (1099, by investor) + 0.5% each to Nairne, Raj, Phil. Partners (Nairne 30.25% + Raj 0.5% + Phil 0.5% = 31.25% total) get K-1s. The 90/5/5 LLC ownership governs voting/decision-making, NOT income allocation.").font = Font(italic=True, color="C00000")
     ws.cell(row=r, column=1).alignment = Alignment(wrap_text=True)
     ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=6)
-    ws.row_dimensions[r].height = 45
+    ws.row_dimensions[r].height = 75
     r += 2
 
-    headers = ["Partner Name", "Economic Interest", "Ownership % (Normalized)", "Cash Distributions ($)", "K-1 Allocated Net Income ($)", "SSN/Address (fill in)"]
+    headers = ["Partner Name", "Income Source (per commission)", "Income Share %", "Cash Distributions Received ($)", "K-1 Box 1 Income ($)", "SSN/Address (fill in)"]
     for i, h in enumerate(headers, 1):
         ws.cell(row=r, column=i, value=h)
     set_header_row(ws, r, 6)
     r += 1
 
     partners = [
-        ("Nairne", "30.25% (= 50%×Fund Mgmt 59.5% + direct 0.5%)", T["nairne_pct"], T["nairne_cash"]),
-        ("Raj Duggal", "0.50% (direct)", T["raj_pct"], T["raj_cash"]),
-        ("Phil", "0.50% (direct)", T["phil_pct"], T["phil_cash"]),
+        ("Nairne", "50%×Mgmt 59.5% + 0.5% direct = 30.25% pre-distribution", T["nairne_pct"], T["nairne_cash"]),
+        ("Raj Duggal", "0.5% direct", T["raj_pct"], T["raj_cash"]),
+        ("Phil", "0.5% direct", T["phil_pct"], T["phil_cash"]),
     ]
     total_cash = 0
     total_alloc = 0
-    for name, interest, pct, cash in partners:
+    for name, source, pct, cash in partners:
         ws.cell(row=r, column=1, value=name)
-        ws.cell(row=r, column=2, value=interest)
+        ws.cell(row=r, column=2, value=source)
         ws.cell(row=r, column=3, value=f"{pct*100:.2f}%")
         ws.cell(row=r, column=4, value=cash).number_format = MONEY
         alloc = T["net_income"] * pct
@@ -719,9 +732,8 @@ def build_k1_tab(wb, T):
         total_alloc += alloc
         r += 1
 
-    ws.cell(row=r, column=1, value="TOTAL").font = Font(bold=True)
-    ws.cell(row=r, column=2, value="31.25% partner / 68.75% non-partner")
-    ws.cell(row=r, column=3, value="100.00%")
+    ws.cell(row=r, column=1, value="TOTAL (partners only — non-partner contractors get 1099s, not K-1s)").font = Font(bold=True)
+    ws.cell(row=r, column=3, value="100% partner share")
     ws.cell(row=r, column=4, value=total_cash).number_format = MONEY
     ws.cell(row=r, column=5, value=total_alloc).number_format = MONEY
     for c in range(1, 7):
@@ -729,15 +741,38 @@ def build_k1_tab(wb, T):
         ws.cell(row=r, column=c).font = Font(bold=True)
     r += 2
 
+    # Capital account analysis
+    r = write_section(ws, r, "CAPITAL ACCOUNT ANALYSIS (per partner)", 6)
+    headers = ["Partner", "K-1 Box 1 Income (+ to capital)", "Cash Distributions (− from capital)", "Net Capital Change", "", "Notes"]
+    for i, h in enumerate(headers, 1):
+        ws.cell(row=r, column=i, value=h)
+    set_header_row(ws, r, 6)
+    r += 1
+    for name, _, pct, cash in partners:
+        alloc = T["net_income"] * pct
+        net_change = alloc - cash
+        ws.cell(row=r, column=1, value=name)
+        ws.cell(row=r, column=2, value=alloc).number_format = MONEY
+        ws.cell(row=r, column=3, value=-cash).number_format = MONEY
+        ws.cell(row=r, column=4, value=net_change).number_format = MONEY
+        ws.cell(row=r, column=6, value="Capital decreases" if net_change < 0 else "Capital increases")
+        if net_change < 0:
+            ws.cell(row=r, column=4).font = Font(bold=True, color="C00000")
+        else:
+            ws.cell(row=r, column=4).font = Font(bold=True, color="006400")
+        r += 1
+    r += 1
+
     ws.cell(row=r, column=1, value="NOTES").font = Font(bold=True)
     r += 1
     notes = [
-        "Per Nairne 2026-05-07: the 59.5% Fund Management slice is split 50/50 between AJ Affleck (1099 contractor) and Nairne (K-1 partner). AJ's $37,139.89 in 2025 1099 income includes BOTH her 39%-pool consultant share AND her 50%×Fund Mgmt share.",
-        "Nairne's K-1 economic interest is 30.25% of pre-distribution gross (= 50%×59.5% + 0.5% direct).",
-        "Total K-1 partner interest = 31.25% (Nairne 30.25 + Raj 0.5 + Phil 0.5). Normalized partner ownership: Nairne 96.80%, Raj 1.60%, Phil 1.60%.",
-        "Cash Distributions and Allocated K-1 Income are different concepts in partnership tax. K-1 Box 1 reports allocated income (taxable to partner); Box L tracks capital account changes from cash distributions (NOT additionally taxed).",
-        "K-1 issuance: ALL partners receive a K-1 every year regardless of dollar amount — even tiny allocations like Raj's $125 require a K-1. There is no $600 threshold for K-1s (unlike 1099s).",
-        "The actual LLC operating agreement governs the legal allocation. Confirm with accountant before filing.",
+        "TWO SEPARATE CONCEPTS: (a) LLC OWNERSHIP / VOTING = 90/5/5 (Nairne/Raj/Phil) — controls decision-making. (b) INCOME ALLOCATION = commission structure (Nairne 30.25% / Raj 0.5% / Phil 0.5% = 31.25% total partner) — controls K-1 Box 1.",
+        "The operating agreement specifies the income allocation as a 'special allocation' that must have substantial economic effect under IRS regs §1.704-1(b). The accountant should confirm this is properly documented.",
+        "AJ Affleck is NOT a partner — she's a 1099 contractor. Her 50%×Fund Mgmt 59.5% share is contractor income, not a partner allocation.",
+        "Nairne's cash distributions ($34,189) exceed her K-1 income allocation ($24,992). The excess $9,197 reduces her capital account.",
+        "Raj/Phil's cash distributions ($947 each) exceed their K-1 income allocations ($413 each). The excess $534 each reduces their capital accounts.",
+        "K-1 issuance: ALL partners receive a K-1 every year regardless of dollar amount. No $600 threshold (unlike 1099s).",
+        "If a partner's capital account goes negative at year-end, the accountant may need to: (a) document initial capital contributions at formation, (b) reclassify excess distributions as Guaranteed Payments (Form 1065 Line 10), or (c) treat as a partner loan. The operating agreement governs.",
     ]
     for note in notes:
         ws.cell(row=r, column=1, value=note).alignment = Alignment(wrap_text=True)
@@ -1011,11 +1046,30 @@ Total partner economic interest = 31.25% of pre-distribution gross. Normalized p
 - Per-recipient amounts are NET (already after weighted costs / Coinbase fees)
 
 ### Member Structure (Per Nairne 2026-05-07)
-- **Nairne**: K-1 partner. Receives 50%×Fund Mgmt 59.5% + 0.5% direct = **30.25% economic interest**. Normalized ownership: 96.80%.
-- **AJ Affleck**: 1099 CONTRACTOR (NOT a partner). Receives 50%×Fund Mgmt 59.5% + her 39%-pool share. Total $37,139.89 in 2025.
-- **Raj Duggal**: K-1 partner. 0.5% direct. Normalized ownership: 1.60%.
-- **Phil**: K-1 partner. 0.5% direct. Normalized ownership: 1.60%. (Phil held the slice all of 2025; Alec replaced him in April 2026.)
-- Total K-1 partner economic interest: 31.25%
+
+**Two separate concepts** in this LLC:
+
+**1. LLC Ownership / Voting (90/5/5)** — governs decision-making, NOT income allocation:
+- Nairne: 90%
+- Raj: 5%
+- Phil: 5%
+
+**2. Income Distribution (commission structure)** — governs K-1 income allocation AND cash distributions:
+- 59.5% Management → split 50/50 between Nairne (K-1 partner) and AJ Affleck (1099 contractor)
+- 39% Capital-raiser pool → split among contractors based on which investors brought capital (1099 to Alec, Jake, AJ, Issac, Luke, Nikki)
+- 0.5% direct → Nairne (K-1 partner)
+- 0.5% direct → Raj (K-1 partner)
+- 0.5% direct → Phil (K-1 partner)
+
+**K-1 partners and their income share** (= the parts of the commission structure flowing to partners):
+- **Nairne**: 50%×59.5% + 0.5% = **30.25%** of pre-distribution gross. Normalized: 96.80% of partner share.
+- **Raj Duggal**: 0.5%. Normalized: 1.60% of partner share.
+- **Phil**: 0.5%. Normalized: 1.60% of partner share. (Phil held the slice all of 2025; Alec replaced him in April 2026.)
+- **Total partner share**: 31.25% of pre-distribution gross.
+
+**1099 contractors** (NOT partners — receive contractor income, not K-1):
+- AJ Affleck: 50%×59.5% Mgmt + her 39%-pool share = $37,139.89 in 2025
+- Alec, Jake, Issac, Luke, Nikki, Chris (operating)
 
 ### Accounting Method
 - **ACCRUAL basis** elected for tax minimization (recognize Aug-Dec deductions in 2025 even if some cash settled in early 2026).
