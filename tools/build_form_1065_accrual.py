@@ -159,9 +159,12 @@ def compute_totals():
     ordinary_business_income = revenue - total_deductions
 
     # K-1 ownership %
-    nairne_pct = 60.0 / 61.0
-    raj_pct = 0.5 / 61.0
-    phil_pct = 0.5 / 61.0
+    # Per Nairne 2026-05-07: 59.5% Fund Mgmt split 50/50 between Nairne (K-1) and AJ (1099)
+    # Nairne K-1 economic interest: 50%×59.5% + 0.5% direct = 30.25%
+    # Total partner interest: 30.25 + 0.5 + 0.5 = 31.25%
+    nairne_pct = 30.25 / 31.25  # 96.80%
+    raj_pct = 0.5 / 31.25       # 1.60%
+    phil_pct = 0.5 / 31.25      # 1.60%
 
     return {
         "yt": yt,
@@ -312,7 +315,7 @@ def build_cover(wb, T):
         ("1. Cover & Filing Info", "This tab — entity, method elections, headline numbers"),
         ("2. Form 1065 Page 1", "Income & Deductions (Lines 1–22)"),
         ("3. Schedule K", "Partners' Distributive Share (aggregate)"),
-        ("4. K-1 Nairne", "Schedule K-1 for Nairne (60%)"),
+        ("4. K-1 Nairne", "Schedule K-1 for Nairne (30.25% economic / 96.80% normalized)"),
         ("5. K-1 Raj Duggal", "Schedule K-1 for Raj Duggal (0.5%)"),
         ("6. K-1 Phil", "Schedule K-1 for Phil (0.5%)"),
         ("7. Schedule L", "Balance Sheet per Books (Beginning + End)"),
@@ -503,7 +506,7 @@ def build_schedule_k(wb, T):
 
     r = section(ws, r, "ANALYSIS OF NET INCOME", 4)
     line("—", "Net income per Schedule K (Line 1)", T["ordinary_business_income"],
-         "Allocated to partners per ownership: Nairne 98.36%, Raj 0.82%, Phil 0.82%",
+         "Allocated to partners per ownership: Nairne 96.80%, Raj 1.60%, Phil 1.60% (per Nairne 2026-05-07 — 50%×Fund Mgmt to AJ as 1099)",
          bold=True, fill=TOTAL_FILL)
 
     ws.column_dimensions["A"].width = 12
@@ -1075,6 +1078,6 @@ if __name__ == "__main__":
     print(f"  Revenue:              ${T['revenue']:>12,.2f}")
     print(f"  Total Deductions:     ${T['total_deductions']:>12,.2f}")
     print(f"  Ordinary Bus Income:  ${T['ordinary_business_income']:>12,.2f}")
-    print(f"  Nairne K-1 (98.36%):  ${T['nairne_k1_income']:>12,.2f}")
-    print(f"  Raj K-1 (0.82%):      ${T['raj_k1_income']:>12,.2f}")
-    print(f"  Phil K-1 (0.82%):     ${T['phil_k1_income']:>12,.2f}")
+    print(f"  Nairne K-1 (96.80%):  ${T['nairne_k1_income']:>12,.2f}")
+    print(f"  Raj K-1 (1.60%):      ${T['raj_k1_income']:>12,.2f}")
+    print(f"  Phil K-1 (1.60%):     ${T['phil_k1_income']:>12,.2f}")

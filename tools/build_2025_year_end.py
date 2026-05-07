@@ -801,9 +801,11 @@ def build_workbook(agg: dict) -> None:
     # Partnership net income (what gets allocated on K-1 schedule K)
     net_income = total_perf_fees - contractor_1099 - op_expense_year_total
     # Per ownership: Nairne 60/61, Raj 0.5/61, Phil 0.5/61 (derived; op agreement governs)
-    nairne_ownership = 60.0 / 61.0
-    raj_ownership = 0.5 / 61.0
-    phil_ownership = 0.5 / 61.0
+    # Per Nairne 2026-05-07: Fund Mgmt 59.5% split 50/50 with AJ (1099)
+    # Nairne economic interest: 30.25%; Raj/Phil 0.5% each; Total partner = 31.25%
+    nairne_ownership = 30.25 / 31.25  # 96.80%
+    raj_ownership = 0.5 / 31.25       # 1.60%
+    phil_ownership = 0.5 / 31.25      # 1.60%
 
     for member, owner_pct, cash in [
         ("Nairne", nairne_ownership, nairne_total),
@@ -845,7 +847,7 @@ def build_workbook(agg: dict) -> None:
         "Operating expenses include items that may be reclassed by the accountant (506c SPV Loans → balance sheet; Insurance $18k may need annual proration).",
         "Cash-basis 1099s (above) may differ from accrual-basis (TPA-derived). Confirm GP's tax basis with accountant.",
         "TruQuant payments are excluded per Nairne 2026-04-30 (TQ is not a GP expense).",
-        "Ownership % shown (Nairne 98.36%/Raj 0.82%/Phil 0.82%) is derived from the 60/0.5/0.5 split. The actual LLC operating agreement governs — confirm with the accountant before filing.",
+        "Ownership % shown (Nairne 96.80%/Raj 1.60%/Phil 1.60%) is derived from the 30.25/0.5/0.5 partner split (Nairne's 30.25% = 50%×Fund Mgmt 59.5% + 0.5% direct, per Nairne 2026-05-07). AJ Affleck receives the OTHER 50% of Fund Mgmt 59.5% as a 1099 contractor. The actual LLC operating agreement governs — confirm with the accountant before filing.",
     ]
     r += 1
     for note in notes:
@@ -1443,9 +1445,11 @@ def build_markdown(agg: dict) -> None:
     phil_actual = actual_year_totals.get("Phil", 0)
     contractor_1099 = sum(v for k, v in actual_year_totals.items() if k not in K1_RECIPIENTS)
     net_income = total_perf_fees - contractor_1099 - op_expense_year
-    nairne_ownership = 60.0 / 61.0
-    raj_ownership = 0.5 / 61.0
-    phil_ownership = 0.5 / 61.0
+    # Per Nairne 2026-05-07: Fund Mgmt 59.5% split 50/50 with AJ (1099)
+    # Nairne economic interest: 30.25%; Raj/Phil 0.5% each; Total partner = 31.25%
+    nairne_ownership = 30.25 / 31.25  # 96.80%
+    raj_ownership = 0.5 / 31.25       # 1.60%
+    phil_ownership = 0.5 / 31.25      # 1.60%
 
     lines.append("## Bottom Line")
     lines.append("")

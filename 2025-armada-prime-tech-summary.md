@@ -19,15 +19,15 @@
 
 **K-1 partner allocations** (Nairne 60% = Fund Mgmt 59.5% + direct 0.5%; Raj 0.5%; Phil 0.5%):
 
-- **Nairne** (98.36% ownership):
+- **Nairne** (96.80% ownership):
   - Cash distributions: $34,188.88 (Fund Mgmt $0.00 + direct 0.5% $34,188.88)
-  - Allocated share of net income: $10,862.18
-- **Raj Duggal** (0.82% ownership):
+  - Allocated share of net income: $10,689.84
+- **Raj Duggal** (1.60% ownership):
   - Cash distributions: $946.97
-  - Allocated share of net income: $90.52
-- **Phil** (0.82% ownership):
+  - Allocated share of net income: $176.69
+- **Phil** (1.60% ownership):
   - Cash distributions: $946.97
-  - Allocated share of net income: $90.52
+  - Allocated share of net income: $176.69
 
 ## Monthly Roll-Up
 

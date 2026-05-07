@@ -18,63 +18,67 @@
 
 ---
 
-## Headline Numbers (2025)
+## Headline Numbers (2025) — Tax-Reclass Basis
 
-| Line | GAAP-Basis | After Tax-Reclass |
-|---|---:|---:|
-| **Revenue** (Performance Fees from Armada Prime LLP) | $153,023.03 | $153,023.03 |
-| Direct Costs (1099 contractor commissions) | ($86,754.81) | ($86,754.81) |
-| Operating Expenses | ($55,225.00) | ($40,450.00) |
-| **Net Income (Partnership)** | **$11,043.22** | **$25,818.22** |
+| Line | Amount |
+|---|---:|
+| **Revenue** (Performance Fees from Armada Prime LLP) | $153,023.03 |
+| Less: Direct Costs (1099 contractor commissions) | ($86,754.81) |
+| Less: Operating Expenses (after reclass) | ($40,450.00) |
+| **PARTNERSHIP NET INCOME** | **$25,818.22** |
 
-The GAAP→reclass swing is **$4,275 in 506c SPV Loans** (move to balance sheet) and **$10,500 in Insurance proration** (Dec $18K is annual D&O — only 5/12 hits 2025).
+Tax-reclass adjustments: $4,275 SPV Loan moved to Balance Sheet; $10,500 Insurance pro-rated to Prepaid Asset (only $7,500 of the $18K Dec premium hits 2025 P&L for the 5-month operating period).
 
 ---
 
-## Member Structure & K-1 Allocation (3 Partners)
+## Member Structure & K-1 Allocation (3 Partners) — Per Nairne 2026-05-07
 
-Per Nairne 2026-05-05 — **Phil corrected to K-1 partner** (was previously thought to be a 1099 contractor).
+The 59.5% Fund Mgmt slice is split 50/50 between **AJ Affleck (1099 contractor)** and **Nairne (K-1 partner)**.
 
-| Member | Ownership % | Cash Distributions Received | K-1 Allocated Net Income (Reclass-Basis) |
-|---|---:|---:|---:|
-| **Nairne** | 98.36% (60/61) | $34,188.88 | $25,394.97 |
-| **Raj Duggal** | 0.82% (0.5/61) | $946.97 | $211.62 |
-| **Phil** | 0.82% (0.5/61) | $946.97 | $211.62 |
+| Member | Economic Interest | Ownership % | Cash Distributions | K-1 Allocated Net Income |
+|---|---|---:|---:|---:|
+| **Nairne** | 30.25% (50%×Fund Mgmt + 0.5% direct) | 96.80% | $34,188.88 | $24,992.04 |
+| **Raj Duggal** | 0.50% (direct) | 1.60% | $946.97 | $413.09 |
+| **Phil** | 0.50% (direct) | 1.60% | $946.97 | $413.09 |
 
-Nairne's 60% = Fund Management 59.5% slice + direct 0.5%. The Fund Management slice is K-1 income to Nairne (NOT a separate entity expense / 1099).
+Total partner economic interest = 31.25% of pre-distribution gross. Normalized partner ownership: Nairne 96.80%, Raj 1.60%, Phil 1.60%.
 
 ---
 
 ## 1099-NEC Recipients (Aug–Dec 2025 totals)
 
-| Recipient | 2025 Total |
-|---|---:|
-| Alec Atkinson | $38,076.87 |
-| Jake Gordon | $10,388.66 |
-| AJ Affleck | $37,139.89 |
-| Issac Morris | $761.49 |
-| Luke Affleck | $164.90 |
-| Nikki | $223.00 |
-| Chris (operating contractor) | $11,500.00 |
-| **Total 1099 Payments** | **$98,254.81** |
+| Recipient | 2025 Total | 1099 Required? |
+|---|---:|---|
+| Alec Atkinson | $38,076.87 | YES (>$600) |
+| **AJ Affleck** | **$37,139.89** | **YES — includes 50%×Fund Mgmt** |
+| Jake Gordon | $10,388.66 | YES (>$600) |
+| Chris (operating) | $11,500.00 | YES (>$600) |
+| Issac Morris | $761.49 | YES (>$600) |
+| Nikki | $223.00 | NO — under $600 |
+| Luke Affleck | $164.90 | NO — under $600 |
+| **Total Contractor Expense** | **$98,254.81** | |
 
 **Phil is NOT on the 1099 list** — Phil is a K-1 partner. See K-1 Partners tab.
 
+**Threshold rules:**
+- 1099-NEC: required when payment ≥$600/year per recipient. Luke + Nikki are below — no 1099 issuance, but expenses still flow through P&L.
+- K-1: NO threshold. All partners (Nairne, Raj, Phil) receive K-1s every year regardless of dollar amount.
+
 ---
 
-## Operating Expenses Summary
+## Operating Expenses Summary (Tax-Reclass)
 
-| Category | GAAP Amount | Reclass-Adjusted | Reclass Reason |
-|---|---:|---:|---|
-| Insurance | $18,000.00 | $7,500.00 | Annual D&O policy → pro-rate to 5/12 of year |
-| Chris (contractor labor) | $11,500.00 | $11,500.00 | — |
-| PVD | $12,000.00 | $12,000.00 | — *(verify vendor for 1099)* |
-| Website | $7,500.00 | $7,500.00 | — |
-| Ad Spend / Marketing | $5,000.00 | $5,000.00 | — |
-| Alpha Verification | $2,250.00 | $2,250.00 | — |
-| TPA Admin Fees | $5,700.00 | $5,700.00 | — *(may overlap fund-level admin)* |
-| 506c SPV Loan | $4,275.00 | $0.00 | **MOVE TO BALANCE SHEET (loan/capital)** |
-| **Total** | **$55,225.00** | **$40,450.00** | |
+| Category | Amount | Notes |
+|---|---:|---|
+| Insurance (D&O, pro-rated 5/12) | $7,500.00 | Remaining $10,500 → Prepaid Asset on Balance Sheet |
+| Chris (contractor labor) | $4,000.00 | Dec only; 1099-NEC required |
+| Consulting | $7,500.00 | Nov only |
+| PVD (Tech/Ads) | $6,000.00 | Aug only; verify 1099 obligation |
+| Website | $7,500.00 | Oct only |
+| Alpha Verification | $2,250.00 | Nov only |
+| TPA Admin Fees (Formidium) | $5,700.00 | $600 Nov + $5,100 Dec |
+| **Total Operating Expenses** | **$40,450.00** | |
+| (Reclassified to Balance Sheet) | $4,275.00 | 506c SPV Loan → loan receivable |
 
 ---
 
@@ -89,11 +93,15 @@ Nairne's 60% = Fund Management 59.5% slice + direct 0.5%. The Fund Management sl
 - All payments are CASH BASIS — what was actually disbursed each month
 - Per-recipient amounts are NET (already after weighted costs / Coinbase fees)
 
-### Member Structure (Updated 2026-05-05)
-- **Nairne**: 60% ownership (= Fund Mgmt 59.5% + direct 0.5%) — K-1 partner
-- **Raj Duggal**: 0.5% ownership — K-1 partner
-- **Phil**: 0.5% ownership — K-1 partner *(corrected from prior 1099 status)*
-- Phil held the 0.5% slice all of 2025; Alec replaced him in April 2026
+### Member Structure (Per Nairne 2026-05-07)
+- **Nairne**: K-1 partner. Receives 50%×Fund Mgmt 59.5% + 0.5% direct = **30.25% economic interest**. Normalized ownership: 96.80%.
+- **AJ Affleck**: 1099 CONTRACTOR (NOT a partner). Receives 50%×Fund Mgmt 59.5% + her 39%-pool share. Total $37,139.89 in 2025.
+- **Raj Duggal**: K-1 partner. 0.5% direct. Normalized ownership: 1.60%.
+- **Phil**: K-1 partner. 0.5% direct. Normalized ownership: 1.60%. (Phil held the slice all of 2025; Alec replaced him in April 2026.)
+- Total K-1 partner economic interest: 31.25%
+
+### Accounting Method
+- **ACCRUAL basis** elected for tax minimization (recognize Aug-Dec deductions in 2025 even if some cash settled in early 2026).
 
 ---
 

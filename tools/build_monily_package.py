@@ -73,6 +73,15 @@ PERIOD_DESC = "Aug 1, 2025 – Dec 31, 2025"
 # ---------------------------------------------------------------------------
 
 def compute_year_totals():
+    """Per Nairne 2026-05-07:
+       - 59.5% Fund Mgmt slice split 50/50 between Nairne (K-1) and AJ (1099)
+       - AJ stays a 1099 contractor; her cash already reflects both her 39%-pool
+         consultant share AND her 50%×Fund Mgmt share
+       - Nairne K-1 economic interest: 50%×59.5% + 0.5% direct = 30.25%
+       - Raj/Phil K-1 economic interest: 0.5% each
+       - Total partner interest: 31.25%
+       - Tax-Reclass only (GAAP column removed)
+    """
     year_totals = {}
     for period, recipients in ACTUAL_PAID.items():
         for k, v in recipients.items():
@@ -85,18 +94,17 @@ def compute_year_totals():
     contractor_total = sum(v for k, v in year_totals.items() if k not in K1_RECIPIENTS)
 
     op_expenses = aggregate_op_expenses()
-    op_total_gaap = sum(op_expenses.values())
-    spv_reclass = 4275  # Aug only (Oct $25K removed from expenses per Nairne 2026-05-07)
+    op_total_gross = sum(op_expenses.values())
+    spv_reclass = 4275  # Aug only — moves to Balance Sheet
     insurance_prorate = 18000 - 7500
-    op_total_reclass = op_total_gaap - spv_reclass - insurance_prorate
+    op_total = op_total_gross - spv_reclass - insurance_prorate  # tax-reclass amount
 
-    net_gaap = revenue - contractor_total - op_total_gaap
-    net_reclass = revenue - contractor_total - op_total_reclass
+    net_income = revenue - contractor_total - op_total
 
-    # Ownership %
-    nairne_pct = 60.0 / 61.0
-    raj_pct = 0.5 / 61.0
-    phil_pct = 0.5 / 61.0
+    # NEW K-1 ownership %: Nairne 30.25/31.25, Raj 0.5/31.25, Phil 0.5/31.25
+    nairne_pct = 30.25 / 31.25  # 96.80%
+    raj_pct = 0.5 / 31.25       # 1.60%
+    phil_pct = 0.5 / 31.25      # 1.60%
 
     return {
         "year_totals": year_totals,
@@ -106,12 +114,11 @@ def compute_year_totals():
         "phil_cash": phil_total,
         "contractor_total": contractor_total,
         "op_expenses": op_expenses,
-        "op_total_gaap": op_total_gaap,
-        "op_total_reclass": op_total_reclass,
+        "op_total_gross": op_total_gross,
+        "op_total": op_total,
         "spv_reclass": spv_reclass,
         "insurance_prorate": insurance_prorate,
-        "net_gaap": net_gaap,
-        "net_reclass": net_reclass,
+        "net_income": net_income,
         "nairne_pct": nairne_pct,
         "raj_pct": raj_pct,
         "phil_pct": phil_pct,
@@ -210,23 +217,23 @@ def build_cover_tab(wb, T):
         r += 1
     r += 1
 
-    r = write_section(ws, r, "HEADLINE NUMBERS", ncols=4)
-    headers = ["Line Item", "GAAP-Basis ($)", "Tax-Reclass ($)", "Notes"]
+    r = write_section(ws, r, "HEADLINE NUMBERS (Tax-Reclass Basis)", ncols=4)
+    headers = ["Line Item", "Amount ($)", "Notes", ""]
     for i, h in enumerate(headers, 1):
         ws.cell(row=r, column=i, value=h)
     set_header_row(ws, r, 4)
     r += 1
     rows = [
-        ("Revenue (Performance Fees from Armada Prime LLP)", T["revenue"], T["revenue"], "TPA-authoritative; Aug-Dec 2025"),
-        ("Less: 1099 Contractor Expenses (Alec, Jake, AJ, Issac, Luke)", -T["contractor_total"], -T["contractor_total"], "Phil moved to K-1 per Nairne 2026-05-05"),
-        ("Less: Operating Expenses", -T["op_total_gaap"], -T["op_total_reclass"], "Reclass moves $4,275 SPV loans to balance sheet, pro-rates Insurance"),
-        ("PARTNERSHIP NET INCOME", T["net_gaap"], T["net_reclass"], "Allocated to K-1 partners"),
+        ("Revenue (Performance Fees from Armada Prime LLP)", T["revenue"], "TPA-authoritative; Aug-Dec 2025"),
+        ("Less: 1099 Contractor Expenses", -T["contractor_total"], "Alec, Jake, AJ, Issac (Luke + Nikki <$600 — no 1099 required, but still expense)"),
+        ("Less: Operating Expenses (after reclass)", -T["op_total"], "Strips $4,275 SPV loan to balance sheet; pro-rates $18K Insurance to $7,500"),
+        ("PARTNERSHIP NET INCOME", T["net_income"], "Allocated to K-1 partners (Nairne, Raj, Phil)"),
     ]
-    for label, gaap, reclass, note in rows:
+    for label, amount, note in rows:
         ws.cell(row=r, column=1, value=label)
-        ws.cell(row=r, column=2, value=gaap).number_format = MONEY
-        ws.cell(row=r, column=3, value=reclass).number_format = MONEY
-        ws.cell(row=r, column=4, value=note).alignment = Alignment(wrap_text=True)
+        ws.cell(row=r, column=2, value=amount).number_format = MONEY
+        ws.cell(row=r, column=3, value=note).alignment = Alignment(wrap_text=True)
+        ws.merge_cells(start_row=r, start_column=3, end_row=r, end_column=4)
         if "NET INCOME" in label:
             for c in range(1, 5):
                 ws.cell(row=r, column=c).fill = TOTAL_FILL
@@ -234,16 +241,16 @@ def build_cover_tab(wb, T):
         r += 1
     r += 1
 
-    r = write_section(ws, r, "K-1 PARTNERS (3 partners)", ncols=4)
-    headers = ["Partner", "Ownership %", "Cash Distributions ($)", "Allocated K-1 Income (Reclass-Basis, $)"]
+    r = write_section(ws, r, "K-1 PARTNERS (3 partners) — Per Nairne 2026-05-07: Fund Mgmt 59.5% split 50/50 between Nairne (K-1) and AJ (1099)", ncols=4)
+    headers = ["Partner", "Ownership %", "Cash Distributions ($)", "Allocated K-1 Income ($)"]
     for i, h in enumerate(headers, 1):
         ws.cell(row=r, column=i, value=h)
     set_header_row(ws, r, 4)
     r += 1
     k1_rows = [
-        ("Nairne (Fund Mgmt 59.5% + direct 0.5%)", T["nairne_pct"], T["nairne_cash"], T["net_reclass"] * T["nairne_pct"]),
-        ("Raj Duggal (direct 0.5%)", T["raj_pct"], T["raj_cash"], T["net_reclass"] * T["raj_pct"]),
-        ("Phil (direct 0.5%)", T["phil_pct"], T["phil_cash"], T["net_reclass"] * T["phil_pct"]),
+        (f"Nairne (50%×Fund Mgmt 59.5% + direct 0.5% = 30.25% of perf fees)", T["nairne_pct"], T["nairne_cash"], T["net_income"] * T["nairne_pct"]),
+        ("Raj Duggal (direct 0.5%)", T["raj_pct"], T["raj_cash"], T["net_income"] * T["raj_pct"]),
+        ("Phil (direct 0.5%)", T["phil_pct"], T["phil_cash"], T["net_income"] * T["phil_pct"]),
     ]
     for partner, pct, cash, allocated in k1_rows:
         ws.cell(row=r, column=1, value=partner)
@@ -258,7 +265,7 @@ def build_cover_tab(wb, T):
     r = write_section(ws, r, "TAB GUIDE", ncols=4)
     tab_guide = [
         ("1. Cover & Summary", "This tab — entity info, headline numbers, K-1 partner allocations, file overview"),
-        ("2. P&L Statement", "Full Profit & Loss with GAAP and Tax-Reclass columns, line-by-line detail"),
+        ("2. P&L Statement", "Profit & Loss (Tax-Reclass basis), line-by-line detail"),
         ("3. Balance Sheet", "As of Dec 31, 2025. Best-effort with placeholders flagged for accountant"),
         ("4. General Ledger", "Transaction-level ledger of all cash movements (revenue, distributions, expenses)"),
         ("5. Asset Schedule", "Fixed asset / depreciation schedule. No fixed assets recorded."),
@@ -285,21 +292,20 @@ def build_cover_tab(wb, T):
 
 def build_pnl_tab(wb, T):
     ws = wb.create_sheet("2. P&L Statement")
-    r = title_block(ws, "Profit & Loss Statement", ncols=4)
-    headers = ["Line Item", "GAAP-Style ($)", "Tax-Reclass ($)", "Notes"]
+    r = title_block(ws, "Profit & Loss Statement (Tax-Reclass Basis)", ncols=4)
+    headers = ["Line Item", "Amount ($)", "Notes", ""]
     for i, h in enumerate(headers, 1):
         ws.cell(row=r, column=i, value=h)
     set_header_row(ws, r, 4)
     r += 1
 
-    def line(label, gaap=None, reclass=None, note="", bold=False, fill=None):
+    def line(label, amount=None, note="", bold=False, fill=None):
         nonlocal r
         ws.cell(row=r, column=1, value=label)
-        if gaap is not None:
-            ws.cell(row=r, column=2, value=gaap).number_format = MONEY
-        if reclass is not None:
-            ws.cell(row=r, column=3, value=reclass).number_format = MONEY
-        ws.cell(row=r, column=4, value=note).alignment = Alignment(wrap_text=True)
+        if amount is not None:
+            ws.cell(row=r, column=2, value=amount).number_format = MONEY
+        ws.cell(row=r, column=3, value=note).alignment = Alignment(wrap_text=True)
+        ws.merge_cells(start_row=r, start_column=3, end_row=r, end_column=4)
         if bold:
             for c in range(1, 5):
                 ws.cell(row=r, column=c).font = Font(bold=True)
@@ -309,75 +315,84 @@ def build_pnl_tab(wb, T):
         r += 1
 
     r = write_section(ws, r, "REVENUE", 4)
-    line("Performance Fees Income (from Armada Prime LLP)", T["revenue"], T["revenue"],
+    line("Performance Fees Income (from Armada Prime LLP)", T["revenue"],
          "Per TPA Reporting Packages, Performance Fees Crystallized line, Aug-Dec 2025.")
-    line("Total Revenue", T["revenue"], T["revenue"], bold=True, fill=SUBTOTAL_FILL)
+    line("Total Revenue", T["revenue"], bold=True, fill=SUBTOTAL_FILL)
     r += 1
 
     r = write_section(ws, r, "DIRECT COSTS — Capital Raiser Commissions (1099 contractors)", 4)
     yt = T["year_totals"]
     contractors = [
-        ("Alec Atkinson", yt.get("Alec Atkinson", 0)),
-        ("Jake Gordon", yt.get("Jake Gordon", 0)),
-        ("AJ Affleck", yt.get("AJ Affleck", 0)),
-        ("Issac Morris", yt.get("Issac", 0)),
-        ("Luke Affleck", yt.get("Luke", 0)),
-        ("Nikki", yt.get("Nikki", 0)),
+        ("Alec Atkinson", yt.get("Alec Atkinson", 0), "1099-NEC required (>$600)"),
+        ("AJ Affleck", yt.get("AJ Affleck", 0), "1099-NEC required (>$600). Includes 50%×Fund Mgmt 59.5% + her 39%-pool consultant share per Nairne 2026-05-07."),
+        ("Jake Gordon", yt.get("Jake Gordon", 0), "1099-NEC required (>$600)"),
+        ("Issac Morris", yt.get("Issac", 0), "1099-NEC required (>$600)"),
+        ("Luke Affleck", yt.get("Luke", 0), "Less than $600 — NO 1099 required (still expense to GP)"),
+        ("Nikki", yt.get("Nikki", 0), "Less than $600 — NO 1099 required (still expense to GP)"),
     ]
-    for name, amt in contractors:
-        line(f"  {name}", amt, amt, "1099-NEC issued separately")
-    line("Total Direct Costs", T["contractor_total"], T["contractor_total"], bold=True, fill=SUBTOTAL_FILL)
+    for name, amt, note in contractors:
+        line(f"  {name}", amt, note)
+    line("Total Direct Costs", T["contractor_total"], bold=True, fill=SUBTOTAL_FILL)
     r += 1
 
-    r = write_section(ws, r, "OPERATING EXPENSES", 4)
+    r = write_section(ws, r, "OPERATING EXPENSES (Tax-Reclass)", 4)
     op = T["op_expenses"]
     op_lines = [
-        ("Chris (Contractor labor — 1099)", op.get("Chris", 0), op.get("Chris", 0), "Issue 1099-NEC; verify SSN/address"),
-        ("Insurance (D&O)", op.get("Insurance", 0), 7500, "Reclass: $18k Dec is annual D&O. Pro-rate to ~$7,500 for Aug-Dec period."),
-        ("PVD", op.get("PVD", 0), op.get("PVD", 0), "Vendor identification needed for 1099 obligation"),
-        ("Website", op.get("Website", 0), op.get("Website", 0), "Marketing/web build"),
-        ("Ad Spend / Marketing", op.get("Ad Spend", 0), op.get("Ad Spend", 0), "Marketing"),
-        ("Alpha Verification", op.get("Alpha Verification", 0), op.get("Alpha Verification", 0), "Compliance/verification service"),
-        ("TPA Admin Fees (Formidium)", op.get("TPA", 0), op.get("TPA", 0), "Verify GP-paid vs fund-paid (fund books also have $600/mo)"),
-        ("506c SPV Loan", op.get("506c SPV Loan", 0), 0, "RECLASS to Balance Sheet: $4,275 is a loan/capital item, not P&L expense."),
+        ("Chris (Contractor labor — 1099)", op.get("Chris", 0), "Issue 1099-NEC; verify SSN/address"),
+        ("Consulting (Nov)", op.get("Consulting", 0), "Operating consulting; verify recipient for 1099"),
+        ("Insurance (D&O)", 7500, "Pro-rated: $18k Dec is annual D&O — only 5/12 ($7,500) hits 2025; remaining $10,500 → Prepaid Asset on Balance Sheet"),
+        ("PVD (Tech/Ads)", op.get("PVD", 0), "Vendor identification needed for 1099 obligation"),
+        ("Website", op.get("Website", 0), "Marketing/web build"),
+        ("Alpha Verification", op.get("Alpha Verification", 0), "Compliance/verification service"),
+        ("TPA Admin Fees (Formidium)", op.get("TPA", 0), "Verify GP-paid vs fund-paid (fund books also have $600/mo)"),
     ]
-    for label, gaap, reclass, note in op_lines:
-        line(f"  {label}", gaap, reclass, note)
-    line("Total Operating Expenses", T["op_total_gaap"], T["op_total_reclass"], bold=True, fill=SUBTOTAL_FILL)
+    for label, amt, note in op_lines:
+        line(f"  {label}", amt, note)
+    line("Total Operating Expenses", T["op_total"], bold=True, fill=SUBTOTAL_FILL)
+    r += 1
+
+    r = write_section(ws, r, "RECLASSIFIED OFF P&L (To Balance Sheet)", 4)
+    line("  506c SPV Loan disbursement (Aug)", T["spv_reclass"],
+         "Loan receivable / equity investment — appears on Balance Sheet (Tab 3), NOT on P&L")
+    line("  Insurance prepaid portion (covers 2026)", T["insurance_prorate"],
+         "$10,500 of Dec $18K Insurance covers 2026 — booked as Prepaid Asset on Balance Sheet")
     r += 1
 
     r = write_section(ws, r, "NET INCOME (Partnership)", 4)
-    line("Total Revenue", T["revenue"], T["revenue"])
-    line("Less: Direct Costs (1099 contractors)", -T["contractor_total"], -T["contractor_total"])
-    line("Less: Operating Expenses", -T["op_total_gaap"], -T["op_total_reclass"])
-    line("= NET INCOME", T["net_gaap"], T["net_reclass"], bold=True, fill=TOTAL_FILL,
-         note="Tax-reclass column reflects accountant-preferred adjustments.")
+    line("Total Revenue", T["revenue"])
+    line("Less: Direct Costs (1099 contractors)", -T["contractor_total"])
+    line("Less: Operating Expenses (after reclass)", -T["op_total"])
+    line("= NET INCOME", T["net_income"], bold=True, fill=TOTAL_FILL,
+         note="This is what flows to Schedule K Line 1 → allocated to K-1 partners.")
     r += 1
 
-    r = write_section(ws, r, "K-1 PARTNER ALLOCATION", 4)
-    line(f"Nairne — Cash distributions received", T["nairne_cash"], T["nairne_cash"],
-         "Includes Fund Mgmt 59.5% + direct 0.5%. K-1 capital account.")
-    line(f"Nairne — Allocated share of Net Income (98.36%)",
-         T["net_gaap"] * T["nairne_pct"], T["net_reclass"] * T["nairne_pct"],
-         "K-1 Box 1 (Ordinary Income).")
-    line("Raj Duggal — Cash distributions received", T["raj_cash"], T["raj_cash"], "K-1 capital account.")
-    line("Raj Duggal — Allocated share of Net Income (0.82%)",
-         T["net_gaap"] * T["raj_pct"], T["net_reclass"] * T["raj_pct"], "K-1 Box 1.")
-    line("Phil — Cash distributions received", T["phil_cash"], T["phil_cash"], "K-1 capital account.")
-    line("Phil — Allocated share of Net Income (0.82%)",
-         T["net_gaap"] * T["phil_pct"], T["net_reclass"] * T["phil_pct"], "K-1 Box 1.")
+    r = write_section(ws, r, "K-1 PARTNER ALLOCATION (Per Nairne 2026-05-07: Fund Mgmt 59.5% split 50/50 between Nairne K-1 and AJ 1099)", 4)
+    line(f"Nairne — Cash distributions received", T["nairne_cash"],
+         "Includes 50%×Fund Mgmt 59.5% + direct 0.5%. K-1 capital account.")
+    line(f"Nairne — Allocated share of Net Income ({T['nairne_pct']*100:.2f}%)",
+         T["net_income"] * T["nairne_pct"],
+         "K-1 Box 1 (Ordinary Income). Ownership = 30.25/31.25 of partner share.")
+    line("Raj Duggal — Cash distributions received", T["raj_cash"], "K-1 capital account.")
+    line(f"Raj Duggal — Allocated share of Net Income ({T['raj_pct']*100:.2f}%)",
+         T["net_income"] * T["raj_pct"], "K-1 Box 1. Ownership = 0.5/31.25 of partner share.")
+    line("Phil — Cash distributions received", T["phil_cash"], "K-1 capital account.")
+    line(f"Phil — Allocated share of Net Income ({T['phil_pct']*100:.2f}%)",
+         T["net_income"] * T["phil_pct"], "K-1 Box 1. Ownership = 0.5/31.25 of partner share.")
     r += 1
 
     r = write_section(ws, r, "PREPARER NOTES", 4)
     notes = [
         "1. Entity formed at the Armada Prime relaunch in August 2025; first year of operations.",
-        "2. Revenue source: TPA (Formidium) Performance Fees Crystallized line, Aug-Dec 2025.",
-        "3. Member structure (per Nairne 2026-05-05): Nairne 60% (Fund Mgmt 59.5% + direct 0.5%), Raj Duggal 0.5%, Phil 0.5%. All three are K-1 partners.",
-        "4. Phil was previously thought to be a 1099 contractor but has been corrected to K-1 partner status.",
-        "5. TruQuant payments are NOT included. The August 'Trader & Developer' $6,909.93 + 'Spydr' $88.78 are excluded per 2026-04-30 policy decision (TQ is upstream of GP entity).",
-        "6. Contractor amounts shown are CASH BASIS per Distributions Armada Tech 2025 ledger. Difference vs accrual basis (TPA Performance Fees Crystallized) ≈ $11,587.",
-        "7. RECOMMEND: $4,275 of '506c SPV Loan' line items should be reclassified to Balance Sheet (loan/capital).",
-        "8. RECOMMEND: $18,000 December Insurance line is likely annual D&O — pro-rate to ~$7,500 for the 5-month period; book remainder as Prepaid Asset.",
+        "2. Accounting method: ACCRUAL basis (recommended for tax minimization).",
+        "3. Revenue source: TPA (Formidium) Performance Fees Crystallized line, Aug-Dec 2025.",
+        "4. Member/economic structure (per Nairne 2026-05-07): Fund Mgmt 59.5% slice is split 50/50 between AJ Affleck (1099 contractor) and Nairne (K-1 partner). Plus 0.5% direct slices to each of Nairne, Raj, Phil. All three of Nairne/Raj/Phil are K-1 partners.",
+        "5. AJ Affleck's 1099 amount thus includes BOTH her 39%-pool consultant share AND her 50%×Fund Mgmt 29.75% share.",
+        "6. K-1 ownership %: Nairne 30.25/31.25 = 96.80%; Raj 0.5/31.25 = 1.60%; Phil 0.5/31.25 = 1.60%. Total partner interest = 31.25% of pre-distribution gross.",
+        "7. TruQuant payments are NOT included. August 'Trader & Developer' $6,909.93 + 'Spydr' $88.78 excluded per 2026-04-30 policy (TQ is upstream of GP entity).",
+        "8. RECOMMEND: $4,275 of August '506c SPV Loan' is a loan/capital item — reclassified to Balance Sheet.",
+        "9. RECOMMEND: $18,000 Dec Insurance line is annual D&O — $7,500 pro-rated to 2025; remaining $10,500 booked as Prepaid Asset on Balance Sheet.",
+        "10. 1099 threshold: contractors receiving <$600/year (Luke $164.90, Nikki $223.00) do NOT require 1099-NEC issuance, but their amounts ARE still expense to GP entity.",
+        "11. K-1: NO threshold — partners receive K-1 every year regardless of dollar amount. Raj and Phil get K-1s even at $125 allocations.",
     ]
     for note in notes:
         line(note)
@@ -385,8 +400,8 @@ def build_pnl_tab(wb, T):
 
     ws.column_dimensions["A"].width = 50
     ws.column_dimensions["B"].width = 18
-    ws.column_dimensions["C"].width = 18
-    ws.column_dimensions["D"].width = 60
+    ws.column_dimensions["C"].width = 50
+    ws.column_dimensions["D"].width = 30
 
 
 # ---------------------------------------------------------------------------
@@ -451,9 +466,9 @@ def build_balance_sheet_tab(wb, T):
          "Cash distributions made in 2025", f"Fund Mgmt ${T['nairne_cash'] - 946.97:,.2f} + direct ${946.97:,.2f}")
     line("Cumulative Distributions — Raj Duggal", -T["raj_cash"], "Cash distributions made in 2025")
     line("Cumulative Distributions — Phil", -T["phil_cash"], "Cash distributions made in 2025")
-    line("Retained Earnings (Net Income for the year)", T["net_gaap"],
-         "From P&L Statement", f"GAAP: ${T['net_gaap']:,.2f}. Reclass: ${T['net_reclass']:,.2f}")
-    equity_total = T["net_gaap"] - T["nairne_cash"] - T["raj_cash"] - T["phil_cash"]
+    line("Retained Earnings (Net Income for the year)", T["net_income"],
+         "From P&L Statement (Tax-Reclass basis)", f"${T['net_income']:,.2f}")
+    equity_total = T["net_income"] - T["nairne_cash"] - T["raj_cash"] - T["phil_cash"]
     line("Total Members' Equity (excl. placeholders)", equity_total, bold=True, fill=SUBTOTAL_FILL)
     r += 1
 
@@ -671,45 +686,44 @@ def build_k1_tab(wb, T):
     ws = wb.create_sheet("6. K-1 Partners")
     r = title_block(ws, "K-1 Partner Schedule", ncols=6)
 
-    ws.cell(row=r, column=1, value="Per Nairne 2026-05-05: 3 K-1 partners — Nairne (60%), Raj Duggal (0.5%), Phil (0.5%). Phil corrected from prior 1099 status.").font = Font(italic=True, color="C00000")
+    ws.cell(row=r, column=1, value="Per Nairne 2026-05-07: 3 K-1 partners. Fund Mgmt 59.5% slice is split 50/50 — half to AJ Affleck (1099 contractor) and half to Nairne (K-1). Plus direct 0.5% slices to Nairne, Raj, and Phil. Total partner economic interest = 31.25% of pre-distribution gross.").font = Font(italic=True, color="C00000")
+    ws.cell(row=r, column=1).alignment = Alignment(wrap_text=True)
     ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=6)
+    ws.row_dimensions[r].height = 45
     r += 2
 
-    headers = ["Partner Name", "Ownership %", "Cash Distributions ($)", "K-1 Allocated Net Income — GAAP ($)", "K-1 Allocated Net Income — Reclass ($)", "SSN/Address (fill in)"]
+    headers = ["Partner Name", "Economic Interest", "Ownership % (Normalized)", "Cash Distributions ($)", "K-1 Allocated Net Income ($)", "SSN/Address (fill in)"]
     for i, h in enumerate(headers, 1):
         ws.cell(row=r, column=i, value=h)
     set_header_row(ws, r, 6)
     r += 1
 
     partners = [
-        ("Nairne", T["nairne_pct"], T["nairne_cash"]),
-        ("Raj Duggal", T["raj_pct"], T["raj_cash"]),
-        ("Phil", T["phil_pct"], T["phil_cash"]),
+        ("Nairne", "30.25% (= 50%×Fund Mgmt 59.5% + direct 0.5%)", T["nairne_pct"], T["nairne_cash"]),
+        ("Raj Duggal", "0.50% (direct)", T["raj_pct"], T["raj_cash"]),
+        ("Phil", "0.50% (direct)", T["phil_pct"], T["phil_cash"]),
     ]
     total_cash = 0
-    total_gaap = 0
-    total_reclass = 0
-    for name, pct, cash in partners:
+    total_alloc = 0
+    for name, interest, pct, cash in partners:
         ws.cell(row=r, column=1, value=name)
-        ws.cell(row=r, column=2, value=f"{pct*100:.4f}%")
-        ws.cell(row=r, column=3, value=cash).number_format = MONEY
-        gaap_alloc = T["net_gaap"] * pct
-        reclass_alloc = T["net_reclass"] * pct
-        ws.cell(row=r, column=4, value=gaap_alloc).number_format = MONEY
-        ws.cell(row=r, column=5, value=reclass_alloc).number_format = MONEY
+        ws.cell(row=r, column=2, value=interest)
+        ws.cell(row=r, column=3, value=f"{pct*100:.2f}%")
+        ws.cell(row=r, column=4, value=cash).number_format = MONEY
+        alloc = T["net_income"] * pct
+        ws.cell(row=r, column=5, value=alloc).number_format = MONEY
         ws.cell(row=r, column=6, value="")
         for c in range(1, 7):
             ws.cell(row=r, column=c).fill = K1_FILL
         total_cash += cash
-        total_gaap += gaap_alloc
-        total_reclass += reclass_alloc
+        total_alloc += alloc
         r += 1
 
     ws.cell(row=r, column=1, value="TOTAL").font = Font(bold=True)
-    ws.cell(row=r, column=2, value="100.00%")
-    ws.cell(row=r, column=3, value=total_cash).number_format = MONEY
-    ws.cell(row=r, column=4, value=total_gaap).number_format = MONEY
-    ws.cell(row=r, column=5, value=total_reclass).number_format = MONEY
+    ws.cell(row=r, column=2, value="31.25% partner / 68.75% non-partner")
+    ws.cell(row=r, column=3, value="100.00%")
+    ws.cell(row=r, column=4, value=total_cash).number_format = MONEY
+    ws.cell(row=r, column=5, value=total_alloc).number_format = MONEY
     for c in range(1, 7):
         ws.cell(row=r, column=c).fill = TOTAL_FILL
         ws.cell(row=r, column=c).font = Font(bold=True)
@@ -718,10 +732,12 @@ def build_k1_tab(wb, T):
     ws.cell(row=r, column=1, value="NOTES").font = Font(bold=True)
     r += 1
     notes = [
-        "Nairne's 60% is the sum of Fund Management 59.5% slice + direct 0.5% slice. Both are partner allocations (K-1), not entity expenses.",
-        "Cash Distributions and Allocated K-1 Income are different concepts in partnership tax. K-1 Box 1 reports allocated income; Box L tracks capital account changes from distributions.",
-        "Ownership % shown is derived from the 60/0.5/0.5 split. The actual LLC operating agreement governs the legal allocation.",
-        "If the operating agreement specifies a different income allocation method (e.g., guaranteed payments to Nairne for managing), the accountant should adjust.",
+        "Per Nairne 2026-05-07: the 59.5% Fund Management slice is split 50/50 between AJ Affleck (1099 contractor) and Nairne (K-1 partner). AJ's $37,139.89 in 2025 1099 income includes BOTH her 39%-pool consultant share AND her 50%×Fund Mgmt share.",
+        "Nairne's K-1 economic interest is 30.25% of pre-distribution gross (= 50%×59.5% + 0.5% direct).",
+        "Total K-1 partner interest = 31.25% (Nairne 30.25 + Raj 0.5 + Phil 0.5). Normalized partner ownership: Nairne 96.80%, Raj 1.60%, Phil 1.60%.",
+        "Cash Distributions and Allocated K-1 Income are different concepts in partnership tax. K-1 Box 1 reports allocated income (taxable to partner); Box L tracks capital account changes from cash distributions (NOT additionally taxed).",
+        "K-1 issuance: ALL partners receive a K-1 every year regardless of dollar amount — even tiny allocations like Raj's $125 require a K-1. There is no $600 threshold for K-1s (unlike 1099s).",
+        "The actual LLC operating agreement governs the legal allocation. Confirm with accountant before filing.",
     ]
     for note in notes:
         ws.cell(row=r, column=1, value=note).alignment = Alignment(wrap_text=True)
@@ -741,7 +757,7 @@ def build_1099_tab(wb, T):
     ws = wb.create_sheet("7. 1099 Recipients")
     r = title_block(ws, "1099-NEC Recipients Schedule", ncols=5)
 
-    headers = ["Recipient", "2025 Total ($)", "Source of Payment", "EIN/SSN (fill in)", "Address (fill in)"]
+    headers = ["Recipient", "2025 Total ($)", "1099-NEC Required?", "Source of Payment", "EIN/SSN + Address (fill in)"]
     for i, h in enumerate(headers, 1):
         ws.cell(row=r, column=i, value=h)
     set_header_row(ws, r, 5)
@@ -749,25 +765,39 @@ def build_1099_tab(wb, T):
 
     yt = T["year_totals"]
     contractors = [
-        ("Alec Atkinson", yt.get("Alec Atkinson", 0), "Capital raiser commission (39% of his investors' perf fees)"),
-        ("Jake Gordon", yt.get("Jake Gordon", 0), "Capital raiser commission"),
-        ("AJ Affleck", yt.get("AJ Affleck", 0), "Capital raiser commission"),
-        ("Issac Morris", yt.get("Issac", 0), "Capital raiser commission"),
-        ("Luke Affleck", yt.get("Luke", 0), "Capital raiser commission"),
-        ("Nikki (last name TBD)", yt.get("Nikki", 0), "Capital raiser commission (Nov 2025 only)"),
-        ("Chris (last name TBD)", 11500.00, "Operating contractor labor (Nov $7,500 + Dec $4,000)"),
+        ("Alec Atkinson", yt.get("Alec Atkinson", 0), True, "Capital raiser commission (39% of his investors' perf fees)"),
+        ("AJ Affleck", yt.get("AJ Affleck", 0), True, "Capital raiser commission + 50%×Fund Mgmt 59.5% (per Nairne 2026-05-07)"),
+        ("Jake Gordon", yt.get("Jake Gordon", 0), True, "Capital raiser commission"),
+        ("Chris (last name TBD)", 11500.00, True, "Operating contractor labor (Nov $7,500 + Dec $4,000)"),
+        ("Issac Morris", yt.get("Issac", 0), True, "Capital raiser commission"),
+        ("Nikki (last name TBD)", yt.get("Nikki", 0), False, "Capital raiser commission (Nov 2025 only) — under $600"),
+        ("Luke Affleck", yt.get("Luke", 0), False, "Capital raiser commission (Dec 2025 only) — under $600"),
     ]
-    total = 0
-    for name, amt, src in contractors:
+    total_required = 0
+    total_all = 0
+    for name, amt, required, src in contractors:
         ws.cell(row=r, column=1, value=name)
         ws.cell(row=r, column=2, value=amt).number_format = MONEY
-        ws.cell(row=r, column=3, value=src)
-        ws.cell(row=r, column=4, value="")
+        ws.cell(row=r, column=3, value="YES" if required else "NO (<$600 threshold)")
+        ws.cell(row=r, column=4, value=src).alignment = Alignment(wrap_text=True)
         ws.cell(row=r, column=5, value="")
-        total += amt
+        if not required:
+            for c in range(1, 6):
+                ws.cell(row=r, column=c).fill = WARN_FILL
+        total_all += amt
+        if required:
+            total_required += amt
         r += 1
-    ws.cell(row=r, column=1, value="TOTAL 1099 PAYMENTS").font = Font(bold=True)
-    ws.cell(row=r, column=2, value=total).number_format = MONEY
+
+    ws.cell(row=r, column=1, value="TOTAL — All Contractor Payments (P&L expense)").font = Font(bold=True)
+    ws.cell(row=r, column=2, value=total_all).number_format = MONEY
+    for c in range(1, 6):
+        ws.cell(row=r, column=c).fill = SUBTOTAL_FILL
+        ws.cell(row=r, column=c).font = Font(bold=True)
+    r += 1
+    ws.cell(row=r, column=1, value="TOTAL — 1099-NEC Forms Required to Issue").font = Font(bold=True)
+    ws.cell(row=r, column=2, value=total_required).number_format = MONEY
+    ws.cell(row=r, column=3, value="(only contractors >$600)")
     for c in range(1, 6):
         ws.cell(row=r, column=c).fill = TOTAL_FILL
         ws.cell(row=r, column=c).font = Font(bold=True)
@@ -776,24 +806,34 @@ def build_1099_tab(wb, T):
     ws.cell(row=r, column=1, value="VENDORS THAT MAY ALSO REQUIRE 1099").font = Font(bold=True, color="C00000")
     r += 1
     vendors_check = [
-        ("PVD", 12000.00, "If individual/sole prop and >$600 → 1099-NEC. Verify entity type."),
-        ("Ad Spend / Marketing vendors", 5000.00, "If individual/sole prop. Verify."),
+        ("PVD (Tech/Ads)", 6000.00, "If individual/sole prop and >$600 → 1099-NEC. Verify entity type."),
         ("Website builder", 7500.00, "If individual contractor. Verify."),
         ("Alpha Verification", 2250.00, "Likely corporate; unlikely 1099 needed. Verify."),
         ("Insurance carrier", 18000.00, "Corporate — no 1099."),
         ("Formidium (TPA)", 5700.00, "Corporate — no 1099."),
+        ("Consulting (Nov)", 7500.00, "Verify recipient identity for 1099 requirement."),
     ]
     for name, amt, note in vendors_check:
         ws.cell(row=r, column=1, value=name)
         ws.cell(row=r, column=2, value=amt).number_format = MONEY
-        ws.cell(row=r, column=3, value=note).alignment = Alignment(wrap_text=True)
+        ws.cell(row=r, column=4, value=note).alignment = Alignment(wrap_text=True)
         r += 1
     r += 1
 
-    ws.cell(row=r, column=1, value="NOTE: Phil is NOT on this 1099 list — Phil is a K-1 partner (per Nairne 2026-05-05). See K-1 Partners tab.").font = Font(italic=True, color="C00000")
-    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=5)
+    notes = [
+        "1099-NEC threshold: $600/year per recipient. Below that, NO 1099 required (but still expense to GP entity).",
+        "Luke ($164.90) and Nikki ($223.00) are under $600 — no 1099-NEC issuance required for them.",
+        "Phil is NOT on this 1099 list — Phil is a K-1 partner (per Nairne 2026-05-05). See K-1 Partners tab.",
+        "AJ Affleck IS a 1099 contractor (NOT a K-1 partner). Her $37,139.89 includes BOTH her 39%-pool consultant share AND her 50%×Fund Mgmt 59.5% share (per Nairne 2026-05-07).",
+        "All 1099-NECs must be furnished to recipients by January 31 of the following year.",
+    ]
+    for note in notes:
+        ws.cell(row=r, column=1, value=note).alignment = Alignment(wrap_text=True)
+        ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=5)
+        ws.row_dimensions[r].height = 30
+        r += 1
 
-    for i, w in enumerate([22, 16, 60, 22, 35], 1):
+    for i, w in enumerate([22, 16, 24, 50, 30], 1):
         ws.column_dimensions[get_column_letter(i)].width = w
 
 
@@ -895,63 +935,67 @@ def build_cover_memo(T):
 
 ---
 
-## Headline Numbers (2025)
+## Headline Numbers (2025) — Tax-Reclass Basis
 
-| Line | GAAP-Basis | After Tax-Reclass |
-|---|---:|---:|
-| **Revenue** (Performance Fees from Armada Prime LLP) | ${T['revenue']:,.2f} | ${T['revenue']:,.2f} |
-| Direct Costs (1099 contractor commissions) | (${T['contractor_total']:,.2f}) | (${T['contractor_total']:,.2f}) |
-| Operating Expenses | (${T['op_total_gaap']:,.2f}) | (${T['op_total_reclass']:,.2f}) |
-| **Net Income (Partnership)** | **${T['net_gaap']:,.2f}** | **${T['net_reclass']:,.2f}** |
+| Line | Amount |
+|---|---:|
+| **Revenue** (Performance Fees from Armada Prime LLP) | ${T['revenue']:,.2f} |
+| Less: Direct Costs (1099 contractor commissions) | (${T['contractor_total']:,.2f}) |
+| Less: Operating Expenses (after reclass) | (${T['op_total']:,.2f}) |
+| **PARTNERSHIP NET INCOME** | **${T['net_income']:,.2f}** |
 
-The GAAP→reclass swing is **$4,275 in 506c SPV Loans** (move to balance sheet) and **$10,500 in Insurance proration** (Dec $18K is annual D&O — only 5/12 hits 2025).
+Tax-reclass adjustments: $4,275 SPV Loan moved to Balance Sheet; $10,500 Insurance pro-rated to Prepaid Asset (only $7,500 of the $18K Dec premium hits 2025 P&L for the 5-month operating period).
 
 ---
 
-## Member Structure & K-1 Allocation (3 Partners)
+## Member Structure & K-1 Allocation (3 Partners) — Per Nairne 2026-05-07
 
-Per Nairne 2026-05-05 — **Phil corrected to K-1 partner** (was previously thought to be a 1099 contractor).
+The 59.5% Fund Mgmt slice is split 50/50 between **AJ Affleck (1099 contractor)** and **Nairne (K-1 partner)**.
 
-| Member | Ownership % | Cash Distributions Received | K-1 Allocated Net Income (Reclass-Basis) |
-|---|---:|---:|---:|
-| **Nairne** | {T['nairne_pct']*100:.2f}% (60/61) | ${T['nairne_cash']:,.2f} | ${T['net_reclass'] * T['nairne_pct']:,.2f} |
-| **Raj Duggal** | {T['raj_pct']*100:.2f}% (0.5/61) | ${T['raj_cash']:,.2f} | ${T['net_reclass'] * T['raj_pct']:,.2f} |
-| **Phil** | {T['phil_pct']*100:.2f}% (0.5/61) | ${T['phil_cash']:,.2f} | ${T['net_reclass'] * T['phil_pct']:,.2f} |
+| Member | Economic Interest | Ownership % | Cash Distributions | K-1 Allocated Net Income |
+|---|---|---:|---:|---:|
+| **Nairne** | 30.25% (50%×Fund Mgmt + 0.5% direct) | {T['nairne_pct']*100:.2f}% | ${T['nairne_cash']:,.2f} | ${T['net_income'] * T['nairne_pct']:,.2f} |
+| **Raj Duggal** | 0.50% (direct) | {T['raj_pct']*100:.2f}% | ${T['raj_cash']:,.2f} | ${T['net_income'] * T['raj_pct']:,.2f} |
+| **Phil** | 0.50% (direct) | {T['phil_pct']*100:.2f}% | ${T['phil_cash']:,.2f} | ${T['net_income'] * T['phil_pct']:,.2f} |
 
-Nairne's 60% = Fund Management 59.5% slice + direct 0.5%. The Fund Management slice is K-1 income to Nairne (NOT a separate entity expense / 1099).
+Total partner economic interest = 31.25% of pre-distribution gross. Normalized partner ownership: Nairne 96.80%, Raj 1.60%, Phil 1.60%.
 
 ---
 
 ## 1099-NEC Recipients (Aug–Dec 2025 totals)
 
-| Recipient | 2025 Total |
-|---|---:|
-| Alec Atkinson | ${T['year_totals'].get('Alec Atkinson', 0):,.2f} |
-| Jake Gordon | ${T['year_totals'].get('Jake Gordon', 0):,.2f} |
-| AJ Affleck | ${T['year_totals'].get('AJ Affleck', 0):,.2f} |
-| Issac Morris | ${T['year_totals'].get('Issac', 0):,.2f} |
-| Luke Affleck | ${T['year_totals'].get('Luke', 0):,.2f} |
-| Nikki | ${T['year_totals'].get('Nikki', 0):,.2f} |
-| Chris (operating contractor) | $11,500.00 |
-| **Total 1099 Payments** | **${T['contractor_total'] + 11500:,.2f}** |
+| Recipient | 2025 Total | 1099 Required? |
+|---|---:|---|
+| Alec Atkinson | ${T['year_totals'].get('Alec Atkinson', 0):,.2f} | YES (>$600) |
+| **AJ Affleck** | **${T['year_totals'].get('AJ Affleck', 0):,.2f}** | **YES — includes 50%×Fund Mgmt** |
+| Jake Gordon | ${T['year_totals'].get('Jake Gordon', 0):,.2f} | YES (>$600) |
+| Chris (operating) | $11,500.00 | YES (>$600) |
+| Issac Morris | ${T['year_totals'].get('Issac', 0):,.2f} | YES (>$600) |
+| Nikki | ${T['year_totals'].get('Nikki', 0):,.2f} | NO — under $600 |
+| Luke Affleck | ${T['year_totals'].get('Luke', 0):,.2f} | NO — under $600 |
+| **Total Contractor Expense** | **${T['contractor_total'] + 11500:,.2f}** | |
 
 **Phil is NOT on the 1099 list** — Phil is a K-1 partner. See K-1 Partners tab.
 
+**Threshold rules:**
+- 1099-NEC: required when payment ≥$600/year per recipient. Luke + Nikki are below — no 1099 issuance, but expenses still flow through P&L.
+- K-1: NO threshold. All partners (Nairne, Raj, Phil) receive K-1s every year regardless of dollar amount.
+
 ---
 
-## Operating Expenses Summary
+## Operating Expenses Summary (Tax-Reclass)
 
-| Category | GAAP Amount | Reclass-Adjusted | Reclass Reason |
-|---|---:|---:|---|
-| Insurance | $18,000.00 | $7,500.00 | Annual D&O policy → pro-rate to 5/12 of year |
-| Chris (contractor labor) | $11,500.00 | $11,500.00 | — |
-| PVD | $12,000.00 | $12,000.00 | — *(verify vendor for 1099)* |
-| Website | $7,500.00 | $7,500.00 | — |
-| Ad Spend / Marketing | $5,000.00 | $5,000.00 | — |
-| Alpha Verification | $2,250.00 | $2,250.00 | — |
-| TPA Admin Fees | $5,700.00 | $5,700.00 | — *(may overlap fund-level admin)* |
-| 506c SPV Loan | $4,275.00 | $0.00 | **MOVE TO BALANCE SHEET (loan/capital)** |
-| **Total** | **${T['op_total_gaap']:,.2f}** | **${T['op_total_reclass']:,.2f}** | |
+| Category | Amount | Notes |
+|---|---:|---|
+| Insurance (D&O, pro-rated 5/12) | $7,500.00 | Remaining $10,500 → Prepaid Asset on Balance Sheet |
+| Chris (contractor labor) | $4,000.00 | Dec only; 1099-NEC required |
+| Consulting | $7,500.00 | Nov only |
+| PVD (Tech/Ads) | $6,000.00 | Aug only; verify 1099 obligation |
+| Website | $7,500.00 | Oct only |
+| Alpha Verification | $2,250.00 | Nov only |
+| TPA Admin Fees (Formidium) | $5,700.00 | $600 Nov + $5,100 Dec |
+| **Total Operating Expenses** | **${T['op_total']:,.2f}** | |
+| (Reclassified to Balance Sheet) | $4,275.00 | 506c SPV Loan → loan receivable |
 
 ---
 
@@ -966,11 +1010,15 @@ Nairne's 60% = Fund Management 59.5% slice + direct 0.5%. The Fund Management sl
 - All payments are CASH BASIS — what was actually disbursed each month
 - Per-recipient amounts are NET (already after weighted costs / Coinbase fees)
 
-### Member Structure (Updated 2026-05-05)
-- **Nairne**: 60% ownership (= Fund Mgmt 59.5% + direct 0.5%) — K-1 partner
-- **Raj Duggal**: 0.5% ownership — K-1 partner
-- **Phil**: 0.5% ownership — K-1 partner *(corrected from prior 1099 status)*
-- Phil held the 0.5% slice all of 2025; Alec replaced him in April 2026
+### Member Structure (Per Nairne 2026-05-07)
+- **Nairne**: K-1 partner. Receives 50%×Fund Mgmt 59.5% + 0.5% direct = **30.25% economic interest**. Normalized ownership: 96.80%.
+- **AJ Affleck**: 1099 CONTRACTOR (NOT a partner). Receives 50%×Fund Mgmt 59.5% + her 39%-pool share. Total $37,139.89 in 2025.
+- **Raj Duggal**: K-1 partner. 0.5% direct. Normalized ownership: 1.60%.
+- **Phil**: K-1 partner. 0.5% direct. Normalized ownership: 1.60%. (Phil held the slice all of 2025; Alec replaced him in April 2026.)
+- Total K-1 partner economic interest: 31.25%
+
+### Accounting Method
+- **ACCRUAL basis** elected for tax minimization (recognize Aug-Dec deductions in 2025 even if some cash settled in early 2026).
 
 ---
 
