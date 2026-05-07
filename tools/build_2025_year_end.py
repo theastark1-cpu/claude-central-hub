@@ -222,19 +222,21 @@ ACTUAL_GROSS = {
 # Operating expenses paid by Armada Prime Tech LLC, from each month's
 # Distributions ledger Costs section + Dec from BEST ONE Costs sheet.
 GP_OP_EXPENSES = {
+    # Updated 2026-05-07 per Nairne's revised expense list. Changes vs prior:
+    #   Oct: removed 506c SPV Loan $25K, PVD $6K, Ad Spend $5K — kept only Website $7,500
+    #   Nov: "Chris" renamed to "Consulting" (same $7,500 amount)
+    #   Aug: PVD category clarified as Tech/Ads
+    # 2025 total now $55,225 (was $91,225).
     "2025-08": [
         ("506c SPV Loan", 4275.00),
         ("PVD", 6000.00),
     ],
-    "2025-09": [],  # Sep R20 Total = 0
+    "2025-09": [],
     "2025-10": [
-        ("506c SPV Loan", 25000.00),
-        ("PVD", 6000.00),
         ("Website", 7500.00),
-        ("Ad Spend", 5000.00),
     ],
     "2025-11": [
-        ("Chris", 7500.00),
+        ("Consulting", 7500.00),
         ("Alpha Verification", 2250.00),
         ("Formidium (TPA)", 600.00),
     ],
@@ -272,9 +274,10 @@ def _categorize(vendor: str) -> str:
     v = vendor.lower()
     if "tpa" in v or "formidium" in v: return "Admin / TPA Fee"
     if "chris" in v: return "Payroll/Contractor"
+    if "consulting" in v: return "Consulting"
     if "insurance" in v: return "Insurance"
     if "spv" in v or "loan" in v: return "Loan/SPV"
-    if "pvd" in v: return "PVD (verify)"
+    if "pvd" in v: return "Tech/Ads"
     if "website" in v: return "Marketing/Web"
     if "ad spend" in v or "ads" in v: return "Marketing/Ads"
     if "alpha" in v: return "Verification/Compliance"
@@ -1000,11 +1003,11 @@ def build_workbook(agg: dict) -> None:
     ws.cell(row=r, column=1, value="Verify with user before sending to accountant").font = Font(bold=True, color="C00000")
     r += 1
     notes = [
-        "1. Insurance ($18k Dec): is this annual or already monthly-allocated? If annual, reduce to ~$1.5k for Dec.",
+        "1. Insurance ($18k Dec): is this annual or already monthly-allocated? If annual D&O policy, fully deductible in 2025 under 12-month prepaid rule (Reg §1.263(a)-4(f)).",
         "2. TPA fee duplication: Dec has TWO TPA lines ($600 + $4,500). The $600 also appears as fund-level admin in TPA's books. Confirm only the GP-paid portion goes here.",
-        "3. 506c SPV Loan ($4,275 Aug + $25,000 Oct): is this an expense or a loan repayment? Expense for 1099/K-1 vs balance-sheet item.",
-        "4. PVD ($6k Aug + $6k Oct): vendor identification needed for 1099 (if individual) or just expense (if entity).",
-        "5. Badtwin / Ad Spend / Website (Oct): vendor names + 1099 obligations need confirmation.",
+        "3. 506c SPV Loan ($4,275 Aug only): is this an expense or a loan repayment? If loan, reclassify to Balance Sheet (asset).",
+        "4. PVD ($6k Aug only): vendor identification needed for 1099 (if individual) or just expense (if entity). Tech/Ads category.",
+        "5. Consulting ($7.5k Nov) + Chris ($4k Dec): 1099-NEC required if individuals.",
     ]
     for note in notes:
         ws.cell(row=r, column=1, value=note)

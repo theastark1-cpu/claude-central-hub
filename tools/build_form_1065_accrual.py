@@ -4,7 +4,7 @@
 Tax-optimized strategy:
   - Accounting method: ACCRUAL (recognize Dec 2025 deductions in 2025, not 2026)
   - Insurance $18K kept fully deductible in 2025 (12-month prepaid rule)
-  - 506c SPV Loans $29,275 reclassified to Balance Sheet (Asset, not P&L)
+  - 506c SPV Loans $4,275 reclassified to Balance Sheet (Asset, not P&L)
   - Phil treated as K-1 partner (not 1099)
 
 Output:
@@ -90,7 +90,7 @@ def compute_totals():
 
     # Operating expenses (accrual + tax-optimized reclass)
     # Keep full $18K insurance (12-month prepaid rule)
-    # Move $29,275 SPV Loans to Balance Sheet (NOT a P&L expense)
+    # Move $4,275 SPV Loans to Balance Sheet (NOT a P&L expense)
     op_raw = {}
     mapping = {
         "506c SPV Loan": "506c SPV Loan",
@@ -258,7 +258,7 @@ def build_cover(wb, T):
     choices = [
         ("Accounting Method", "ACCRUAL", "Recognize Dec 2025 expenses in 2025 (when only 5 months of revenue). Defer income recognition compared to ad-hoc cash treatment of late-arriving wires."),
         ("Insurance Treatment", "Full $18K deducted in 2025", "12-month prepaid rule (IRS Pub 535) allows full deduction of prepaid expenses with benefit period ≤12 months from payment."),
-        ("506c SPV Loans Treatment", "Reclassified to Balance Sheet (Asset)", "$29,275 in SPV Loan disbursements are loan receivables / equity investments — NOT P&L expenses."),
+        ("506c SPV Loans Treatment", "Reclassified to Balance Sheet (Asset)", "$4,275 in SPV Loan disbursements are loan receivables / equity investments — NOT P&L expenses."),
         ("Phil's 0.5% Slice", "K-1 Partner (NOT 1099 contractor)", "Per Nairne 2026-05-05 — Phil is a partner; his slice is a partner allocation, not a contractor expense."),
     ]
     for label, choice, rationale in choices:
@@ -422,7 +422,7 @@ def build_page1(wb, T):
     r += 1
     r = section(ws, r, "ITEMS NOT ON P&L (TRACK SEPARATELY)", 4)
     line("—", "506c SPV Loan disbursements (RECLASSIFIED to Balance Sheet)", T["spv_amount"],
-         "Aug $4,275 + Oct $25,000 = $29,275. Loan receivables / SPV equity investment; appears on Schedule L (Tab 7), not Form 1065 Page 1.", fill=WARN_FILL)
+         "Aug $4,275 (Oct $25K SPV disbursement was reclassified out of GP expenses entirely per Nairne 2026-05-07). Loan receivable / SPV equity investment — appears on Schedule L (Tab 7), not Form 1065 Page 1.", fill=WARN_FILL)
 
     ws.column_dimensions["A"].width = 12
     ws.column_dimensions["B"].width = 60
@@ -787,7 +787,7 @@ def build_schedule_m1(wb, T):
     notes = [
         "Schedule M-1 reconciles BOOK income (your accounting records) to TAXABLE income (Schedule K).",
         "For Armada Prime Tech LLC's first year, books and tax should reconcile cleanly — no permanent or temporary differences expected.",
-        "The 506c SPV reclassification ($29,275 from P&L to balance sheet) is reflected in BOTH books and tax — no M-1 adjustment needed.",
+        "The 506c SPV reclassification ($4,275 from P&L to balance sheet) is reflected in BOTH books and tax — no M-1 adjustment needed.",
         "Insurance ($18K full deduction in 2025) is consistent between books and tax under the 12-month prepaid rule.",
     ]
     for note in notes:

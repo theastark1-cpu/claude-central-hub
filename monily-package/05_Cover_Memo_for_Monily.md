@@ -1,7 +1,7 @@
 # Monily Tax Organizer — Cover Memo
 ## Armada Prime Tech LLC — Tax Year 2025
 
-**Prepared:** 2026-05-05
+**Prepared:** 2026-05-07
 **Period of operations:** Aug 1, 2025 – Dec 31, 2025 (entity formed at Armada Prime LLP relaunch)
 **Filing status:** First year of filing
 **Tax classification:** Multi-member LLC, partnership for tax purposes
@@ -24,10 +24,10 @@
 |---|---:|---:|
 | **Revenue** (Performance Fees from Armada Prime LLP) | $153,023.03 | $153,023.03 |
 | Direct Costs (1099 contractor commissions) | ($86,754.81) | ($86,754.81) |
-| Operating Expenses | ($91,225.00) | ($51,450.00) |
-| **Net Income (Partnership)** | **$-24,956.78** | **$14,818.22** |
+| Operating Expenses | ($55,225.00) | ($40,450.00) |
+| **Net Income (Partnership)** | **$11,043.22** | **$25,818.22** |
 
-The GAAP→reclass swing is **$29,275 in 506c SPV Loans** (move to balance sheet) and **$10,500 in Insurance proration** (Dec $18K is annual D&O — only 5/12 hits 2025).
+The GAAP→reclass swing is **$4,275 in 506c SPV Loans** (move to balance sheet) and **$10,500 in Insurance proration** (Dec $18K is annual D&O — only 5/12 hits 2025).
 
 ---
 
@@ -37,9 +37,9 @@ Per Nairne 2026-05-05 — **Phil corrected to K-1 partner** (was previously thou
 
 | Member | Ownership % | Cash Distributions Received | K-1 Allocated Net Income (Reclass-Basis) |
 |---|---:|---:|---:|
-| **Nairne** | 98.36% (60/61) | $34,188.88 | $14,575.30 |
-| **Raj Duggal** | 0.82% (0.5/61) | $946.97 | $121.46 |
-| **Phil** | 0.82% (0.5/61) | $946.97 | $121.46 |
+| **Nairne** | 98.36% (60/61) | $34,188.88 | $25,394.97 |
+| **Raj Duggal** | 0.82% (0.5/61) | $946.97 | $211.62 |
+| **Phil** | 0.82% (0.5/61) | $946.97 | $211.62 |
 
 Nairne's 60% = Fund Management 59.5% slice + direct 0.5%. The Fund Management slice is K-1 income to Nairne (NOT a separate entity expense / 1099).
 
@@ -73,8 +73,8 @@ Nairne's 60% = Fund Management 59.5% slice + direct 0.5%. The Fund Management sl
 | Ad Spend / Marketing | $5,000.00 | $5,000.00 | — |
 | Alpha Verification | $2,250.00 | $2,250.00 | — |
 | TPA Admin Fees | $5,700.00 | $5,700.00 | — *(may overlap fund-level admin)* |
-| 506c SPV Loan | $29,275.00 | $0.00 | **MOVE TO BALANCE SHEET (loan/capital)** |
-| **Total** | **$91,225.00** | **$51,450.00** | |
+| 506c SPV Loan | $4,275.00 | $0.00 | **MOVE TO BALANCE SHEET (loan/capital)** |
+| **Total** | **$55,225.00** | **$40,450.00** | |
 
 ---
 
@@ -109,7 +109,7 @@ Nairne's 60% = Fund Management 59.5% slice + direct 0.5%. The Fund Management sl
 8. **Initial member capital contributions** for all 3 members at formation
 9. **Confirm cash basis vs accrual basis** for tax reporting
 10. **Foreign financial account question** — verify crypto wallets/exchanges
-11. **506c SPV structure** — confirm whether the $29,275 is loan or equity investment
+11. **506c SPV structure** — confirm whether the $4,275 is loan or equity investment
 12. **Insurance pro-ration** — confirm $18K Dec is annual D&O
 
 ---

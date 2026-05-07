@@ -14,20 +14,20 @@
   - Issac: $761.49
   - Nikki: $223.00
   - Luke: $164.90
-- **GP-paid operating expenses (Aug-Dec 2025):** $91,225.00 *(see GP Expenses tab; verify Insurance + TPA double-count + SPV loans reclass)*
-- **Partnership net income (allocated to K-1 partners):** **$-24,956.78**
+- **GP-paid operating expenses (Aug-Dec 2025):** $55,225.00 *(see GP Expenses tab; verify Insurance + TPA double-count + SPV loans reclass)*
+- **Partnership net income (allocated to K-1 partners):** **$11,043.22**
 
 **K-1 partner allocations** (Nairne 60% = Fund Mgmt 59.5% + direct 0.5%; Raj 0.5%; Phil 0.5%):
 
 - **Nairne** (98.36% ownership):
   - Cash distributions: $34,188.88 (Fund Mgmt $0.00 + direct 0.5% $34,188.88)
-  - Allocated share of net income: $-24,547.65
+  - Allocated share of net income: $10,862.18
 - **Raj Duggal** (0.82% ownership):
   - Cash distributions: $946.97
-  - Allocated share of net income: $-204.56
+  - Allocated share of net income: $90.52
 - **Phil** (0.82% ownership):
   - Cash distributions: $946.97
-  - Allocated share of net income: $-204.56
+  - Allocated share of net income: $90.52
 
 ## Monthly Roll-Up
 
@@ -69,10 +69,10 @@ In August 2025, the GP cut (30% of fund net) was split as: 9.5% Consultant + 13.
 |---|---:|
 | Aug 2025 | $10,275.00 |
 | Sep 2025 | $0.00 |
-| Oct 2025 | $43,500.00 |
+| Oct 2025 | $7,500.00 |
 | Nov 2025 | $10,350.00 |
 | Dec 2025 | $27,100.00 |
-| **2025 Total** | **$91,225.00** |
+| **2025 Total** | **$55,225.00** |
 
 Itemized breakdown in the workbook's `GP Expenses` and `Monthly Op Expenses` tabs (vendor × month matrix in the latter).
 

@@ -86,7 +86,7 @@ def compute_year_totals():
 
     op_expenses = aggregate_op_expenses()
     op_total_gaap = sum(op_expenses.values())
-    spv_reclass = 4275 + 25000  # Aug + Oct
+    spv_reclass = 4275  # Aug only (Oct $25K removed from expenses per Nairne 2026-05-07)
     insurance_prorate = 18000 - 7500
     op_total_reclass = op_total_gaap - spv_reclass - insurance_prorate
 
@@ -219,7 +219,7 @@ def build_cover_tab(wb, T):
     rows = [
         ("Revenue (Performance Fees from Armada Prime LLP)", T["revenue"], T["revenue"], "TPA-authoritative; Aug-Dec 2025"),
         ("Less: 1099 Contractor Expenses (Alec, Jake, AJ, Issac, Luke)", -T["contractor_total"], -T["contractor_total"], "Phil moved to K-1 per Nairne 2026-05-05"),
-        ("Less: Operating Expenses", -T["op_total_gaap"], -T["op_total_reclass"], "Reclass moves $29,275 SPV loans to balance sheet, pro-rates Insurance"),
+        ("Less: Operating Expenses", -T["op_total_gaap"], -T["op_total_reclass"], "Reclass moves $4,275 SPV loans to balance sheet, pro-rates Insurance"),
         ("PARTNERSHIP NET INCOME", T["net_gaap"], T["net_reclass"], "Allocated to K-1 partners"),
     ]
     for label, gaap, reclass, note in rows:
@@ -339,7 +339,7 @@ def build_pnl_tab(wb, T):
         ("Ad Spend / Marketing", op.get("Ad Spend", 0), op.get("Ad Spend", 0), "Marketing"),
         ("Alpha Verification", op.get("Alpha Verification", 0), op.get("Alpha Verification", 0), "Compliance/verification service"),
         ("TPA Admin Fees (Formidium)", op.get("TPA", 0), op.get("TPA", 0), "Verify GP-paid vs fund-paid (fund books also have $600/mo)"),
-        ("506c SPV Loan", op.get("506c SPV Loan", 0), 0, "RECLASS to Balance Sheet: $29,275 is a loan/capital item, not P&L expense."),
+        ("506c SPV Loan", op.get("506c SPV Loan", 0), 0, "RECLASS to Balance Sheet: $4,275 is a loan/capital item, not P&L expense."),
     ]
     for label, gaap, reclass, note in op_lines:
         line(f"  {label}", gaap, reclass, note)
@@ -376,7 +376,7 @@ def build_pnl_tab(wb, T):
         "4. Phil was previously thought to be a 1099 contractor but has been corrected to K-1 partner status.",
         "5. TruQuant payments are NOT included. The August 'Trader & Developer' $6,909.93 + 'Spydr' $88.78 are excluded per 2026-04-30 policy decision (TQ is upstream of GP entity).",
         "6. Contractor amounts shown are CASH BASIS per Distributions Armada Tech 2025 ledger. Difference vs accrual basis (TPA Performance Fees Crystallized) ≈ $11,587.",
-        "7. RECOMMEND: $29,275 of '506c SPV Loan' line items should be reclassified to Balance Sheet (loan/capital).",
+        "7. RECOMMEND: $4,275 of '506c SPV Loan' line items should be reclassified to Balance Sheet (loan/capital).",
         "8. RECOMMEND: $18,000 December Insurance line is likely annual D&O — pro-rate to ~$7,500 for the 5-month period; book remainder as Prepaid Asset.",
     ]
     for note in notes:
@@ -468,7 +468,7 @@ def build_balance_sheet_tab(wb, T):
     r = write_section(ws, r, "METHODOLOGY", 4)
     method_notes = [
         "1. Best-effort balance sheet built from transactional data. PLACEHOLDER lines need population by accountant.",
-        "2. 506c SPV Loans ($29,275) reclassified from P&L to assets.",
+        "2. 506c SPV Loans ($4,275) reclassified from P&L to assets.",
         "3. $18,000 Dec Insurance split: $7,500 to 2025 P&L, $10,500 booked as Prepaid Asset.",
         "4. Cumulative Distributions shown as negative equity. Member capital contributions need to be added.",
         "5. The $11,588 cash-vs-accrual delta on Distributions ledger may flow through Accounts Payable. Confirm tax basis with accountant.",
@@ -650,7 +650,7 @@ def build_asset_tab(wb, T):
     r += 1
     notes = [
         "Armada Prime Tech LLC has no fixed assets / depreciable property recorded for 2025. Services-only LLC.",
-        "506c SPV Loan disbursements ($29,275 total) are NOT depreciable. They are loan receivables / equity investments — Balance Sheet items.",
+        "506c SPV Loan disbursements ($4,275 total) are NOT depreciable. They are loan receivables / equity investments — Balance Sheet items.",
         "If equipment / software / capital assets were purchased in 2025, please add them.",
     ]
     for note in notes:
@@ -904,7 +904,7 @@ def build_cover_memo(T):
 | Operating Expenses | (${T['op_total_gaap']:,.2f}) | (${T['op_total_reclass']:,.2f}) |
 | **Net Income (Partnership)** | **${T['net_gaap']:,.2f}** | **${T['net_reclass']:,.2f}** |
 
-The GAAP→reclass swing is **$29,275 in 506c SPV Loans** (move to balance sheet) and **$10,500 in Insurance proration** (Dec $18K is annual D&O — only 5/12 hits 2025).
+The GAAP→reclass swing is **$4,275 in 506c SPV Loans** (move to balance sheet) and **$10,500 in Insurance proration** (Dec $18K is annual D&O — only 5/12 hits 2025).
 
 ---
 
@@ -950,7 +950,7 @@ Nairne's 60% = Fund Management 59.5% slice + direct 0.5%. The Fund Management sl
 | Ad Spend / Marketing | $5,000.00 | $5,000.00 | — |
 | Alpha Verification | $2,250.00 | $2,250.00 | — |
 | TPA Admin Fees | $5,700.00 | $5,700.00 | — *(may overlap fund-level admin)* |
-| 506c SPV Loan | $29,275.00 | $0.00 | **MOVE TO BALANCE SHEET (loan/capital)** |
+| 506c SPV Loan | $4,275.00 | $0.00 | **MOVE TO BALANCE SHEET (loan/capital)** |
 | **Total** | **${T['op_total_gaap']:,.2f}** | **${T['op_total_reclass']:,.2f}** | |
 
 ---
@@ -986,7 +986,7 @@ Nairne's 60% = Fund Management 59.5% slice + direct 0.5%. The Fund Management sl
 8. **Initial member capital contributions** for all 3 members at formation
 9. **Confirm cash basis vs accrual basis** for tax reporting
 10. **Foreign financial account question** — verify crypto wallets/exchanges
-11. **506c SPV structure** — confirm whether the $29,275 is loan or equity investment
+11. **506c SPV structure** — confirm whether the $4,275 is loan or equity investment
 12. **Insurance pro-ration** — confirm $18K Dec is annual D&O
 
 ---
