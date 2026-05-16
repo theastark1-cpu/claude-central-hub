@@ -2,6 +2,20 @@
 
 Record decisions here so both agents stay aligned.
 
+## 2026-05-15 — Arcane Capital Partners LLLP NAV reports for NC Opportunity Fund LP
+
+NC Opportunity Fund LP was a Class B LP in Arcane Capital Partners LLLP (Position 2196755) from April 15, 2025 through July 31, 2025 before transitioning to Armada Prime LLP on August 1, 2025. No formal monthly NAV reports were issued during the Arcane period — performance was tracked internally only. NC's own CPA (Eric C. Reimer, EEPB) produces formal Cascade Technology Group NAV reports for downstream Armada Prime audit support; this gap was closed by retrofitting the same template back to the Arcane period.
+
+Conventions frozen here:
+- **Source of truth for period returns**: GPs Cuts tab of monthly Master Tracker xlsx (June row 28, July row 28). May has no GP cuts row — reconstructed from Juniper Square netincome CSV ($6,690.21 booked Jun 2, 2025 as "May 2025 Fund Returns").
+- **Arcane waterfall** (distinct from Armada Prime's TruQuant 18% / 82% Fund / 70/30 split): Gross Trading Return → 30% SpyderTech trading fee → 70% Investor / 30% GP of remainder. Effective NC investor share = 49% of gross.
+- **June reconciling item**: GP cuts shows June investor profit = $10,791.40; Juniper Square accounting shows June return = $13,866.50; difference of $3,075.10 booked as "Other Adjustments / Reconciling Items" so ending June NAV ($829,542.86) matches July GP cuts opening capital.
+- **Format**: 6-section PDFs mirroring Cascade template (title, exec summary, LP overview, NAV calc support, manager commentary, compliance + dual signature). Filename: `Arcane_NAV_Support_YYYY-MM_NCOpportunityFund.pdf`.
+- **Signatories**: Alec Atkinson + Jake Gordon as Authorized Signatories, Arcane Capital Partners LLLP. No CPA signoff (these are internally prepared retrospective records).
+- **No password gate** on `arcane-capital/index.html` per user direction.
+
+Reproducibility: `python3 arcane-capital/generate_nav_pdf.py` regenerates all 3 PDFs from the hardcoded data dict (data locked from source files at execution time).
+
 ## 2026-04-30 — Armada Prime Tech LLC 2025 year-end reconciliation built (1099/K-1 prep)
 
 Per Nairne, year-end accounting for the GP entity Armada Prime Tech LLC for tax year 2025. Scope decisions:

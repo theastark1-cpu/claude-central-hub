@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Arcane Capital Partners LLLP — NC Opportunity Fund LP NAV Reports</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:wght@600;700&display=swap" />
+<style>
+:root {
+  --bg: #0a0e17;
+  --surface: #111827;
+  --surface2: #1a2236;
+  --surface3: #222d45;
+  --border: #2a3550;
+  --text: #e2e8f0;
+  --text-dim: #8494b0;
+  --text-muted: #5a6a85;
+  --accent: #3b82f6;
+  --navy: #1b2a4e;
+  --green: #10b981;
+  --amber: #f59e0b;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  background: var(--bg); color: var(--text);
+  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+  font-size: 15px; line-height: 1.55;
+  min-height: 100vh;
+}
+.wrap { max-width: 880px; margin: 0 auto; padding: 56px 28px 96px; }
+
+.hero {
+  border-left: 3px solid var(--accent);
+  padding-left: 22px;
+  margin-bottom: 44px;
+}
+.hero .eyebrow {
+  font-size: 11px; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--text-muted);
+  margin-bottom: 12px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.hero h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 38px; line-height: 1.15; font-weight: 700;
+  color: var(--text); margin-bottom: 14px;
+}
+.hero .sub {
+  font-size: 16px; color: var(--text-dim); max-width: 640px;
+}
+.hero .sub strong { color: var(--text); font-weight: 600; }
+
+.summary {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 24px 26px;
+  margin-bottom: 36px;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 18px;
+}
+.summary .kpi { display: flex; flex-direction: column; gap: 6px; }
+.summary .kpi .label {
+  font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text-muted); font-family: 'JetBrains Mono', monospace;
+}
+.summary .kpi .value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 20px; color: var(--text); font-weight: 500;
+}
+.summary .kpi .value.small { font-size: 14px; }
+
+.section-h {
+  font-size: 12px; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  margin: 32px 0 14px;
+}
+
+.reports { display: grid; gap: 14px; }
+.report {
+  display: flex; align-items: stretch;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; overflow: hidden;
+  text-decoration: none; color: inherit;
+  transition: border-color .15s ease, transform .15s ease, background .15s ease;
+}
+.report:hover {
+  border-color: var(--accent);
+  background: var(--surface2);
+}
+.report .month-block {
+  background: var(--navy); padding: 22px 24px;
+  display: flex; flex-direction: column; justify-content: center;
+  min-width: 130px;
+  border-right: 1px solid var(--border);
+}
+.report .month-block .m {
+  font-family: 'Playfair Display', serif;
+  font-size: 24px; font-weight: 700; color: var(--text);
+  line-height: 1;
+}
+.report .month-block .y {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px; color: var(--text-dim);
+  margin-top: 6px; letter-spacing: 0.1em;
+}
+.report .body {
+  flex: 1; padding: 18px 22px;
+  display: flex; flex-direction: column; gap: 4px;
+  justify-content: center;
+}
+.report .body .title {
+  font-size: 15px; font-weight: 600; color: var(--text);
+}
+.report .body .meta {
+  font-size: 12px; color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.04em;
+}
+.report .metrics {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 14px 22px; border-left: 1px solid var(--border);
+  font-family: 'JetBrains Mono', monospace;
+  justify-content: center;
+  min-width: 200px;
+}
+.report .metrics .row {
+  display: flex; justify-content: space-between; gap: 14px;
+  font-size: 12px;
+}
+.report .metrics .row .k { color: var(--text-muted); }
+.report .metrics .row .v { color: var(--text); }
+.report .metrics .row .v.green { color: var(--green); }
+.report .dl {
+  display: flex; align-items: center; padding: 0 22px;
+  color: var(--text-dim); border-left: 1px solid var(--border);
+  font-size: 13px; font-family: 'JetBrains Mono', monospace;
+}
+.report:hover .dl { color: var(--accent); }
+
+.foot {
+  margin-top: 56px; padding-top: 24px;
+  border-top: 1px solid var(--border);
+  font-size: 12px; color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  line-height: 1.7;
+}
+.foot p + p { margin-top: 8px; }
+
+@media (max-width: 700px) {
+  .report { flex-direction: column; }
+  .report .month-block, .report .body, .report .metrics, .report .dl {
+    border-right: none; border-left: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .report .dl { padding: 14px 22px; border-bottom: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <div class="eyebrow">Arcane Capital Partners LLLP</div>
+    <h1>NC Opportunity Fund LP<br/>NAV & Capital Account Reports</h1>
+    <p class="sub">
+      Retrospective monthly NAV &amp; capital account reports for
+      <strong>NC Opportunity Fund LP</strong>'s Class B limited partnership
+      interest in <strong>Arcane Capital Partners LLLP</strong>, covering
+      the Arcane reporting period <strong>May–July 2025</strong> prior to
+      NC's August 2025 transition to Armada Prime LLP. Period returns are
+      sourced from the monthly GPs Cuts allocation schedule.
+    </p>
+  </div>
+
+  <div class="summary">
+    <div class="kpi">
+      <div class="label">Position ID</div>
+      <div class="value">2196755</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Asset Class</div>
+      <div class="value">Class B</div>
+    </div>
+    <div class="kpi">
+      <div class="label">% Ownership (Jul 2025)</div>
+      <div class="value">21.19%</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Cumulative Contributions</div>
+      <div class="value">$807,895</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Cumulative Return</div>
+      <div class="value">$46,850</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Ending NAV (Jul 31, 2025)</div>
+      <div class="value">$854,744</div>
+    </div>
+  </div>
+
+  <div class="section-h">Monthly Reports</div>
+  <div class="reports">
+
+    <a class="report" href="nav_reports/Arcane_NAV_Support_2025-05_NCOpportunityFund.pdf">
+      <div class="month-block">
+        <div class="m">May</div>
+        <div class="y">2025</div>
+      </div>
+      <div class="body">
+        <div class="title">Monthly NAV &amp; Capital Account Report</div>
+        <div class="meta">Inception period · Juniper Square allocation</div>
+      </div>
+      <div class="metrics">
+        <div class="row"><span class="k">Period Return</span><span class="v green">+1.00%</span></div>
+        <div class="row"><span class="k">Investor $</span><span class="v">+$6,690</span></div>
+        <div class="row"><span class="k">Ending NAV</span><span class="v">$675,711</span></div>
+      </div>
+      <div class="dl">PDF →</div>
+    </a>
+
+    <a class="report" href="nav_reports/Arcane_NAV_Support_2025-06_NCOpportunityFund.pdf">
+      <div class="month-block">
+        <div class="m">Jun</div>
+        <div class="y">2025</div>
+      </div>
+      <div class="body">
+        <div class="title">Monthly NAV &amp; Capital Account Report</div>
+        <div class="meta">First full GPs Cuts period · 3.26% gross</div>
+      </div>
+      <div class="metrics">
+        <div class="row"><span class="k">Period Return</span><span class="v green">+1.60%</span></div>
+        <div class="row"><span class="k">Investor $</span><span class="v">+$10,791</span></div>
+        <div class="row"><span class="k">Ending NAV</span><span class="v">$829,543</span></div>
+      </div>
+      <div class="dl">PDF →</div>
+    </a>
+
+    <a class="report" href="nav_reports/Arcane_NAV_Support_2025-07_NCOpportunityFund.pdf">
+      <div class="month-block">
+        <div class="m">Jul</div>
+        <div class="y">2025</div>
+      </div>
+      <div class="body">
+        <div class="title">Monthly NAV &amp; Capital Account Report</div>
+        <div class="meta">Final Arcane period · 6.20% gross · pre-transition</div>
+      </div>
+      <div class="metrics">
+        <div class="row"><span class="k">Period Return</span><span class="v green">+3.04%</span></div>
+        <div class="row"><span class="k">Investor $</span><span class="v">+$25,202</span></div>
+        <div class="row"><span class="k">Ending NAV</span><span class="v">$854,744</span></div>
+      </div>
+      <div class="dl">PDF →</div>
+    </a>
+
+  </div>
+
+  <div class="foot">
+    <p>
+      Format mirrors the Cascade Technology Group NAV &amp; Loan Support
+      Report template prepared by Eric C. Reimer, CPA (EEPB) for downstream
+      Armada Prime LLP audit support.
+    </p>
+    <p>
+      Source data: Master Tracker xlsx files (GPs Cuts tab), Juniper Square
+      capital activity &amp; net-income exports. Generator:
+      <code>arcane-capital/generate_nav_pdf.py</code>.
+    </p>
+    <p>
+      Reports signed by Alec Atkinson &amp; Jake Gordon as Authorized Signatories,
+      Arcane Capital Partners LLLP.
+    </p>
+  </div>
+</div>
+</body>
+</html>
